@@ -1,8 +1,10 @@
 NCURSES_CFLAGS := $(shell pkg-config --cflags ncursesw)
 NCURSES_LIBS := $(shell pkg-config --libs ncursesw)
+LIBEV_CFLAGS := $(shell pkg-config --cflags libev)
+LIBEV_LIBS := $(shell pkg-config --libs libev)
 
-CFLAGS = -MMD -Wall $(NCURSES_CFLAGS)
-LIBS = $(NCURSES_LIBS)
+CFLAGS = -MMD -Wall $(NCURSES_CFLAGS) $(LIBEV_CFLAGS)
+LIBS = $(NCURSES_LIBS) $(LIBEV_LIBS)
 
 SOURCES = \
 	src/listmodel.c \

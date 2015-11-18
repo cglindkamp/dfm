@@ -4,9 +4,17 @@
 #include <ncurses.h>
 #include <wchar.h>
 
+#include <ev.h>
+
 #include "listmodel.h"
 #include "listview.h"
 #include "testmodel.h"
+
+struct loopdata {
+	struct listview view;
+	struct listmodel model;
+	WINDOW *status;
+};
 
 void init_ncurses()
 {
@@ -19,51 +27,72 @@ void init_ncurses()
 	init_pair(1, COLOR_WHITE, COLOR_BLUE);
 }
 
-int main(void)
+static void sigwinch_cb(EV_P_ ev_signal *w, int revents)
 {
-	struct listview view;
-	struct listmodel model;
-	WINDOW *status;
+	struct loopdata *data = ev_userdata(EV_A);
+
+	endwin();
+	doupdate();
+	mvwin(data->status, LINES - 1, 0);
+	wresize(data->status, 1, COLS);
+	wrefresh(data->status);
+	listview_resize(&data->view, COLS, LINES - 1);
+}
+
+static void stdin_cb(EV_P_ ev_io *w, int revents)
+{
+	struct loopdata *data = ev_userdata(EV_A);
 	wint_t key;
 	int ret;
-	bool running = true;
+
+	ret = wget_wch(data->status, &key);
+	if(ret == ERR)
+		return;
+
+	wmove(data->status, 0, 0);
+	wprintw(data->status, "%-3d %-10d", ret, key);
+	wrefresh(data->status);
+
+	if(ret == KEY_CODE_YES) {
+		switch(key) {
+		case KEY_UP:
+			listview_up(&data->view);
+			break;
+		case KEY_DOWN:
+			listview_down(&data->view);
+			break;
+		}
+	}
+	if(ret == OK && key == 3) // ^C
+		ev_break(EV_A_ EVBREAK_ONE);
+}
+
+int main(void)
+{
+	struct loopdata data;
+	struct ev_loop *loop = EV_DEFAULT;
+	ev_io stdin_watcher;
+	ev_signal sigwinch_watcher;
 
 	setlocale(LC_ALL, "");
 	init_ncurses();
 
-	status = newwin(1, COLS, LINES - 1, 0);
-	keypad(status, TRUE);
+	data.status = newwin(1, COLS, LINES - 1, 0);
+	keypad(data.status, TRUE);
+	nodelay(data.status, TRUE);
 
-	testmodel_init(&model);
-	listview_init(&view, &model, 0, 0, COLS, LINES - 1);
+	testmodel_init(&data.model);
+	listview_init(&data.view, &data.model, 0, 0, COLS, LINES - 1);
 
-	while(running) {
-		ret = wget_wch(status, &key);
-		if(ret == ERR)
-			continue;
+	ev_set_userdata(loop, &data);
 
-		wmove(status, 0, 0);
-		wprintw(status, "%-3d %-10d", ret, key);
-		wrefresh(status);
+	ev_io_init(&stdin_watcher, stdin_cb, 0, EV_READ);
+	ev_io_start(loop, &stdin_watcher);
 
-		if(ret == KEY_CODE_YES) {
-			switch(key) {
-			case KEY_RESIZE:
-				mvwin(status, LINES - 1, 0);
-				wresize(status, 1, COLS);
-				listview_resize(&view, COLS, LINES - 1);
-				break;
-			case KEY_UP:
-				listview_up(&view);
-				break;
-			case KEY_DOWN:
-				listview_down(&view);
-				break;
-			}
-		}
-		if(ret == OK && key == 3) // ^C
-			running = false;
-	}
+	ev_signal_init(&sigwinch_watcher, sigwinch_cb, SIGWINCH);
+	ev_signal_start(loop, &sigwinch_watcher);
+
+	ev_run(loop, 0);
 
 	endwin();
 
