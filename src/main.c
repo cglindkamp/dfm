@@ -1,14 +1,16 @@
 #define _XOPEN_SOURCE_EXTENDED
 #include <stdbool.h>
+#include <limits.h>
 #include <locale.h>
 #include <ncurses.h>
+#include <unistd.h>
 #include <wchar.h>
 
 #include <ev.h>
 
 #include "listmodel.h"
 #include "listview.h"
-#include "testmodel.h"
+#include "dirmodel.h"
 
 struct loopdata {
 	struct listview view;
@@ -73,6 +75,7 @@ int main(void)
 	struct ev_loop *loop = EV_DEFAULT;
 	ev_io stdin_watcher;
 	ev_signal sigwinch_watcher;
+	char cwd[PATH_MAX];
 
 	setlocale(LC_ALL, "");
 	init_ncurses();
@@ -81,7 +84,7 @@ int main(void)
 	keypad(data.status, TRUE);
 	nodelay(data.status, TRUE);
 
-	testmodel_init(&data.model);
+	dirmodel_init(&data.model, getcwd(cwd, PATH_MAX));
 	listview_init(&data.view, &data.model, 0, 0, COLS, LINES - 1);
 
 	ev_set_userdata(loop, &data);
@@ -94,6 +97,7 @@ int main(void)
 
 	ev_run(loop, 0);
 
+	dirmodel_free(&data.model);
 	endwin();
 
 	return 0;

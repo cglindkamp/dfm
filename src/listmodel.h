@@ -6,6 +6,7 @@
 struct listmodel {
 	unsigned int (*count)(struct listmodel *model);
 	void (*render)(struct listmodel *model, wchar_t *buffer, size_t len, unsigned int index);
+	void *data;
 };
 
 unsigned int listmodel_count(struct listmodel *model);

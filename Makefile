@@ -7,6 +7,8 @@ CFLAGS = -MMD -Wall $(NCURSES_CFLAGS) $(LIBEV_CFLAGS)
 LIBS = $(NCURSES_LIBS) $(LIBEV_LIBS)
 
 SOURCES = \
+	src/dirmodel.c \
+	src/list.c \
 	src/listmodel.c \
 	src/listview.c \
 	src/main.c \
