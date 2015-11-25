@@ -63,6 +63,12 @@ static void stdin_cb(EV_P_ ev_io *w, int revents)
 		case KEY_DOWN:
 			listview_down(&data->view);
 			break;
+		case KEY_PPAGE:
+			listview_pageup(&data->view);
+			break;
+		case KEY_NPAGE:
+			listview_pagedown(&data->view);
+			break;
 		}
 	}
 	if(ret == OK && key == 3) // ^C

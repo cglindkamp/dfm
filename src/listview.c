@@ -50,6 +50,41 @@ void listview_down(struct listview *view)
 	print_list(view);
 }
 
+void listview_pageup(struct listview *view)
+{
+	int rowcount = getmaxy(view->window);
+
+	if(view->index > 0)
+		view->index = 0;
+	else {
+		if(view->first >= rowcount)
+			view->first -= rowcount;
+		else
+			view->first = 0;
+	}
+	print_list(view);
+}
+
+void listview_pagedown(struct listview *view)
+{
+	int listcount = listmodel_count(view->model);
+	int rowcount = getmaxy(view->window);
+
+	if(view->index < rowcount - 1) {
+		if(listcount > rowcount)
+			view->index = rowcount - 1;
+		else
+			view->index = listcount - 1;
+	} else {
+		if(view->first + view->index + rowcount < listcount)
+			view->first += rowcount;
+		else {
+			view->first = listcount - rowcount;
+		}
+	}
+	print_list(view);
+}
+
 void listview_resize(struct listview *view, unsigned int width, unsigned int height)
 {
 	unsigned int selected = view->first + view->index;
