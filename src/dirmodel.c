@@ -40,7 +40,10 @@ void dirmodel_init(struct listmodel *model, const char *path)
 	dir = opendir(path);
 	entry = readdir(dir);
 	while(entry) {
-		list_append(list, strdup(entry->d_name));
+		if(strcmp(entry->d_name, ".") != 0 &&
+		   strcmp(entry->d_name, "..") != 0) {
+			list_append(list, strdup(entry->d_name));
+		}
 		entry = readdir(dir);
 	}
 	closedir(dir);
