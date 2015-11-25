@@ -1,5 +1,6 @@
 #include <dirent.h>
 #include <fcntl.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -20,14 +21,36 @@ unsigned int dirmodel_count(struct listmodel *model)
 	return list_length(list);
 }
 
+static void filesize_to_string(char *buf, off_t filesize)
+{
+	char suffix[] = {' ', 'k', 'M', 'G', 'T'};
+	int cs = 0;
+	off_t cv = filesize;
+
+	while(cv > 1024) {
+		cv /= 1024;
+		if(cs > 0)
+			filesize /= 1024;
+		cs++;
+	}
+
+	if(cv < 100 && cs > 0)
+		sprintf(buf, "%zu.%1zu%c", cv, (filesize - cv * 1024) * 10 / 1024, suffix[cs]);
+	else
+		sprintf(buf, "%zu%c", cv, suffix[cs]);
+}
+
 void dirmodel_render(struct listmodel *model, wchar_t *buffer, size_t len, unsigned int index)
 {
 	list_t *list = model->data;
-	wchar_t *fmta = L"%%-%ds";
-	wchar_t fmt[10];
+	struct filedata *filedata = list_get_item(list, index);
+	wchar_t *fmta = L"%%-%d.%ds %%%ds";
+	wchar_t fmt[32];
+	char filesize[6];
 
-	swprintf(fmt, 10, fmta, len);
-	swprintf(buffer, len + 1, fmt, list_get_item(list, index));
+	filesize_to_string(filesize, filedata->stat.st_size);
+	swprintf(fmt, 16, fmta, len - 6, len - 6, 5);
+	swprintf(buffer, len + 1, fmt, filedata->filename, filesize);
 }
 
 static int sort_filename(const void *a, const void *b)
