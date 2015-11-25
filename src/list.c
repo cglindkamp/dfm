@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -48,26 +49,23 @@ void list_append(list_t *list, void *item)
 	list->length++;
 }
 
-int list_insert(list_t *list, int index, void *item)
+void list_insert(list_t *list, int index, void *item)
 {
+	assert(index >= 0 && index <= list->length);
+
 	if(list->length == list->allocated_items)
 		list_make_room(list);
-	if(list->length >= index &&
-	   index >= 0) {
-		memmove(&list->items[index + 1], &list->items[index], (list->length - index) * sizeof(list->items[0]));
-		list->items[index] = item;
-		list->length++;
-		return index;
-	} else
-		return -1;
+
+	memmove(&list->items[index + 1], &list->items[index], (list->length - index) * sizeof(list->items[0]));
+	list->items[index] = item;
+	list->length++;
 }
 
 void *list_get_item(list_t *list, int index)
 {
-	if(index >= 0 && index < list->length)
-		return list->items[index];
-	else
-		return NULL;
+	assert(index >= 0 && index < list->length);
+
+	return list->items[index];
 }
 
 void list_sort(list_t *list, int (*compare)(const void *, const void *))

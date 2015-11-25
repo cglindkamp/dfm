@@ -3,7 +3,7 @@ NCURSES_LIBS := $(shell pkg-config --libs ncursesw)
 LIBEV_CFLAGS := $(shell pkg-config --cflags libev)
 LIBEV_LIBS := $(shell pkg-config --libs libev)
 
-CFLAGS = -MMD -Wall $(NCURSES_CFLAGS) $(LIBEV_CFLAGS)
+CFLAGS = -MMD -Wall -DNDEBUG $(NCURSES_CFLAGS) $(LIBEV_CFLAGS)
 LIBS = $(NCURSES_LIBS) $(LIBEV_LIBS)
 
 SOURCES = \
