@@ -23,18 +23,19 @@ unsigned int dirmodel_count(struct listmodel *model)
 
 static void filesize_to_string(char *buf, off_t filesize)
 {
-	char suffix[] = {' ', 'k', 'M', 'G', 'T'};
+	char suffix[] = {' ', 'K', 'M', 'G', 'T', 'P', 'E'};
 	int cs = 0;
 	off_t cv = filesize;
 
-	while(cv > 1024) {
+	while(cv > 1024 && cs < sizeof(suffix) - 1) {
+		filesize = cv;
 		cv /= 1024;
-		if(cs > 0)
-			filesize /= 1024;
 		cs++;
 	}
 
-	if(cv < 100 && cs > 0)
+	if(cv >= 10000)
+		strcpy(buf, ">9000");
+	else if(cv < 100 && cs > 0)
 		sprintf(buf, "%zu.%1zu%c", cv, (filesize - cv * 1024) * 10 / 1024, suffix[cs]);
 	else
 		sprintf(buf, "%zu%c", cv, suffix[cs]);
