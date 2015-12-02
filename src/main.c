@@ -47,7 +47,6 @@ static void stdin_cb(EV_P_ ev_io *w, int revents)
 	struct loopdata *data = ev_userdata(EV_A);
 	wint_t key;
 	int ret;
-	char cwd[PATH_MAX];
 	char *currentfile;
 
 	ret = wget_wch(data->status, &key);
@@ -75,14 +74,14 @@ static void stdin_cb(EV_P_ ev_io *w, int revents)
 		case KEY_LEFT:
 			dirmodel_free(&data->model);
 			chdir("..");
-			dirmodel_init(&data->model, getcwd(cwd, PATH_MAX));
+			dirmodel_init(&data->model, ".");
 			listview_setmodel(&data->view, &data->model);
 			break;
 		case KEY_RIGHT:
 			currentfile = strdup(dirmodel_getfilename(&data->model, listview_getindex(&data->view)));
 			dirmodel_free(&data->model);
 			chdir(currentfile);
-			dirmodel_init(&data->model, getcwd(cwd, PATH_MAX));
+			dirmodel_init(&data->model, ".");
 			listview_setmodel(&data->view, &data->model);
 			break;
 		}
@@ -97,7 +96,6 @@ int main(void)
 	struct ev_loop *loop = EV_DEFAULT;
 	ev_io stdin_watcher;
 	ev_signal sigwinch_watcher;
-	char cwd[PATH_MAX];
 
 	setlocale(LC_ALL, "");
 	init_ncurses();
@@ -106,7 +104,7 @@ int main(void)
 	keypad(data.status, TRUE);
 	nodelay(data.status, TRUE);
 
-	dirmodel_init(&data.model, getcwd(cwd, PATH_MAX));
+	dirmodel_init(&data.model, ".");
 	listview_init(&data.view, &data.model, 0, 0, COLS, LINES - 1);
 
 	ev_set_userdata(loop, &data);
