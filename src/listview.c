@@ -85,6 +85,11 @@ void listview_pagedown(struct listview *view)
 	print_list(view);
 }
 
+unsigned int listview_getindex(struct listview *view)
+{
+	return view->first + view->index;
+}
+
 void listview_resize(struct listview *view, unsigned int width, unsigned int height)
 {
 	unsigned int selected = view->first + view->index;
@@ -105,12 +110,17 @@ void listview_resize(struct listview *view, unsigned int width, unsigned int hei
 	print_list(view);
 }
 
-void listview_init(struct listview *view, struct listmodel *model, unsigned int x, unsigned int y, unsigned int width, unsigned int height)
+void listview_setmodel(struct listview *view, struct listmodel *model)
 {
-	view->window = newwin(height, width, y, x);
 	view->index = 0;
 	view->first = 0;
 	view->model = model;
 	print_list(view);
+}
+
+void listview_init(struct listview *view, struct listmodel *model, unsigned int x, unsigned int y, unsigned int width, unsigned int height)
+{
+	view->window = newwin(height, width, y, x);
+	listview_setmodel(view, model);
 }
 

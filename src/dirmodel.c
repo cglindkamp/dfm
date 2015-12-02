@@ -67,6 +67,13 @@ static int sort_filename(const void *a, const void *b)
 	return 1;
 }
 
+const char *dirmodel_getfilename(struct listmodel *model, unsigned int index)
+{
+	list_t *list = model->data;
+	struct filedata *filedata = list_get_item(list, index);
+	return filedata->filename;
+}
+
 void dirmodel_init(struct listmodel *model, const char *path)
 {
 	DIR *dir;

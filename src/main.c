@@ -3,6 +3,7 @@
 #include <limits.h>
 #include <locale.h>
 #include <ncurses.h>
+#include <string.h>
 #include <unistd.h>
 #include <wchar.h>
 
@@ -46,6 +47,8 @@ static void stdin_cb(EV_P_ ev_io *w, int revents)
 	struct loopdata *data = ev_userdata(EV_A);
 	wint_t key;
 	int ret;
+	char cwd[PATH_MAX];
+	char *currentfile;
 
 	ret = wget_wch(data->status, &key);
 	if(ret == ERR)
@@ -68,6 +71,19 @@ static void stdin_cb(EV_P_ ev_io *w, int revents)
 			break;
 		case KEY_NPAGE:
 			listview_pagedown(&data->view);
+			break;
+		case KEY_LEFT:
+			dirmodel_free(&data->model);
+			chdir("..");
+			dirmodel_init(&data->model, getcwd(cwd, PATH_MAX));
+			listview_setmodel(&data->view, &data->model);
+			break;
+		case KEY_RIGHT:
+			currentfile = strdup(dirmodel_getfilename(&data->model, listview_getindex(&data->view)));
+			dirmodel_free(&data->model);
+			chdir(currentfile);
+			dirmodel_init(&data->model, getcwd(cwd, PATH_MAX));
+			listview_setmodel(&data->view, &data->model);
 			break;
 		}
 	}

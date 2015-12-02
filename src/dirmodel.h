@@ -3,6 +3,7 @@
 
 #include "listmodel.h"
 
+const char *dirmodel_getfilename(struct listmodel *model, unsigned int index);
 void dirmodel_init(struct listmodel *model, const char *path);
 void dirmodel_free(struct listmodel *model);
 
