@@ -42,12 +42,18 @@ static void sigwinch_cb(EV_P_ ev_signal *w, int revents)
 	listview_resize(&data->view, COLS, LINES - 1);
 }
 
+static void reload_dirmodel(struct loopdata *data)
+{
+	dirmodel_free(&data->model);
+	dirmodel_init(&data->model, ".");
+	listview_setmodel(&data->view, &data->model);
+}
+
 static void stdin_cb(EV_P_ ev_io *w, int revents)
 {
 	struct loopdata *data = ev_userdata(EV_A);
 	wint_t key;
 	int ret;
-	char *currentfile;
 
 	ret = wget_wch(data->status, &key);
 	if(ret == ERR)
@@ -72,17 +78,12 @@ static void stdin_cb(EV_P_ ev_io *w, int revents)
 			listview_pagedown(&data->view);
 			break;
 		case KEY_LEFT:
-			dirmodel_free(&data->model);
-			chdir("..");
-			dirmodel_init(&data->model, ".");
-			listview_setmodel(&data->view, &data->model);
+			if(chdir("..") == 0)
+				reload_dirmodel(data);
 			break;
 		case KEY_RIGHT:
-			currentfile = strdup(dirmodel_getfilename(&data->model, listview_getindex(&data->view)));
-			dirmodel_free(&data->model);
-			chdir(currentfile);
-			dirmodel_init(&data->model, ".");
-			listview_setmodel(&data->view, &data->model);
+			if(chdir(dirmodel_getfilename(&data->model, listview_getindex(&data->view))) == 0)
+				reload_dirmodel(data);
 			break;
 		}
 	}
