@@ -118,6 +118,7 @@ int main(void)
 
 	ev_run(loop, 0);
 
+	listview_free(&data.view);
 	dirmodel_free(&data.model);
 	endwin();
 

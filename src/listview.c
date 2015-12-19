@@ -110,6 +110,43 @@ void listview_resize(struct listview *view, unsigned int width, unsigned int hei
 	print_list(view);
 }
 
+static void change_cb(unsigned int index, enum model_change change, void *data)
+{
+	struct listview *view = data;
+	int rowcount = getmaxy(view->window);
+
+	switch(change) {
+	case MODEL_ADD:
+		if(index < view->first)
+			view->first++;
+		else if(index <= view->first + view->index) {
+			if(view->index == rowcount - 1)
+				view->first++;
+			else
+				view->index++;
+			print_list(view);
+		} else if(index < view->first + rowcount)
+			print_list(view);
+		break;
+	case MODEL_REMOVE:
+		if(index < view->first)
+			view->first--;
+		else if(index <= view->first + view->index) {
+			if(view->index == 0) {
+				if(view->first != 0)
+					view->first--;
+			} else
+				view->index--;
+			print_list(view);
+		} else if(index < view->first + rowcount)
+			print_list(view);
+	case MODEL_CHANGE:
+		if(index >= view->first && index < view->first + rowcount)
+			print_list(view);
+		break;
+	}
+}
+
 void listview_setmodel(struct listview *view, struct listmodel *model)
 {
 	view->index = 0;
@@ -122,5 +159,12 @@ void listview_init(struct listview *view, struct listmodel *model, unsigned int 
 {
 	view->window = newwin(height, width, y, x);
 	listview_setmodel(view, model);
+	listmodel_register_change_callback(view->model, change_cb, view);
+}
+
+void listview_free(struct listview *view)
+{
+	listmodel_unregister_change_callback(view->model, change_cb, view);
+	delwin(view->window);
 }
 
