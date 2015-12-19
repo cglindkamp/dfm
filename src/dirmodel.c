@@ -1,15 +1,25 @@
 #include <dirent.h>
 #include <fcntl.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/inotify.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <ev.h>
+
 #include "dirmodel.h"
 #include "listmodel_impl.h"
 #include "list.h"
+
+struct data {
+	struct list *list;
+	ev_io inotify_watcher;
+	int inotify_fd;
+};
 
 struct filedata {
 	char *filename;
@@ -18,7 +28,8 @@ struct filedata {
 
 unsigned int dirmodel_count(struct listmodel *model)
 {
-	list_t *list = model->data;
+	struct data *data = model->data;
+	list_t *list = data->list;
 	return list_length(list);
 }
 
@@ -44,7 +55,8 @@ static void filesize_to_string(char *buf, off_t filesize)
 
 void dirmodel_render(struct listmodel *model, wchar_t *buffer, size_t len, unsigned int index)
 {
-	list_t *list = model->data;
+	struct data *data = model->data;
+	list_t *list = data->list;
 	struct filedata *filedata = list_get_item(list, index);
 	wchar_t *fmta = L"%%-%d.%ds %%%ds";
 	wchar_t fmt[32];
@@ -68,9 +80,91 @@ static int sort_filename(const void *a, const void *b)
 	return 1;
 }
 
+/* TODO: implement binary search */
+static bool find_file_in_list(list_t *list, struct filedata *filedata, unsigned int *index)
+{
+	struct filedata *filedatacur;
+	unsigned int i;
+	bool found = false;
+	int ret;
+
+	for(i = 0; i < list_length(list) && !found; i++) {
+		filedatacur = list_get_item(list, i);
+		ret = sort_filename(&filedata, &filedatacur);
+		if(ret <= 0) {
+			found = (ret == 0);
+			break;
+		}
+	}
+	*index = i;
+	return found;
+}
+
+static void inotify_cb(EV_P_ ev_io *w, int revents)
+{
+	struct listmodel *model = w->data;
+	struct data *data = model->data;
+	list_t *list = data->list;
+	char buf[4096]
+		__attribute__((aligned(__alignof(struct inotify_event))));
+	char *ptr;
+	const struct inotify_event *event;
+	ssize_t len;
+	struct filedata *filedata, *filedataold;
+	unsigned int index;
+	bool found;
+
+	len = read(data->inotify_fd, &buf, sizeof(buf));
+	if(len <= 0)
+		return;
+
+	for(ptr = buf; ptr < buf + len; ptr += sizeof(struct inotify_event) + event->len) {
+		event = (const struct inotify_event *)ptr;
+
+		filedata = malloc(sizeof(*filedata));
+		filedata->filename = strdup(event->name);
+
+		if(event->mask & (IN_DELETE | IN_MOVED_FROM)) {
+			/* We cannot stat a deleted or moved file, but the
+			 * compare function used by the search function uses
+			 * S_IFDIR. So search two times, with and without the
+			 * flag set */
+			filedata->stat.st_mode = S_IFDIR;
+			found = find_file_in_list(list, filedata, &index);
+			if(!found) {
+				filedata->stat.st_mode = 0;
+				found = find_file_in_list(list, filedata, &index);
+			}
+			free(filedata->filename);
+			free(filedata);
+			if(found) {
+				filedataold = list_get_item(list, index);
+				free(filedataold->filename);
+				free(filedataold);
+				list_remove(list, index);
+				listmodel_notify_change(model, index, MODEL_REMOVE);
+			}
+		} else if(event->mask & (IN_CREATE | IN_MOVED_TO | IN_MODIFY)) {
+			stat(filedata->filename, &filedata->stat);
+			found = find_file_in_list(list, filedata, &index);
+			if(found) {
+				filedataold = list_get_item(list, index);
+				list_set_item(list, index, filedata);
+				free(filedataold->filename);
+				free(filedataold);
+				listmodel_notify_change(model, index, MODEL_CHANGE);
+			} else {
+				list_insert(list, index, filedata);
+				listmodel_notify_change(model, index, MODEL_ADD);
+			}
+		}
+	}
+}
+
 const char *dirmodel_getfilename(struct listmodel *model, unsigned int index)
 {
-	list_t *list = model->data;
+	struct data *data = model->data;
+	list_t *list = data->list;
 	struct filedata *filedata = list_get_item(list, index);
 	return filedata->filename;
 }
@@ -80,13 +174,32 @@ void dirmodel_init(struct listmodel *model, const char *path)
 	DIR *dir;
 	struct dirent *entry;
 	struct filedata *filedata;
+	struct data *data;
 	list_t *list = list_new(0);
+	struct ev_loop *loop = EV_DEFAULT;
 
 	listmodel_init(model);
 
+	data = malloc(sizeof(*data));
+	data->list = list;
+
 	model->count = dirmodel_count;
 	model->render = dirmodel_render;
-	model->data = list;
+	model->data = data;
+
+	data->inotify_fd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
+	inotify_add_watch(data->inotify_fd, ".",
+		IN_CREATE |
+		IN_DELETE |
+		IN_MOVED_FROM |
+		IN_MOVED_TO |
+		IN_MODIFY |
+		IN_EXCL_UNLINK
+		);
+
+	data->inotify_watcher.data = model;
+	ev_io_init(&data->inotify_watcher, inotify_cb, data->inotify_fd, EV_READ);
+	ev_io_start(loop, &data->inotify_watcher);
 
 	dir = opendir(path);
 	entry = readdir(dir);
@@ -107,16 +220,19 @@ void dirmodel_init(struct listmodel *model, const char *path)
 
 void dirmodel_free(struct listmodel *model)
 {
-	list_t *list = model->data;
+	struct data *data = model->data;
+	list_t *list = data->list;
 	struct filedata *filedata;
 	int i;
 
+	close(data->inotify_fd);
 	for(i = 0; i < list_length(list); i++) {
 		filedata = list_get_item(list, i);
 		free(filedata->filename);
 		free(filedata);
 	}
 	list_free(list);
+	free(data);
 
 	listmodel_free(model);
 }
