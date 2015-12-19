@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 #include "dirmodel.h"
+#include "listmodel_impl.h"
 #include "list.h"
 
 struct filedata {
@@ -81,6 +82,8 @@ void dirmodel_init(struct listmodel *model, const char *path)
 	struct filedata *filedata;
 	list_t *list = list_new(0);
 
+	listmodel_init(model);
+
 	model->count = dirmodel_count;
 	model->render = dirmodel_render;
 	model->data = list;
@@ -114,5 +117,7 @@ void dirmodel_free(struct listmodel *model)
 		free(filedata);
 	}
 	list_free(list);
+
+	listmodel_free(model);
 }
 
