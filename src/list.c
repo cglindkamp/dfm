@@ -61,11 +61,26 @@ void list_insert(list_t *list, int index, void *item)
 	list->length++;
 }
 
+void list_remove(list_t *list, int index)
+{
+	assert(index >= 0 && index < list->length);
+
+	memmove(&list->items[index], &list->items[index + 1], (list->length - index - 1) * sizeof(list->items[0]));
+	list->length--;
+}
+
 void *list_get_item(list_t *list, int index)
 {
 	assert(index >= 0 && index < list->length);
 
 	return list->items[index];
+}
+
+void list_set_item(list_t *list, int index, void *item)
+{
+	assert(index >= 0 && index < list->length);
+
+	list->items[index] = item;
 }
 
 void list_sort(list_t *list, int (*compare)(const void *, const void *))
