@@ -80,24 +80,33 @@ static int sort_filename(const void *a, const void *b)
 	return 1;
 }
 
-/* TODO: implement binary search */
 static bool find_file_in_list(list_t *list, struct filedata *filedata, unsigned int *index)
 {
 	struct filedata *filedatacur;
-	unsigned int i;
-	bool found = false;
+	unsigned int min, middle, max;
 	int ret;
 
-	for(i = 0; i < list_length(list) && !found; i++) {
-		filedatacur = list_get_item(list, i);
+	min = 0;
+	max = list_length(list) - 1;
+
+	while(min < max) {
+		middle = (min + max) / 2;
+		filedatacur = list_get_item(list, middle);
 		ret = sort_filename(&filedata, &filedatacur);
-		if(ret <= 0) {
-			found = (ret == 0);
-			break;
-		}
+		if(ret <= 0)
+			max = middle;
+		else
+			min = middle + 1;
 	}
-	*index = i;
-	return found;
+
+	*index = min;
+	filedatacur = list_get_item(list, *index);
+	ret = sort_filename(&filedata, &filedatacur);
+
+	if(ret > 0 && *index == list_length(list) - 1)
+		*index = list_length(list);
+	return ret == 0;
+
 }
 
 static void inotify_cb(EV_P_ ev_io *w, int revents)
