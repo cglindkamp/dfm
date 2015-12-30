@@ -19,6 +19,7 @@ struct data {
 	struct list *list;
 	ev_io inotify_watcher;
 	int inotify_fd;
+	int inotify_watch;
 };
 
 struct filedata {
@@ -197,7 +198,7 @@ void dirmodel_init(struct listmodel *model, const char *path)
 	model->data = data;
 
 	data->inotify_fd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
-	inotify_add_watch(data->inotify_fd, ".",
+	data->inotify_watch = inotify_add_watch(data->inotify_fd, ".",
 		IN_CREATE |
 		IN_DELETE |
 		IN_MOVED_FROM |
@@ -232,8 +233,11 @@ void dirmodel_free(struct listmodel *model)
 	struct data *data = model->data;
 	list_t *list = data->list;
 	struct filedata *filedata;
+	struct ev_loop *loop = EV_DEFAULT;
 	int i;
 
+	ev_io_stop(loop, &data->inotify_watcher);
+	inotify_rm_watch(data->inotify_fd, data->inotify_watch);
 	close(data->inotify_fd);
 	for(i = 0; i < list_length(list); i++) {
 		filedata = list_get_item(list, i);
