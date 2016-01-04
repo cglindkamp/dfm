@@ -16,6 +16,7 @@ enum model_change {
 	MODEL_ADD,
 	MODEL_REMOVE,
 	MODEL_CHANGE,
+	MODEL_RELOAD,
 };
 
 typedef void(model_change_callback)(unsigned int index, enum model_change change, void *data);

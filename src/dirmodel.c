@@ -179,23 +179,16 @@ const char *dirmodel_getfilename(struct listmodel *model, unsigned int index)
 	return filedata->filename;
 }
 
-void dirmodel_init(struct listmodel *model, const char *path)
+static void internal_init(struct listmodel *model, const char *path)
 {
 	DIR *dir;
 	struct dirent *entry;
 	struct filedata *filedata;
-	struct data *data;
+	struct data *data = model->data;
 	list_t *list = list_new(0);
 	struct ev_loop *loop = EV_DEFAULT;
 
-	listmodel_init(model);
-
-	data = malloc(sizeof(*data));
 	data->list = list;
-
-	model->count = dirmodel_count;
-	model->render = dirmodel_render;
-	model->data = data;
 
 	data->inotify_fd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
 	data->inotify_watch = inotify_add_watch(data->inotify_fd, ".",
@@ -228,7 +221,7 @@ void dirmodel_init(struct listmodel *model, const char *path)
 	list_sort(list, sort_filename);
 }
 
-void dirmodel_free(struct listmodel *model)
+static void internal_free(struct listmodel *model)
 {
 	struct data *data = model->data;
 	list_t *list = data->list;
@@ -245,8 +238,29 @@ void dirmodel_free(struct listmodel *model)
 		free(filedata);
 	}
 	list_free(list);
-	free(data);
-
-	listmodel_free(model);
 }
 
+void dirmodel_change_directory(struct listmodel *model, const char *path)
+{
+	internal_free(model);
+	internal_init(model, path);
+	listmodel_notify_change(model, 0, MODEL_RELOAD);
+}
+
+void dirmodel_init(struct listmodel *model, const char *path)
+{
+	listmodel_init(model);
+
+	model->data = malloc(sizeof(struct data));
+	model->count = dirmodel_count;
+	model->render = dirmodel_render;
+
+	internal_init(model, path);
+
+}
+void dirmodel_free(struct listmodel *model)
+{
+	internal_free(model);
+	free(model->data);
+	listmodel_free(model);
+}

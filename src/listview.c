@@ -144,22 +144,21 @@ static void change_cb(unsigned int index, enum model_change change, void *data)
 		if(index >= view->first && index < view->first + rowcount)
 			print_list(view);
 		break;
+	case MODEL_RELOAD:
+		view->first = 0;
+		view->index = 0;
+		print_list(view);
 	}
-}
-
-void listview_setmodel(struct listview *view, struct listmodel *model)
-{
-	view->index = 0;
-	view->first = 0;
-	view->model = model;
-	print_list(view);
 }
 
 void listview_init(struct listview *view, struct listmodel *model, unsigned int x, unsigned int y, unsigned int width, unsigned int height)
 {
 	view->window = newwin(height, width, y, x);
-	listview_setmodel(view, model);
+	view->index = 0;
+	view->first = 0;
+	view->model = model;
 	listmodel_register_change_callback(view->model, change_cb, view);
+	print_list(view);
 }
 
 void listview_free(struct listview *view)

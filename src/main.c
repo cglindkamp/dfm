@@ -42,13 +42,6 @@ static void sigwinch_cb(EV_P_ ev_signal *w, int revents)
 	listview_resize(&data->view, COLS, LINES - 1);
 }
 
-static void reload_dirmodel(struct loopdata *data)
-{
-	dirmodel_free(&data->model);
-	dirmodel_init(&data->model, ".");
-	listview_setmodel(&data->view, &data->model);
-}
-
 static void stdin_cb(EV_P_ ev_io *w, int revents)
 {
 	struct loopdata *data = ev_userdata(EV_A);
@@ -79,11 +72,11 @@ static void stdin_cb(EV_P_ ev_io *w, int revents)
 			break;
 		case KEY_LEFT:
 			if(chdir("..") == 0)
-				reload_dirmodel(data);
+				dirmodel_change_directory(&data->model, ".");
 			break;
 		case KEY_RIGHT:
 			if(chdir(dirmodel_getfilename(&data->model, listview_getindex(&data->view))) == 0)
-				reload_dirmodel(data);
+				dirmodel_change_directory(&data->model, ".");
 			break;
 		}
 	}
