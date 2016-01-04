@@ -120,10 +120,10 @@ static void change_cb(unsigned int index, enum model_change change, void *data)
 		if(index < view->first)
 			view->first++;
 		else if(index <= view->first + view->index) {
-			if(view->index == rowcount - 1)
-				view->first++;
-			else
+			if(listmodel_count(view->model) < rowcount)
 				view->index++;
+			else
+				view->first++;
 			print_list(view);
 		} else if(index < view->first + rowcount)
 			print_list(view);
@@ -132,14 +132,20 @@ static void change_cb(unsigned int index, enum model_change change, void *data)
 		if(index < view->first)
 			view->first--;
 		else if(index <= view->first + view->index) {
-			if(view->index == 0) {
-				if(view->first != 0)
-					view->first--;
+			if(view->first != 0) {
+				view->first--;
 			} else
 				view->index--;
 			print_list(view);
-		} else if(index < view->first + rowcount)
+		} else if(index < view->first + rowcount) {
+			if(listmodel_count(view->model) < view->first + rowcount) {
+				if(view->first != 0) {
+					view->first--;
+					view->index++;
+				}
+			}
 			print_list(view);
+		}
 	case MODEL_CHANGE:
 		if(index >= view->first && index < view->first + rowcount)
 			print_list(view);
