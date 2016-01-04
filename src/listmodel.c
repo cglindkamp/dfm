@@ -19,7 +19,7 @@ void listmodel_render(struct listmodel *model, wchar_t *buffer, size_t len, unsi
 
 void listmodel_register_change_callback(struct listmodel *model, model_change_callback callback, void *data)
 {
-	struct callback *cb = malloc(sizeof(*callback));
+	struct callback *cb = malloc(sizeof(*cb));
 	cb->cb = callback;
 	cb->data = data;
 	list_append(model->change_callbacks, cb);
