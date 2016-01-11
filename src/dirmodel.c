@@ -59,13 +59,10 @@ void dirmodel_render(struct listmodel *model, wchar_t *buffer, size_t len, unsig
 	struct data *data = model->data;
 	list_t *list = data->list;
 	struct filedata *filedata = list_get_item(list, index);
-	wchar_t *fmta = L"%%-%d.%ds %%%ds";
-	wchar_t fmt[32];
 	char filesize[6];
 
 	filesize_to_string(filesize, filedata->stat.st_size);
-	swprintf(fmt, 16, fmta, len - 6, len - 6, 5);
-	swprintf(buffer, len + 1, fmt, filedata->filename, filesize);
+	swprintf(buffer, len + 1, L"%-*.*s %*s", len - 6, len - 6, filedata->filename, 5, filesize);
 }
 
 static int sort_filename(const void *a, const void *b)
