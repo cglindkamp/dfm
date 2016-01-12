@@ -12,7 +12,6 @@ SOURCES = \
 	src/listmodel.c \
 	src/listview.c \
 	src/main.c \
-	src/testmodel.c
 
 OBJECTS = $(patsubst %.c,%.o,$(SOURCES))
 DEPS = $(patsubst %.c,%.d,$(SOURCES))
