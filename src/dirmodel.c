@@ -60,9 +60,15 @@ void dirmodel_render(struct listmodel *model, wchar_t *buffer, size_t len, unsig
 	list_t *list = data->list;
 	struct filedata *filedata = list_get_item(list, index);
 	char filesize[6];
+	char *info;
 
-	filesize_to_string(filesize, filedata->stat.st_size);
-	swprintf(buffer, len + 1, L"%-*.*s %*s", len - 6, len - 6, filedata->filename, 5, filesize);
+	if(S_ISDIR(filedata->stat.st_mode)) {
+		info = "<DIR>";
+	} else {
+		info = filesize;
+		filesize_to_string(filesize, filedata->stat.st_size);
+	}
+	swprintf(buffer, len + 1, L"%-*.*s %*s", len - 6, len - 6, filedata->filename, 5, info);
 }
 
 static int sort_filename(const void *a, const void *b)
