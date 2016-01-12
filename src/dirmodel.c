@@ -24,6 +24,7 @@ struct data {
 
 struct filedata {
 	char *filename;
+	bool is_link;
 	struct stat stat;
 };
 
@@ -61,6 +62,8 @@ void dirmodel_render(struct listmodel *model, wchar_t *buffer, size_t len, unsig
 	struct filedata *filedata = list_get_item(list, index);
 	char filesize[6];
 	char *info;
+	char *link;
+	size_t filename_length = len - 6;
 
 	if(S_ISDIR(filedata->stat.st_mode)) {
 		info = "<DIR>";
@@ -68,7 +71,14 @@ void dirmodel_render(struct listmodel *model, wchar_t *buffer, size_t len, unsig
 		info = filesize;
 		filesize_to_string(filesize, filedata->stat.st_size);
 	}
-	swprintf(buffer, len + 1, L"%-*.*s %*s", len - 6, len - 6, filedata->filename, 5, info);
+
+	if(filedata->is_link) {
+		filename_length -= 3;
+		link = " ->";
+	} else
+		link = "";
+
+	swprintf(buffer, len + 1, L"%-*.*s%s %*s", filename_length, filename_length, filedata->filename, link, 5, info);
 }
 
 static int sort_filename(const void *a, const void *b)
@@ -111,6 +121,16 @@ static bool find_file_in_list(list_t *list, struct filedata *filedata, unsigned 
 		*index = list_length(list);
 	return ret == 0;
 
+}
+
+static void read_file_data(struct filedata *filedata)
+{
+	lstat(filedata->filename, &filedata->stat);
+	filedata->is_link = false;
+	if(S_ISLNK(filedata->stat.st_mode)) {
+		filedata->is_link = true;
+		stat(filedata->filename, &filedata->stat);
+	}
 }
 
 static void inotify_cb(EV_P_ ev_io *w, int revents)
@@ -158,7 +178,7 @@ static void inotify_cb(EV_P_ ev_io *w, int revents)
 				listmodel_notify_change(model, index, MODEL_REMOVE);
 			}
 		} else if(event->mask & (IN_CREATE | IN_MOVED_TO | IN_MODIFY)) {
-			stat(filedata->filename, &filedata->stat);
+			read_file_data(filedata);
 			found = find_file_in_list(list, filedata, &index);
 			if(found) {
 				filedataold = list_get_item(list, index);
@@ -214,7 +234,7 @@ static void internal_init(struct listmodel *model, const char *path)
 		   strcmp(entry->d_name, "..") != 0) {
 			filedata = malloc(sizeof(*filedata));
 			filedata->filename = strdup(entry->d_name);
-			fstatat(dirfd(dir), filedata->filename, &filedata->stat, AT_SYMLINK_NOFOLLOW);
+			read_file_data(filedata);
 			list_append(list, filedata);
 		}
 		entry = readdir(dir);
