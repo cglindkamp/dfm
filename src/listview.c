@@ -114,7 +114,10 @@ static void change_cb(unsigned int index, enum model_change change, void *data)
 
 	switch(change) {
 	case MODEL_ADD:
-		if(index <= view->index) {
+		if(listcount == 1) {
+			view->index = 0;
+			print_list(view);
+		} else if(index <= view->index) {
 			view->index++;
 			if(listcount > rowcount)
 				view->first++;
