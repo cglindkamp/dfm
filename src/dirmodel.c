@@ -100,6 +100,11 @@ static bool find_file_in_list(list_t *list, struct filedata *filedata, unsigned 
 	unsigned int min, middle, max;
 	int ret;
 
+	if(list_length(list) == 0) {
+		*index = 0;
+		return false;
+	}
+
 	min = 0;
 	max = list_length(list) - 1;
 
