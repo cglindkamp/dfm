@@ -75,6 +75,8 @@ static void stdin_cb(EV_P_ ev_io *w, int revents)
 				dirmodel_change_directory(&data->model, ".");
 			break;
 		case KEY_RIGHT:
+			if(listmodel_count(&data->model) == 0)
+				break;
 			if(chdir(dirmodel_getfilename(&data->model, listview_getindex(&data->view))) == 0)
 				dirmodel_change_directory(&data->model, ".");
 			break;
