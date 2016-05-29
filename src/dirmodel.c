@@ -128,14 +128,16 @@ static bool find_file_in_list(list_t *list, struct filedata *filedata, unsigned 
 
 }
 
-static void read_file_data(struct filedata *filedata)
+static bool read_file_data(struct filedata *filedata)
 {
-	lstat(filedata->filename, &filedata->stat);
+	if(lstat(filedata->filename, &filedata->stat) != 0)
+		return false;
 	filedata->is_link = false;
 	if(S_ISLNK(filedata->stat.st_mode)) {
 		filedata->is_link = true;
 		stat(filedata->filename, &filedata->stat);
 	}
+	return true;
 }
 
 static void inotify_cb(EV_P_ ev_io *w, int revents)
@@ -183,7 +185,11 @@ static void inotify_cb(EV_P_ ev_io *w, int revents)
 				listmodel_notify_change(model, index, MODEL_REMOVE);
 			}
 		} else if(event->mask & (IN_CREATE | IN_MOVED_TO | IN_MODIFY)) {
-			read_file_data(filedata);
+			if(!read_file_data(filedata)) {
+				free(filedata->filename);
+				free(filedata);
+				continue;
+			}
 			found = find_file_in_list(list, filedata, &index);
 			if(found) {
 				filedataold = list_get_item(list, index);
@@ -239,7 +245,11 @@ static void internal_init(struct listmodel *model, const char *path)
 		   strcmp(entry->d_name, "..") != 0) {
 			filedata = malloc(sizeof(*filedata));
 			filedata->filename = strdup(entry->d_name);
-			read_file_data(filedata);
+			if(!read_file_data(filedata)) {
+				free(filedata->filename);
+				free(filedata);
+				continue;
+			}
 			list_append(list, filedata);
 		}
 		entry = readdir(dir);
