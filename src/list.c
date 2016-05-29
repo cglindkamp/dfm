@@ -87,3 +87,38 @@ void list_sort(list_t *list, int (*compare)(const void *, const void *))
 {
 	qsort(list->items, list->length, sizeof(void *), compare);
 }
+
+bool list_find_item_or_insertpoint(list_t *list, int (*compare)(const void *, const void *), void *item, unsigned int *index)
+{
+	void *currentitem;
+	unsigned int min, middle, max;
+	int ret;
+
+	if(list_length(list) == 0) {
+		*index = 0;
+		return false;
+	}
+
+	min = 0;
+	max = list_length(list) - 1;
+
+	while(min < max) {
+		middle = (min + max) / 2;
+		currentitem = list_get_item(list, middle);
+		ret = compare(&item, &currentitem);
+		if(ret <= 0)
+			max = middle;
+		else
+			min = middle + 1;
+	}
+
+	*index = min;
+	currentitem = list_get_item(list, *index);
+	ret = compare(&item, &currentitem);
+
+	if(ret > 0 && *index == list_length(list) - 1)
+		*index = list_length(list);
+	return ret == 0;
+
+}
+

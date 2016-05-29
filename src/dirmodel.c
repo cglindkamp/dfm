@@ -94,40 +94,6 @@ static int sort_filename(const void *a, const void *b)
 	return 1;
 }
 
-static bool find_file_in_list(list_t *list, struct filedata *filedata, unsigned int *index)
-{
-	struct filedata *filedatacur;
-	unsigned int min, middle, max;
-	int ret;
-
-	if(list_length(list) == 0) {
-		*index = 0;
-		return false;
-	}
-
-	min = 0;
-	max = list_length(list) - 1;
-
-	while(min < max) {
-		middle = (min + max) / 2;
-		filedatacur = list_get_item(list, middle);
-		ret = sort_filename(&filedata, &filedatacur);
-		if(ret <= 0)
-			max = middle;
-		else
-			min = middle + 1;
-	}
-
-	*index = min;
-	filedatacur = list_get_item(list, *index);
-	ret = sort_filename(&filedata, &filedatacur);
-
-	if(ret > 0 && *index == list_length(list) - 1)
-		*index = list_length(list);
-	return ret == 0;
-
-}
-
 static bool read_file_data(struct filedata *filedata)
 {
 	if(lstat(filedata->filename, &filedata->stat) != 0)
@@ -170,10 +136,10 @@ static void inotify_cb(EV_P_ ev_io *w, int revents)
 			 * S_IFDIR. So search two times, with and without the
 			 * flag set */
 			filedata->stat.st_mode = S_IFDIR;
-			found = find_file_in_list(list, filedata, &index);
+			found = list_find_item_or_insertpoint(list, sort_filename, filedata, &index);
 			if(!found) {
 				filedata->stat.st_mode = 0;
-				found = find_file_in_list(list, filedata, &index);
+				found = list_find_item_or_insertpoint(list, sort_filename, filedata, &index);
 			}
 			free(filedata->filename);
 			free(filedata);
@@ -190,7 +156,7 @@ static void inotify_cb(EV_P_ ev_io *w, int revents)
 				free(filedata);
 				continue;
 			}
-			found = find_file_in_list(list, filedata, &index);
+			found = list_find_item_or_insertpoint(list, sort_filename, filedata, &index);
 			if(found) {
 				filedataold = list_get_item(list, index);
 				list_set_item(list, index, filedata);
