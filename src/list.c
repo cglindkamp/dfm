@@ -5,18 +5,18 @@
 #include "list.h"
 
 struct list {
-	int length;
-	int allocated_items;
+	size_t length;
+	size_t allocated_items;
 	void **items;
 };
 
-list_t *list_new(int initial_size)
+list_t *list_new(size_t initial_size)
 {
 	list_t *list;
 
 	list = calloc(1, sizeof(list_t));
 	list->allocated_items = initial_size;
-	if(list->allocated_items <= 0)
+	if(list->allocated_items == 0)
 		list->allocated_items = 8;
 	list->items = calloc(list->allocated_items, sizeof(void *));
 
@@ -29,7 +29,7 @@ void list_free(list_t *list)
 	free(list);
 }
 
-int list_length(list_t *list)
+size_t list_length(list_t *list)
 {
 	return list->length;
 }
@@ -49,9 +49,9 @@ void list_append(list_t *list, void *item)
 	list->length++;
 }
 
-void list_insert(list_t *list, int index, void *item)
+void list_insert(list_t *list, size_t index, void *item)
 {
-	assert(index >= 0 && index <= list->length);
+	assert(index <= list->length);
 
 	if(list->length == list->allocated_items)
 		list_make_room(list);
@@ -61,24 +61,24 @@ void list_insert(list_t *list, int index, void *item)
 	list->length++;
 }
 
-void list_remove(list_t *list, int index)
+void list_remove(list_t *list, size_t index)
 {
-	assert(index >= 0 && index < list->length);
+	assert(index < list->length);
 
 	memmove(&list->items[index], &list->items[index + 1], (list->length - index - 1) * sizeof(list->items[0]));
 	list->length--;
 }
 
-void *list_get_item(list_t *list, int index)
+void *list_get_item(list_t *list, size_t index)
 {
-	assert(index >= 0 && index < list->length);
+	assert(index < list->length);
 
 	return list->items[index];
 }
 
-void list_set_item(list_t *list, int index, void *item)
+void list_set_item(list_t *list, size_t index, void *item)
 {
-	assert(index >= 0 && index < list->length);
+	assert(index < list->length);
 
 	list->items[index] = item;
 }
@@ -88,10 +88,10 @@ void list_sort(list_t *list, int (*compare)(const void *, const void *))
 	qsort(list->items, list->length, sizeof(void *), compare);
 }
 
-bool list_find_item_or_insertpoint(list_t *list, int (*compare)(const void *, const void *), void *item, unsigned int *index)
+bool list_find_item_or_insertpoint(list_t *list, int (*compare)(const void *, const void *), void *item, size_t *index)
 {
 	void *currentitem;
-	unsigned int min, middle, max;
+	size_t min, middle, max;
 	int ret;
 
 	if(list_length(list) == 0) {
