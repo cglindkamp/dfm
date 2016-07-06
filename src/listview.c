@@ -7,7 +7,8 @@
 
 static void print_list(struct listview *view)
 {
-	int i,height, width;
+	unsigned int height, width;
+	size_t i;
 	height = getmaxy(view->window);
 	width = getmaxx(view->window);
 
@@ -42,9 +43,11 @@ void listview_up(struct listview *view)
 
 void listview_down(struct listview *view)
 {
+	unsigned int height = getmaxy(view->window);
+
 	if(view->index < listmodel_count(view->model) - 1) {
 		view->index++;
-		if(view->index - view->first > getmaxy(view->window) - 1)
+		if(view->index - view->first > height - 1)
 			view->first++;
 	}
 	print_list(view);
@@ -52,7 +55,7 @@ void listview_down(struct listview *view)
 
 void listview_pageup(struct listview *view)
 {
-	int rowcount = getmaxy(view->window);
+	unsigned int rowcount = getmaxy(view->window);
 
 	if(view->index == view->first) {
 		if(view->first >= rowcount)
@@ -66,8 +69,8 @@ void listview_pageup(struct listview *view)
 
 void listview_pagedown(struct listview *view)
 {
-	int listcount = listmodel_count(view->model);
-	int rowcount = getmaxy(view->window);
+	size_t listcount = listmodel_count(view->model);
+	unsigned int rowcount = getmaxy(view->window);
 
 	if(view->index - view->first < rowcount - 1) {
 		if(listcount > rowcount)
@@ -85,14 +88,14 @@ void listview_pagedown(struct listview *view)
 	print_list(view);
 }
 
-unsigned int listview_getindex(struct listview *view)
+size_t listview_getindex(struct listview *view)
 {
 	return view->index;
 }
 
 void listview_resize(struct listview *view, unsigned int width, unsigned int height)
 {
-	unsigned int count = listmodel_count(view->model);
+	size_t count = listmodel_count(view->model);
 
 	wresize(view->window, height, width);
 	if(view->index - view->first >= height)
@@ -109,8 +112,8 @@ void listview_resize(struct listview *view, unsigned int width, unsigned int hei
 static void change_cb(unsigned int index, enum model_change change, void *data)
 {
 	struct listview *view = data;
-	int rowcount = getmaxy(view->window);
-	int listcount = listmodel_count(view->model);
+	unsigned int rowcount = getmaxy(view->window);
+	size_t listcount = listmodel_count(view->model);
 
 	switch(change) {
 	case MODEL_ADD:
