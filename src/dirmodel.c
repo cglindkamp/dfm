@@ -50,9 +50,9 @@ static void filesize_to_string(char *buf, off_t filesize)
 	if(cv >= 10000)
 		strcpy(buf, ">9000");
 	else if(cv < 100 && cs > 0)
-		sprintf(buf, "%zu.%1zu%c", cv, (filesize - cv * 1024) * 10 / 1024, suffix[cs]);
+		sprintf(buf, "%lu.%1lu%c", cv, (filesize - cv * 1024) * 10 / 1024, suffix[cs]);
 	else
-		sprintf(buf, "%zu%c", cv, suffix[cs]);
+		sprintf(buf, "%lu%c", cv, suffix[cs]);
 }
 
 void dirmodel_render(struct listmodel *model, wchar_t *buffer, size_t len, size_t index)
