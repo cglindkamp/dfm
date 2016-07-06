@@ -28,7 +28,7 @@ struct filedata {
 	struct stat stat;
 };
 
-unsigned int dirmodel_count(struct listmodel *model)
+size_t dirmodel_count(struct listmodel *model)
 {
 	struct data *data = model->data;
 	list_t *list = data->list;
@@ -38,7 +38,7 @@ unsigned int dirmodel_count(struct listmodel *model)
 static void filesize_to_string(char *buf, off_t filesize)
 {
 	char suffix[] = {' ', 'K', 'M', 'G', 'T', 'P', 'E'};
-	int cs = 0;
+	size_t cs = 0;
 	off_t cv = filesize;
 
 	while(cv > 1024 && cs < sizeof(suffix) - 1) {
@@ -55,7 +55,7 @@ static void filesize_to_string(char *buf, off_t filesize)
 		sprintf(buf, "%zu%c", cv, suffix[cs]);
 }
 
-void dirmodel_render(struct listmodel *model, wchar_t *buffer, size_t len, unsigned int index)
+void dirmodel_render(struct listmodel *model, wchar_t *buffer, size_t len, size_t index)
 {
 	struct data *data = model->data;
 	list_t *list = data->list;
@@ -117,7 +117,7 @@ static void inotify_cb(EV_P_ ev_io *w, int revents)
 	const struct inotify_event *event;
 	ssize_t len;
 	struct filedata *filedata, *filedataold;
-	unsigned int index;
+	size_t index;
 	bool found;
 
 	len = read(data->inotify_fd, &buf, sizeof(buf));
@@ -171,7 +171,7 @@ static void inotify_cb(EV_P_ ev_io *w, int revents)
 	}
 }
 
-const char *dirmodel_getfilename(struct listmodel *model, unsigned int index)
+const char *dirmodel_getfilename(struct listmodel *model, size_t index)
 {
 	struct data *data = model->data;
 	list_t *list = data->list;
@@ -231,7 +231,7 @@ static void internal_free(struct listmodel *model)
 	list_t *list = data->list;
 	struct filedata *filedata;
 	struct ev_loop *loop = EV_DEFAULT;
-	int i;
+	size_t i;
 
 	ev_io_stop(loop, &data->inotify_watcher);
 	inotify_rm_watch(data->inotify_fd, data->inotify_watch);
