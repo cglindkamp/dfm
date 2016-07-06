@@ -1,7 +1,6 @@
 NCURSES_CFLAGS := $(shell pkg-config --cflags ncursesw)
 NCURSES_LIBS := $(shell pkg-config --libs ncursesw)
-LIBEV_CFLAGS := $(shell pkg-config --cflags libev)
-LIBEV_LIBS := $(shell pkg-config --libs libev)
+LIBEV_LIBS := -lev
 
 CFLAGS = -MMD -Wall -Wextra -DNDEBUG $(NCURSES_CFLAGS) $(LIBEV_CFLAGS)
 LIBS = $(NCURSES_LIBS) $(LIBEV_LIBS)
