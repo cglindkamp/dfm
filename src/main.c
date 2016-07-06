@@ -32,6 +32,9 @@ void init_ncurses()
 
 static void sigwinch_cb(EV_P_ ev_signal *w, int revents)
 {
+	(void)w;
+	(void)revents;
+
 	struct loopdata *data = ev_userdata(EV_A);
 
 	endwin();
@@ -44,6 +47,9 @@ static void sigwinch_cb(EV_P_ ev_signal *w, int revents)
 
 static void stdin_cb(EV_P_ ev_io *w, int revents)
 {
+	(void)w;
+	(void)revents;
+
 	struct loopdata *data = ev_userdata(EV_A);
 	wint_t key;
 	int ret;

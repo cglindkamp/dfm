@@ -108,6 +108,11 @@ static bool read_file_data(struct filedata *filedata)
 
 static void inotify_cb(EV_P_ ev_io *w, int revents)
 {
+#ifdef EV_MULTIPLICITY
+	(void)loop;
+#endif
+	(void)revents;
+
 	struct listmodel *model = w->data;
 	struct data *data = model->data;
 	list_t *list = data->list;
