@@ -7,12 +7,12 @@ struct callback {
 	void *data;
 };
 
-unsigned int listmodel_count(struct listmodel *model)
+size_t listmodel_count(struct listmodel *model)
 {
 	return model->count(model);
 }
 
-void listmodel_render(struct listmodel *model, wchar_t *buffer, size_t len, unsigned int index)
+void listmodel_render(struct listmodel *model, wchar_t *buffer, size_t len, size_t index)
 {
 	model->render(model, buffer, len, index);
 }
@@ -29,7 +29,7 @@ void listmodel_unregister_change_callback(struct listmodel *model, model_change_
 {
 	struct list *list = model->change_callbacks;
 	struct callback *cb;
-	unsigned int i;
+	size_t i;
 
 	for(i = 0; i < list_length(list); i++) {
 		cb = list_get_item(list, i);
@@ -40,11 +40,11 @@ void listmodel_unregister_change_callback(struct listmodel *model, model_change_
 	}
 }
 
-void listmodel_notify_change(struct listmodel *model, unsigned int index, enum model_change change)
+void listmodel_notify_change(struct listmodel *model, size_t index, enum model_change change)
 {
 	struct list *list = model->change_callbacks;
 	struct callback *cb;
-	unsigned int i;
+	size_t i;
 
 	for(i = 0; i < list_length(list); i++) {
 		cb = list_get_item(list, i);
@@ -60,7 +60,7 @@ void listmodel_init(struct listmodel *model)
 void listmodel_free(struct listmodel *model)
 {
 	struct list *list = model->change_callbacks;
-	unsigned int i;
+	size_t i;
 
 	for(i = 0; i < list_length(list); i++)
 		free(list_get_item(list, i));

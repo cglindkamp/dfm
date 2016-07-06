@@ -6,8 +6,8 @@
 #include "list.h"
 
 struct listmodel {
-	unsigned int (*count)(struct listmodel *model);
-	void (*render)(struct listmodel *model, wchar_t *buffer, size_t len, unsigned int index);
+	size_t (*count)(struct listmodel *model);
+	void (*render)(struct listmodel *model, wchar_t *buffer, size_t len, size_t index);
 	list_t *change_callbacks;
 	void *data;
 };
@@ -19,10 +19,10 @@ enum model_change {
 	MODEL_RELOAD,
 };
 
-typedef void(model_change_callback)(unsigned int index, enum model_change change, void *data);
+typedef void(model_change_callback)(size_t index, enum model_change change, void *data);
 
-unsigned int listmodel_count(struct listmodel *model);
-void listmodel_render(struct listmodel *model, wchar_t *buffer, size_t len, unsigned int index);
+size_t listmodel_count(struct listmodel *model);
+void listmodel_render(struct listmodel *model, wchar_t *buffer, size_t len, size_t index);
 void listmodel_register_change_callback(struct listmodel *model, model_change_callback callback, void *data);
 void listmodel_unregister_change_callback(struct listmodel *model, model_change_callback callback, void *data);
 
