@@ -20,6 +20,7 @@ struct data {
 	ev_io inotify_watcher;
 	int inotify_fd;
 	int inotify_watch;
+	DIR *dir;
 };
 
 struct filedata {
@@ -94,14 +95,14 @@ static int sort_filename(const void *a, const void *b)
 	return 1;
 }
 
-static bool read_file_data(struct filedata *filedata)
+static bool read_file_data(int dirfd, struct filedata *filedata)
 {
-	if(lstat(filedata->filename, &filedata->stat) != 0)
+	if(fstatat(dirfd, filedata->filename, &filedata->stat, AT_SYMLINK_NOFOLLOW) != 0)
 		return false;
 	filedata->is_link = false;
 	if(S_ISLNK(filedata->stat.st_mode)) {
 		filedata->is_link = true;
-		stat(filedata->filename, &filedata->stat);
+		fstatat(dirfd, filedata->filename, &filedata->stat, 0);
 	}
 	return true;
 }
@@ -156,7 +157,7 @@ static void inotify_cb(EV_P_ ev_io *w, int revents)
 				listmodel_notify_change(model, index, MODEL_REMOVE);
 			}
 		} else if(event->mask & (IN_CREATE | IN_MOVED_TO | IN_MODIFY)) {
-			if(!read_file_data(filedata)) {
+			if(!read_file_data(dirfd(data->dir), filedata)) {
 				free(filedata->filename);
 				free(filedata);
 				continue;
@@ -196,7 +197,7 @@ static void internal_init(struct listmodel *model, const char *path)
 	data->list = list;
 
 	data->inotify_fd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
-	data->inotify_watch = inotify_add_watch(data->inotify_fd, ".",
+	data->inotify_watch = inotify_add_watch(data->inotify_fd, path,
 		IN_CREATE |
 		IN_DELETE |
 		IN_MOVED_FROM |
@@ -216,7 +217,7 @@ static void internal_init(struct listmodel *model, const char *path)
 		   strcmp(entry->d_name, "..") != 0) {
 			filedata = malloc(sizeof(*filedata));
 			filedata->filename = strdup(entry->d_name);
-			if(!read_file_data(filedata)) {
+			if(!read_file_data(dirfd(dir), filedata)) {
 				free(filedata->filename);
 				free(filedata);
 				continue;
@@ -225,7 +226,7 @@ static void internal_init(struct listmodel *model, const char *path)
 		}
 		entry = readdir(dir);
 	}
-	closedir(dir);
+	data->dir = dir;
 
 	list_sort(list, sort_filename);
 }
@@ -241,6 +242,7 @@ static void internal_free(struct listmodel *model)
 	ev_io_stop(loop, &data->inotify_watcher);
 	inotify_rm_watch(data->inotify_fd, data->inotify_watch);
 	close(data->inotify_fd);
+	closedir(data->dir);
 	for(i = 0; i < list_length(list); i++) {
 		filedata = list_get_item(list, i);
 		free(filedata->filename);
