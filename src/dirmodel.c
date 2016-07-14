@@ -186,6 +186,14 @@ const char *dirmodel_getfilename(struct listmodel *model, size_t index)
 	return filedata->filename;
 }
 
+bool dirmodel_isdir(struct listmodel *model, size_t index)
+{
+	struct data *data = model->data;
+	list_t *list = data->list;
+	struct filedata *filedata = list_get_item(list, index);
+	return S_ISDIR(filedata->stat.st_mode);
+}
+
 static bool internal_init(struct listmodel *model, const char *path)
 {
 	DIR *dir;
