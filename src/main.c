@@ -106,7 +106,9 @@ int main(void)
 	keypad(data.status, TRUE);
 	nodelay(data.status, TRUE);
 
-	dirmodel_init(&data.model, ".");
+	dirmodel_init(&data.model);
+	dirmodel_change_directory(&data.model, ".");
+
 	listview_init(&data.view, &data.model, 0, 0, COLS, LINES - 1);
 
 	ev_set_userdata(loop, &data);

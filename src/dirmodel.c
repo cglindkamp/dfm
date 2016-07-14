@@ -21,6 +21,7 @@ struct data {
 	int inotify_fd;
 	int inotify_watch;
 	DIR *dir;
+	bool loaded;
 };
 
 struct filedata {
@@ -185,7 +186,7 @@ const char *dirmodel_getfilename(struct listmodel *model, size_t index)
 	return filedata->filename;
 }
 
-static void internal_init(struct listmodel *model, const char *path)
+static bool internal_init(struct listmodel *model, const char *path)
 {
 	DIR *dir;
 	struct dirent *entry;
@@ -196,7 +197,16 @@ static void internal_init(struct listmodel *model, const char *path)
 
 	data->list = list;
 
+	dir = opendir(path);
+	if(dir == NULL)
+		return false;
+
 	data->inotify_fd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
+	if(data->inotify_fd == -1) {
+		closedir(dir);
+		return false;
+	}
+
 	data->inotify_watch = inotify_add_watch(data->inotify_fd, path,
 		IN_CREATE |
 		IN_DELETE |
@@ -206,11 +216,16 @@ static void internal_init(struct listmodel *model, const char *path)
 		IN_EXCL_UNLINK
 		);
 
+	if(data->inotify_watch == -1) {
+		close(data->inotify_fd);
+		closedir(dir);
+		return false;
+	}
+
 	data->inotify_watcher.data = model;
 	ev_io_init(&data->inotify_watcher, inotify_cb, data->inotify_fd, EV_READ);
 	ev_io_start(loop, &data->inotify_watcher);
 
-	dir = opendir(path);
 	entry = readdir(dir);
 	while(entry) {
 		if(strcmp(entry->d_name, ".") != 0 &&
@@ -229,6 +244,9 @@ static void internal_init(struct listmodel *model, const char *path)
 	data->dir = dir;
 
 	list_sort(list, sort_filename);
+
+	data->loaded = true;
+	return true;
 }
 
 static void internal_free(struct listmodel *model)
@@ -238,6 +256,9 @@ static void internal_free(struct listmodel *model)
 	struct filedata *filedata;
 	struct ev_loop *loop = EV_DEFAULT;
 	size_t i;
+
+	if(!data->loaded)
+		return;
 
 	ev_io_stop(loop, &data->inotify_watcher);
 	inotify_rm_watch(data->inotify_fd, data->inotify_watch);
@@ -249,16 +270,19 @@ static void internal_free(struct listmodel *model)
 		free(filedata);
 	}
 	list_free(list);
+	data->loaded = false;
 }
 
-void dirmodel_change_directory(struct listmodel *model, const char *path)
+bool dirmodel_change_directory(struct listmodel *model, const char *path)
 {
 	internal_free(model);
-	internal_init(model, path);
+	if(!internal_init(model, path))
+		return false;
 	listmodel_notify_change(model, 0, MODEL_RELOAD);
+	return true;
 }
 
-void dirmodel_init(struct listmodel *model, const char *path)
+void dirmodel_init(struct listmodel *model)
 {
 	listmodel_init(model);
 
@@ -266,9 +290,10 @@ void dirmodel_init(struct listmodel *model, const char *path)
 	model->count = dirmodel_count;
 	model->render = dirmodel_render;
 
-	internal_init(model, path);
-
+	struct data *data = model->data;
+	data->loaded = false;
 }
+
 void dirmodel_free(struct listmodel *model)
 {
 	internal_free(model);
