@@ -6,6 +6,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <wchar.h>
+#include <errno.h>
+#include <stdlib.h>
 
 #include <ev.h>
 
@@ -17,6 +19,8 @@ struct loopdata {
 	struct listview view;
 	struct listmodel model;
 	WINDOW *status;
+	char *cwd;
+	size_t cwdsize;
 };
 
 void init_ncurses()
@@ -28,6 +32,55 @@ void init_ncurses()
 
 	start_color();
 	init_pair(1, COLOR_WHITE, COLOR_BLUE);
+}
+
+bool get_current_working_directory(struct loopdata *data)
+{
+	data->cwdsize = PATH_MAX;
+	data->cwd = malloc(data->cwdsize);
+	while(getcwd(data->cwd, data->cwdsize) == NULL)
+	{
+		if(errno == ERANGE) {
+			data->cwdsize *= 2 ;
+			data->cwd = realloc(data->cwd, data->cwdsize);
+		} else {
+			free(data->cwd);
+			return false;
+		}
+	}
+	return true;
+}
+
+static bool remove_path_component(struct loopdata *data)
+{
+	if(strlen(data->cwd) == 1)
+		return false;
+
+	char *slash = rindex(data->cwd, '/');
+	if(slash == data->cwd)
+		*(slash + 1) = 0;
+	else
+		*slash = 0;
+	return true;
+}
+
+static void add_path_component(struct loopdata *data, const char *filename)
+{
+	while(strlen(data->cwd) + strlen(filename) + 2 > data->cwdsize) {
+		data->cwdsize *= 2 ;
+		data->cwd = realloc(data->cwd, data->cwdsize);
+	}
+	if(strlen(data->cwd) != 1)
+		strcat(data->cwd, "/");
+	strcat(data->cwd, filename);
+}
+
+static void display_current_path(struct loopdata *data)
+{
+	wmove(data->status, 0, 0);
+	wclear(data->status);
+	wprintw(data->status, "%s", data->cwd);
+	wrefresh(data->status);
 }
 
 static void sigwinch_cb(EV_P_ ev_signal *w, int revents)
@@ -58,10 +111,6 @@ static void stdin_cb(EV_P_ ev_io *w, int revents)
 	if(ret == ERR)
 		return;
 
-	wmove(data->status, 0, 0);
-	wprintw(data->status, "%-3d %-10d", ret, key);
-	wrefresh(data->status);
-
 	if(ret == KEY_CODE_YES) {
 		switch(key) {
 		case KEY_UP:
@@ -77,14 +126,22 @@ static void stdin_cb(EV_P_ ev_io *w, int revents)
 			listview_pagedown(&data->view);
 			break;
 		case KEY_LEFT:
-			if(chdir("..") == 0)
-				dirmodel_change_directory(&data->model, ".");
+			if(remove_path_component(data))
+				while(!dirmodel_change_directory(&data->model, data->cwd))
+					remove_path_component(data);
+			display_current_path(data);
 			break;
 		case KEY_RIGHT:
 			if(listmodel_count(&data->model) == 0)
 				break;
-			if(chdir(dirmodel_getfilename(&data->model, listview_getindex(&data->view))) == 0)
-				dirmodel_change_directory(&data->model, ".");
+			size_t index = listview_getindex(&data->view);
+			if(dirmodel_isdir(&data->model, index)) {
+				const char *filename = dirmodel_getfilename(&data->model, index);
+				add_path_component(data, filename);
+				while(!dirmodel_change_directory(&data->model, data->cwd))
+					remove_path_component(data);
+				display_current_path(data);
+			}
 			break;
 		}
 	}
@@ -100,14 +157,27 @@ int main(void)
 	ev_signal sigwinch_watcher;
 
 	setlocale(LC_ALL, "");
+
+	if(!get_current_working_directory(&data)) {
+		puts("Cannot get current working directory, exiting!");
+		return -1;
+	}
+
+	dirmodel_init(&data.model);
+	if(!dirmodel_change_directory(&data.model, data.cwd)) {
+		puts("Cannot open current working directory, exiting!");
+		dirmodel_free(&data.model);
+		free(data.cwd);
+		return -1;
+	}
+
 	init_ncurses();
 
 	data.status = newwin(1, COLS, LINES - 1, 0);
 	keypad(data.status, TRUE);
 	nodelay(data.status, TRUE);
 
-	dirmodel_init(&data.model);
-	dirmodel_change_directory(&data.model, ".");
+	display_current_path(&data);
 
 	listview_init(&data.view, &data.model, 0, 0, COLS, LINES - 1);
 
@@ -123,6 +193,7 @@ int main(void)
 
 	listview_free(&data.view);
 	dirmodel_free(&data.model);
+	free(data.cwd);
 	endwin();
 
 	return 0;
