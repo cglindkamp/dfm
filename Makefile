@@ -6,6 +6,7 @@ CFLAGS = -MMD -Wall -Wextra -DNDEBUG $(NCURSES_CFLAGS) $(LIBEV_CFLAGS)
 LIBS = $(NCURSES_LIBS) $(LIBEV_LIBS)
 
 SOURCES = \
+	src/dict.c \
 	src/dirmodel.c \
 	src/list.c \
 	src/listmodel.c \
