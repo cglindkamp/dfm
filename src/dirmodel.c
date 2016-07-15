@@ -108,6 +108,27 @@ static bool read_file_data(int dirfd, struct filedata *filedata)
 	return true;
 }
 
+bool dirmodel_get_index(struct listmodel *model, const char *filename, size_t *index)
+{
+	struct data *data = model->data;
+	list_t *list = data->list;
+	struct filedata filedata;
+	bool found;
+
+	filedata.filename = filename;
+
+	/* We cannot stat a potentially deleted or moved file, but the compare function
+	 * used by the search function uses S_IFDIR. So search two times, with and
+	 * without the flag set */
+	filedata.stat.st_mode = S_IFDIR;
+	found = list_find_item_or_insertpoint(list, sort_filename, &filedata, index);
+	if(!found) {
+		filedata.stat.st_mode = 0;
+		found = list_find_item_or_insertpoint(list, sort_filename, &filedata, index);
+	}
+	return found;
+}
+
 static void inotify_cb(EV_P_ ev_io *w, int revents)
 {
 #ifdef EV_MULTIPLICITY
@@ -134,22 +155,8 @@ static void inotify_cb(EV_P_ ev_io *w, int revents)
 	for(ptr = buf; ptr < buf + len; ptr += sizeof(struct inotify_event) + event->len) {
 		event = (const struct inotify_event *)ptr;
 
-		filedata = malloc(sizeof(*filedata));
-		filedata->filename = strdup(event->name);
-
 		if(event->mask & (IN_DELETE | IN_MOVED_FROM)) {
-			/* We cannot stat a deleted or moved file, but the
-			 * compare function used by the search function uses
-			 * S_IFDIR. So search two times, with and without the
-			 * flag set */
-			filedata->stat.st_mode = S_IFDIR;
-			found = list_find_item_or_insertpoint(list, sort_filename, filedata, &index);
-			if(!found) {
-				filedata->stat.st_mode = 0;
-				found = list_find_item_or_insertpoint(list, sort_filename, filedata, &index);
-			}
-			free(filedata->filename);
-			free(filedata);
+			found = dirmodel_get_index(model, event->name, &index);
 			if(found) {
 				filedataold = list_get_item(list, index);
 				free(filedataold->filename);
@@ -158,6 +165,9 @@ static void inotify_cb(EV_P_ ev_io *w, int revents)
 				listmodel_notify_change(model, index, MODEL_REMOVE);
 			}
 		} else if(event->mask & (IN_CREATE | IN_MOVED_TO | IN_MODIFY)) {
+			filedata = malloc(sizeof(*filedata));
+			filedata->filename = strdup(event->name);
+
 			if(!read_file_data(dirfd(data->dir), filedata)) {
 				free(filedata->filename);
 				free(filedata);
