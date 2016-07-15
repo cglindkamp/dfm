@@ -88,6 +88,18 @@ void listview_pagedown(struct listview *view)
 	print_list(view);
 }
 
+void listview_setindex(struct listview *view, size_t index)
+{
+	unsigned int rowcount = getmaxy(view->window);
+
+	view->index = index;
+	if(index >= rowcount)
+		view->first = index - rowcount + 1;
+	else
+		view->first = 0;
+	print_list(view);
+}
+
 size_t listview_getindex(struct listview *view)
 {
 	return view->index;
