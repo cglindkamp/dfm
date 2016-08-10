@@ -25,10 +25,16 @@ struct data {
 };
 
 struct filedata {
-	char *filename;
+	const char *filename;
 	bool is_link;
 	struct stat stat;
 };
+
+static void free_filedata(struct filedata *filedata)
+{
+	free((void *)filedata->filename);
+	free(filedata);
+}
 
 size_t dirmodel_count(struct listmodel *model)
 {
@@ -159,8 +165,7 @@ static void inotify_cb(EV_P_ ev_io *w, int revents)
 			found = dirmodel_get_index(model, event->name, &index);
 			if(found) {
 				filedataold = list_get_item(list, index);
-				free(filedataold->filename);
-				free(filedataold);
+				free_filedata(filedataold);
 				list_remove(list, index);
 				listmodel_notify_change(model, index, MODEL_REMOVE);
 			}
@@ -169,16 +174,14 @@ static void inotify_cb(EV_P_ ev_io *w, int revents)
 			filedata->filename = strdup(event->name);
 
 			if(!read_file_data(dirfd(data->dir), filedata)) {
-				free(filedata->filename);
-				free(filedata);
+				free_filedata(filedata);
 				continue;
 			}
 			found = list_find_item_or_insertpoint(list, sort_filename, filedata, &index);
 			if(found) {
 				filedataold = list_get_item(list, index);
 				list_set_item(list, index, filedata);
-				free(filedataold->filename);
-				free(filedataold);
+				free_filedata(filedataold);
 				listmodel_notify_change(model, index, MODEL_CHANGE);
 			} else {
 				list_insert(list, index, filedata);
@@ -251,8 +254,7 @@ static bool internal_init(struct listmodel *model, const char *path)
 			filedata = malloc(sizeof(*filedata));
 			filedata->filename = strdup(entry->d_name);
 			if(!read_file_data(dirfd(dir), filedata)) {
-				free(filedata->filename);
-				free(filedata);
+				free_filedata(filedata);
 				continue;
 			}
 			list_append(list, filedata);
@@ -284,8 +286,7 @@ static void internal_free(struct listmodel *model)
 	closedir(data->dir);
 	for(i = 0; i < list_length(list); i++) {
 		filedata = list_get_item(list, i);
-		free(filedata->filename);
-		free(filedata);
+		free_filedata(filedata);
 	}
 	list_free(list);
 	data->loaded = false;
