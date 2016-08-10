@@ -121,7 +121,7 @@ void listview_resize(struct listview *view, unsigned int width, unsigned int hei
 	print_list(view);
 }
 
-static void change_cb(unsigned int index, enum model_change change, void *data)
+static void change_cb(size_t index, enum model_change change, void *data)
 {
 	struct listview *view = data;
 	unsigned int rowcount = getmaxy(view->window);
