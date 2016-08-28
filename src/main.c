@@ -1,13 +1,16 @@
 #define _XOPEN_SOURCE_EXTENDED
-#include <stdbool.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <limits.h>
 #include <locale.h>
 #include <ncurses.h>
+#include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <wchar.h>
-#include <errno.h>
-#include <stdlib.h>
 
 #include <ev.h>
 
@@ -145,6 +148,32 @@ static void sigwinch_cb(EV_P_ ev_signal *w, int revents)
 	listview_resize(&data->view, COLS, LINES - 1);
 }
 
+static void spawn(const char *cwd, const char *program, char * const argv[])
+{
+	int pid = fork();
+
+	if(pid != 0)
+		return;
+
+	int fd = open("/dev/null", O_RDWR);
+
+	dup2(fd, 0);
+	dup2(fd, 1);
+	dup2(fd, 2);
+	chdir(cwd);
+	execvp(program, argv);
+}
+
+static void open_file(const char *cwd, const char *filename)
+{
+	char * const args[] = {
+		"xdg-open",
+		(char *)filename,
+		NULL
+	};
+	spawn(cwd, "xdg-open", args);
+}
+
 static void stdin_cb(EV_P_ ev_io *w, int revents)
 {
 	(void)w;
@@ -200,6 +229,9 @@ static void stdin_cb(EV_P_ ev_io *w, int revents)
 
 				select_stored_position(data, oldpathname);
 				display_current_path(data);
+			} else {
+				const char *filename = dirmodel_getfilename(&data->model, index);
+				open_file(data->cwd, filename);
 			}
 			break;
 		}
