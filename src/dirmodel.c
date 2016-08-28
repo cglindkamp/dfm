@@ -163,7 +163,7 @@ static int sort_filename(const void *a, const void *b)
 
 	if((!S_ISDIR(filedata1->stat.st_mode) && !S_ISDIR(filedata2->stat.st_mode)) ||
 	   ( S_ISDIR(filedata1->stat.st_mode) &&  S_ISDIR(filedata2->stat.st_mode)))
-		return strcmp(filedata1->filename, filedata2->filename);
+		return strcoll(filedata1->filename, filedata2->filename);
 	if(S_ISDIR(filedata1->stat.st_mode))
 		return -1;
 	return 1;
