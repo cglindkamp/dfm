@@ -146,7 +146,6 @@ static size_t dirmodel_render(struct listmodel *model, wchar_t *buffer, size_t l
 			wmemset(&buffer[char_count], L' ', padlength);
 
 		char_count += padlength;
-		display_count += padlength;
 	}
 	buffer[char_count] = L'\0';
 
