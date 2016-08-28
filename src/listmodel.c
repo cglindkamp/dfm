@@ -12,9 +12,9 @@ size_t listmodel_count(struct listmodel *model)
 	return model->count(model);
 }
 
-void listmodel_render(struct listmodel *model, wchar_t *buffer, size_t len, size_t index)
+size_t listmodel_render(struct listmodel *model, wchar_t *buffer, size_t len, size_t width, size_t index)
 {
-	model->render(model, buffer, len, index);
+	return model->render(model, buffer, len, width, index);
 }
 
 void listmodel_register_change_callback(struct listmodel *model, model_change_callback callback, void *data)

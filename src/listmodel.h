@@ -7,7 +7,7 @@
 
 struct listmodel {
 	size_t (*count)(struct listmodel *model);
-	void (*render)(struct listmodel *model, wchar_t *buffer, size_t len, size_t index);
+	size_t (*render)(struct listmodel *model, wchar_t *buffer, size_t len, size_t width, size_t index);
 	list_t *change_callbacks;
 	void *data;
 };
@@ -22,7 +22,7 @@ enum model_change {
 typedef void(model_change_callback)(size_t index, enum model_change change, void *data);
 
 size_t listmodel_count(struct listmodel *model);
-void listmodel_render(struct listmodel *model, wchar_t *buffer, size_t len, size_t index);
+size_t listmodel_render(struct listmodel *model, wchar_t *buffer, size_t len, size_t width, size_t index);
 void listmodel_register_change_callback(struct listmodel *model, model_change_callback callback, void *data);
 void listmodel_unregister_change_callback(struct listmodel *model, model_change_callback callback, void *data);
 

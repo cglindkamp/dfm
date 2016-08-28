@@ -8,25 +8,35 @@
 static void print_list(struct listview *view)
 {
 	unsigned int height, width;
-	size_t i;
+	size_t i = 0;
 	height = getmaxy(view->window);
 	width = getmaxx(view->window);
 
-	wchar_t buffer[width+1];
+	size_t buflen = width;
 
 	werase(view->window);
-	for(i = 0; i < height; i++) {
+	while(i < height) {
 		if(i + view->first >= listmodel_count(view->model))
 			break;
+
+		wchar_t buffer[buflen + 1];
+		size_t reallen = listmodel_render(view->model, buffer, buflen, width, i + view->first);
+
+		if(reallen > buflen) {
+			buflen = reallen;
+			continue;
+		}
 
 		if(i + view->first == view->index) {
 			wattron(view->window, A_BOLD | COLOR_PAIR(1) );
 		} else {
 			wattroff(view->window, A_BOLD | COLOR_PAIR(1) );
 		}
+
 		wmove(view->window, i, 0);
-		listmodel_render(view->model, buffer, width, i + view->first);
 		waddwstr(view->window, buffer);
+
+		i++;
 	}
 	wrefresh(view->window);
 }

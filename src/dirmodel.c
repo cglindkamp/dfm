@@ -1,3 +1,4 @@
+#define _XOPEN_SOURCE 700
 #include <dirent.h>
 #include <fcntl.h>
 #include <stdbool.h>
@@ -8,12 +9,21 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <wchar.h>
 
 #include <ev.h>
 
 #include "dirmodel.h"
 #include "listmodel_impl.h"
 #include "list.h"
+
+#define INFO_SEPARATOR        L" "
+#define INFO_SEPARATOR_LENGTH 1
+#define INFO_LINK             L"-> "
+#define INFO_LINK_LENGTH      3
+#define INFO_DIR              L"<DIR>"
+#define INFO_SIZE_OVERFLOW    L">9000"
+#define INFO_SIZE_DIR_LENGTH  5
 
 struct data {
 	struct list *list;
@@ -43,7 +53,7 @@ size_t dirmodel_count(struct listmodel *model)
 	return list_length(list);
 }
 
-static void filesize_to_string(char *buf, off_t filesize)
+static void filesize_to_string(wchar_t *buf, off_t filesize)
 {
 	char suffix[] = {' ', 'K', 'M', 'G', 'T', 'P', 'E'};
 	size_t cs = 0;
@@ -56,37 +66,94 @@ static void filesize_to_string(char *buf, off_t filesize)
 	}
 
 	if(cv >= 10000)
-		strcpy(buf, ">9000");
+		wcscpy(buf, INFO_SIZE_OVERFLOW);
 	else if(cv < 100 && cs > 0)
-		sprintf(buf, "%lu.%1lu%c", cv, (filesize - cv * 1024) * 10 / 1024, suffix[cs]);
+		swprintf(buf, 6, L"%2lu.%1lu%c", cv, (filesize - cv * 1024) * 10 / 1024, suffix[cs]);
 	else
-		sprintf(buf, "%lu%c", cv, suffix[cs]);
+		swprintf(buf, 6, L"%4lu%c", cv, suffix[cs]);
 }
 
-void dirmodel_render(struct listmodel *model, wchar_t *buffer, size_t len, size_t index)
+static size_t render_info(wchar_t *buffer, struct filedata *filedata)
+{
+	size_t info_size = INFO_SIZE_DIR_LENGTH + 1;
+
+	wcscpy(buffer, INFO_SEPARATOR);
+
+	if(filedata->is_link) {
+		info_size += INFO_LINK_LENGTH;
+		wcscat(buffer, INFO_LINK);
+	}
+
+	if(S_ISDIR(filedata->stat.st_mode))
+		wcscat(buffer, INFO_DIR);
+	else
+		filesize_to_string(buffer + wcslen(buffer), filedata->stat.st_size);
+
+	return info_size;
+}
+
+static size_t render_filename(wchar_t *buffer, size_t len, size_t width, const char *filename)
+{
+	size_t wc_count = mbstowcs(NULL, filename, 0);
+	wchar_t name[wc_count + 1];
+
+	mbstowcs(name, filename, wc_count);
+
+	size_t char_count = 0, display_count = 0;
+
+	for(size_t i = 0; i < wc_count; i++) {
+		int w = wcwidth(name[i]);
+		if(w == -1)
+			continue;
+		if(w + display_count > width)
+			break;
+		if(char_count < len)
+			buffer[char_count] = name[i];
+		display_count += w;
+		char_count++;
+	}
+	buffer[char_count] = L'\0';
+
+	return char_count;
+}
+
+static size_t dirmodel_render(struct listmodel *model, wchar_t *buffer, size_t len, size_t width, size_t index)
 {
 	struct data *data = model->data;
 	list_t *list = data->list;
 	struct filedata *filedata = list_get_item(list, index);
-	char filesize[6];
-	char *info;
-	char *link;
-	size_t filename_length = len - 6;
+	wchar_t info[INFO_SEPARATOR_LENGTH + INFO_LINK_LENGTH + INFO_SIZE_DIR_LENGTH + 1];
+	size_t info_size;
+	size_t char_count = 0;
+	size_t display_count = 0;
 
-	if(S_ISDIR(filedata->stat.st_mode)) {
-		info = "<DIR>";
-	} else {
-		info = filesize;
-		filesize_to_string(filesize, filedata->stat.st_size);
-	}
+	info_size = render_info(info, filedata);
 
-	if(filedata->is_link) {
-		filename_length -= 3;
-		link = " ->";
+	if(width > info_size) {
+		char_count = render_filename(buffer, len - info_size, width - info_size, filedata->filename);
+		display_count = wcswidth(buffer, len);
+
+		if(char_count + info_size > len)
+			return char_count + info_size;
 	} else
-		link = "";
+		info_size = width;
 
-	swprintf(buffer, len + 1, L"%-*.*s%s %*s", filename_length, filename_length, filedata->filename, link, 5, info);
+
+	if(display_count + info_size < width) {
+		size_t padlength = width - display_count - info_size;
+
+		if(char_count + padlength + info_size <= len)
+			wmemset(&buffer[char_count], L' ', padlength);
+
+		char_count += padlength;
+		display_count += padlength;
+	}
+	buffer[char_count] = L'\0';
+
+	if(char_count + info_size <= len)
+		wcsncat(buffer, info + wcslen(info) - info_size, info_size);
+
+	return char_count + info_size;
 }
 
 static int sort_filename(const void *a, const void *b)
