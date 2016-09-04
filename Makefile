@@ -2,7 +2,8 @@ NCURSES_CFLAGS := $(shell pkg-config --cflags ncursesw)
 NCURSES_LIBS := $(shell pkg-config --libs ncursesw)
 LIBEV_LIBS := -lev
 
-CFLAGS = -std=gnu99 -MMD -Wall -Wextra -DNDEBUG $(NCURSES_CFLAGS) $(LIBEV_CFLAGS)
+CPPFLAGS =-DNDEBUG -D_XOPEN_SOURCE=700 -D_XOPEN_SOURCE_EXTENDED
+CFLAGS = -std=c99 -pedantic -Wall -Wextra $(NCURSES_CFLAGS)
 LIBS = $(NCURSES_LIBS) $(LIBEV_LIBS)
 
 SOURCES = \

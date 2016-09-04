@@ -1,4 +1,3 @@
-#define _XOPEN_SOURCE_EXTENDED
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
@@ -66,7 +65,7 @@ static bool remove_path_component(struct loopdata *data, char **removed_componen
 	if(strlen(data->cwd) == 1)
 		return false;
 
-	char *slash = rindex(data->cwd, '/');
+	char *slash = strrchr(data->cwd, '/');
 
 	if(removed_component) {
 		*removed_component = slash + 1;

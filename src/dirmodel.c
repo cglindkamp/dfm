@@ -1,4 +1,3 @@
-#define _XOPEN_SOURCE 700
 #include <dirent.h>
 #include <fcntl.h>
 #include <stdbool.h>

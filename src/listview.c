@@ -1,4 +1,3 @@
-#define _XOPEN_SOURCE_EXTENDED
 #include <ncurses.h>
 #include <wchar.h>
 
