@@ -5,12 +5,12 @@
 
 list_t *list;
 
-void setup(void)
+static void setup(void)
 {
 	list = list_new(0);
 }
 
-void teardown(void)
+static void teardown(void)
 {
 	list_free(list);
 	list = NULL;
@@ -69,7 +69,7 @@ START_TEST(test_list_remove_items)
 }
 END_TEST
 
-int compare_int(const void *item1, const void *item2)
+static int compare_int(const void *item1, const void *item2)
 {
 	intptr_t val1 = *(intptr_t*)item1;
 	intptr_t val2 = *(intptr_t*)item2;
@@ -81,7 +81,7 @@ int compare_int(const void *item1, const void *item2)
 	return 0;
 }
 
-int int_list_is_sorted(list_t *list)
+static int int_list_is_sorted(list_t *list)
 {
 	intptr_t last = (intptr_t)list_get_item(list, 0);
 	for(size_t i = 1; i < 8192; i++) {
