@@ -32,9 +32,11 @@ OBJECTS = \
 	src/main.o \
 
 TESTEDOBJECTS = \
+	src/dict.o \
 	src/list.o \
 
 TESTOBJECTS = \
+	tests/dict.o \
 	tests/list.o \
 	tests/tests.o \
 

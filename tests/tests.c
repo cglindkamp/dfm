@@ -2,15 +2,15 @@
 #include <stdlib.h>
 
 Suite *list_suite(void);
+Suite *dict_suite(void);
 
 int main(void)
 {
-	Suite *suite;
 	SRunner *suite_runner;
 	int number_failed;
 
-	suite = list_suite();
-	suite_runner = srunner_create(suite);
+	suite_runner = srunner_create(list_suite());
+	srunner_add_suite(suite_runner, dict_suite());
 
 	srunner_run_all(suite_runner, CK_NORMAL);
 	number_failed = srunner_ntests_failed(suite_runner);
