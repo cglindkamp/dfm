@@ -151,7 +151,8 @@ static void change_cb(size_t index, enum model_change change, void *data)
 		break;
 	case MODEL_REMOVE:
 		if(index <= view->index) {
-			view->index--;
+			if(view->index != 0)
+				view->index--;
 			if(view->first != 0)
 				view->first--;
 			print_list(view);
