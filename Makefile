@@ -34,10 +34,12 @@ OBJECTS = \
 TESTEDOBJECTS = \
 	src/dict.o \
 	src/list.o \
+	src/listmodel.o \
 
 TESTOBJECTS = \
 	tests/dict.o \
 	tests/list.o \
+	tests/listmodel.o \
 	tests/tests.o \
 
 DEPS = $(patsubst %.o,%.d,$(OBJECTS) $(TESTOBJECTS))
