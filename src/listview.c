@@ -114,6 +114,11 @@ size_t listview_getindex(struct listview *view)
 	return view->index;
 }
 
+size_t listview_getfirst(struct listview *view)
+{
+	return view->first;
+}
+
 void listview_resize(struct listview *view, unsigned int width, unsigned int height)
 {
 	size_t count = listmodel_count(view->model);

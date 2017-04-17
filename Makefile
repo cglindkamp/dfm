@@ -35,11 +35,13 @@ TESTEDOBJECTS = \
 	src/dict.o \
 	src/list.o \
 	src/listmodel.o \
+	src/listview.o \
 
 TESTOBJECTS = \
 	tests/dict.o \
 	tests/list.o \
 	tests/listmodel.o \
+	tests/listview.o \
 	tests/tests.o \
 
 DEPS = $(patsubst %.o,%.d,$(OBJECTS) $(TESTOBJECTS))
@@ -59,7 +61,7 @@ endif
 $(TESTOBJECTS): %.o: %.c
 	$(COMPILE.c) $(CHECK_CFLAGS) -c -o $@ $<
 tests/tests: $(TESTEDOBJECTS) $(TESTOBJECTS)
-	$(LINK.c) -o $@ $^ $(CHECK_LIBS)
+	$(LINK.c) -o $@ $^ $(CHECK_LIBS) $(NCURSES_LIBS)
 
 clean:
 	rm -f files $(OBJECTS) $(TESTOBJECTS) $(DEPS) $(GCNOS) $(GCDAS) *.gcov
