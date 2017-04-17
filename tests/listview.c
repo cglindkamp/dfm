@@ -139,11 +139,7 @@ END_TEST
 START_TEST(test_listview_up_scroll)
 {
 	listview_setindex(&listview, 40);
-	ck_assert_uint_eq(listview_getindex(&listview), 40);
-	ck_assert_uint_eq(listview_getfirst(&listview), 16);
-
-	for(int i = 0; i < 24; i++)
-		listview_up(&listview);
+	listview_setindex(&listview, 16);
 	ck_assert_uint_eq(listview_getindex(&listview), 16);
 	ck_assert_uint_eq(listview_getfirst(&listview), 16);
 
@@ -269,8 +265,7 @@ END_TEST
 START_TEST(test_listview_resize_makesmaller)
 {
 	listview_setindex(&listview, 40);
-	for(int i = 0; i < 10; i++)
-		listview_up(&listview);
+	listview_setindex(&listview, 30);
 	listview_resize(&listview, 80, 20);
 	ck_assert_uint_eq(listview_getindex(&listview), 30);
 	ck_assert_uint_eq(listview_getfirst(&listview), 16);
@@ -299,8 +294,7 @@ END_TEST
 static void gotofirst16index25(void)
 {
 	listview_setindex(&listview, 40);
-	for(int i = 0; i < 15; i++)
-		listview_up(&listview);
+	listview_setindex(&listview, 25);
 }
 
 START_TEST(test_listview_modelchange_addbeforefirst)
