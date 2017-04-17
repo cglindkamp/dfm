@@ -40,73 +40,76 @@ static void print_list(struct listview *view)
 	wrefresh(view->window);
 }
 
+static void listview_setindex_internal(struct listview *view, size_t index, int direction, bool keep_distance)
+{
+	size_t listcount = listmodel_count(view->model);
+	unsigned int rowcount = getmaxy(view->window);
+	size_t distance = view->index - view->first;
+
+	/* check index for over- and underflow */
+	if(direction == 0 && index > listcount - 1)
+		view->index = listcount - 1;
+	else if(direction < 0 && index > view->index)
+		view->index = 0;
+	else if(direction > 0 && (index < view->index || index > listcount - 1))
+		view->index = listcount - 1;
+	else
+		view->index = index;
+
+	/* try to restore distance between first and index
+	 * may underflow, but this is checked later */
+	if(keep_distance)
+		view->first = view->index - distance;
+
+	/* make sure, first has a sane value relative to index */
+	if(view->index < view->first)
+		view->first = view->index;
+	else if(view->index - view->first >= rowcount)
+		view->first = view->index - rowcount + 1;
+
+	/* make sure, view is always filled to the bottom with entries,
+	 * or in case there aren't enough, scrolled to the first entry */
+	if(listcount <= rowcount)
+		view->first = 0;
+	else if(listcount - view->first <= rowcount)
+		view->first = listcount - rowcount;
+
+	print_list(view);
+}
+
 void listview_up(struct listview *view)
 {
-	if(view->index > 0) {
-		view->index--;
-		if(view->first > view->index)
-			view->first = view->index;
-	}
-	print_list(view);
+	listview_setindex_internal(view, view->index - 1, -1, false);
 }
 
 void listview_down(struct listview *view)
 {
-	unsigned int height = getmaxy(view->window);
-
-	if(view->index < listmodel_count(view->model) - 1) {
-		view->index++;
-		if(view->index - view->first > height - 1)
-			view->first++;
-	}
-	print_list(view);
+	listview_setindex_internal(view, view->index + 1, 1, false);
 }
 
 void listview_pageup(struct listview *view)
 {
 	unsigned int rowcount = getmaxy(view->window);
 
-	if(view->index == view->first) {
-		if(view->first >= rowcount)
-			view->first -= rowcount;
-		else
-			view->first = 0;
-	}
-	view->index = view->first;
-	print_list(view);
+	if(view->index == view->first)
+		listview_setindex_internal(view, view->index - rowcount, -1, false);
+	else
+		listview_setindex_internal(view, view->first, -1, false);
 }
 
 void listview_pagedown(struct listview *view)
 {
-	size_t listcount = listmodel_count(view->model);
 	unsigned int rowcount = getmaxy(view->window);
 
-	if(view->index - view->first < rowcount - 1) {
-		if(listcount > rowcount)
-			view->index = view->first + rowcount - 1;
-		else
-			view->index = listcount - 1;
-	} else {
-		if(view->index + rowcount < listcount)
-			view->index += rowcount;
-		else {
-			view->index = listcount - 1;
-		}
-		view->first = view->index - rowcount + 1;
-	}
-	print_list(view);
+	if(view->index - view->first < rowcount - 1)
+		listview_setindex_internal(view, view->first + rowcount - 1, 1, false);
+	else
+		listview_setindex_internal(view, view->index + rowcount, 1, false);
 }
 
 void listview_setindex(struct listview *view, size_t index)
 {
-	unsigned int rowcount = getmaxy(view->window);
-
-	view->index = index;
-	if(index >= rowcount)
-		view->first = index - rowcount + 1;
-	else
-		view->first = 0;
-	print_list(view);
+	listview_setindex_internal(view, index, 0, false);
 }
 
 size_t listview_getindex(struct listview *view)
@@ -121,48 +124,27 @@ size_t listview_getfirst(struct listview *view)
 
 void listview_resize(struct listview *view, unsigned int width, unsigned int height)
 {
-	size_t count = listmodel_count(view->model);
-
 	wresize(view->window, height, width);
-	if(view->index - view->first >= height)
-		view->first = view->index - height + 1;
-	if(view->first + height > count) {
-		if(height > count)
-			view->first = 0;
-		else
-			view->first = count - height;
-	}
-	print_list(view);
+	listview_setindex_internal(view, view->index, 0, false);
 }
 
 static void change_cb(size_t index, enum model_change change, void *data)
 {
 	struct listview *view = data;
 	unsigned int rowcount = getmaxy(view->window);
-	size_t listcount = listmodel_count(view->model);
 
 	switch(change) {
 	case MODEL_ADD:
-		if(listcount == 1) {
-			view->index = 0;
-			print_list(view);
-		} else if(index <= view->index) {
-			view->index++;
-			if(listcount > rowcount)
-				view->first++;
-			print_list(view);
-		} else if(index < view->first + rowcount)
+		if(index <= view->index)
+			listview_setindex_internal(view, view->index + 1, 1, true);
+		else if(index < view->first + rowcount)
 			print_list(view);
 		break;
 	case MODEL_REMOVE:
-		if(index <= view->index) {
-			if(view->index != 0)
-				view->index--;
-			if(view->first != 0)
-				view->first--;
-			print_list(view);
-		} else if(index < view->first + rowcount)
-			print_list(view);
+		if(index < view->index)
+			listview_setindex_internal(view, view->index - 1, -1, true);
+		else if(index < view->first + rowcount)
+			listview_setindex_internal(view, view->index, 0, true);
 	case MODEL_CHANGE:
 		if(index >= view->first && index < view->first + rowcount)
 			print_list(view);
