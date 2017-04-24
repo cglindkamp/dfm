@@ -30,7 +30,7 @@ START_TEST(test_list_add_items)
 	ck_assert_int_eq(list_length(list), 8192);
 
 	for(size_t i = 0; i < 8192; i++)
-		ck_assert_uint_eq(list_get_item(list, i), i);
+		ck_assert_uint_eq((size_t)list_get_item(list, i), i);
 }
 END_TEST
 
@@ -42,13 +42,13 @@ START_TEST(test_list_set_items)
 	ck_assert_int_eq(list_length(list), 8192);
 
 	for(size_t i = 0; i < 8192; i++)
-		ck_assert_uint_eq(list_get_item(list, i), 0);
+		ck_assert_uint_eq((size_t)list_get_item(list, i), 0);
 
 	for(size_t i = 0; i < 8192; i++)
 		list_set_item(list, i, (void*)i);
 
 	for(size_t i = 0; i < 8192; i++)
-		ck_assert_uint_eq(list_get_item(list, i), i);
+		ck_assert_uint_eq((size_t)list_get_item(list, i), i);
 }
 END_TEST
 
@@ -65,7 +65,7 @@ START_TEST(test_list_remove_items)
 	ck_assert_int_eq(list_length(list), 2);
 
 	for(size_t i = 0; i < 2; i++)
-		ck_assert_uint_eq(list_get_item(list, i), i + 2);
+		ck_assert_uint_eq((size_t)list_get_item(list, i), i + 2);
 }
 END_TEST
 

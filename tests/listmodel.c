@@ -38,19 +38,19 @@ START_TEST(test_single_callback)
 	listmodel_register_change_callback(&model, change_callback, &model);
 	ck_assert_uint_eq(cb_count, 0);
 	ck_assert_uint_eq(cb_index, 0);
-	ck_assert_uint_eq(cb_data, NULL);
+	ck_assert_ptr_eq(cb_data, NULL);
 	ck_assert_int_eq(cb_change, MODEL_RELOAD);
 
 	listmodel_notify_change(&model, 0x1337, MODEL_ADD);
 	ck_assert_uint_eq(cb_count, 1);
 	ck_assert_uint_eq(cb_index, 0x1337);
-	ck_assert_uint_eq(cb_data, &model);
+	ck_assert_ptr_eq(cb_data, &model);
 	ck_assert_int_eq(cb_change, MODEL_ADD);
 
 	listmodel_notify_change(&model, 0xdeadbeef, MODEL_REMOVE);
 	ck_assert_uint_eq(cb_count, 2);
 	ck_assert_uint_eq(cb_index, 0xdeadbeef);
-	ck_assert_uint_eq(cb_data, &model);
+	ck_assert_ptr_eq(cb_data, &model);
 	ck_assert_int_eq(cb_change, MODEL_REMOVE);
 }
 END_TEST
@@ -63,7 +63,7 @@ START_TEST(test_two_callbacks)
 	listmodel_notify_change(&model, 0x1337, MODEL_ADD);
 	ck_assert_uint_eq(cb_count, 2);
 	ck_assert_uint_eq(cb_index, 0x1337);
-	ck_assert_uint_eq(cb_data, &cb_count);
+	ck_assert_ptr_eq(cb_data, &cb_count);
 	ck_assert_int_eq(cb_change, MODEL_ADD);
 }
 END_TEST
@@ -77,7 +77,7 @@ START_TEST(test_unregister_callback)
 	listmodel_notify_change(&model, 0x1337, MODEL_ADD);
 	ck_assert_uint_eq(cb_count, 1);
 	ck_assert_uint_eq(cb_index, 0x1337);
-	ck_assert_uint_eq(cb_data, &model);
+	ck_assert_ptr_eq(cb_data, &model);
 	ck_assert_int_eq(cb_change, MODEL_ADD);
 
 	listmodel_unregister_change_callback(&model, change_callback, &model);
@@ -85,7 +85,7 @@ START_TEST(test_unregister_callback)
 	listmodel_notify_change(&model, 0xdeadbeef, MODEL_REMOVE);
 	ck_assert_uint_eq(cb_count, 1);
 	ck_assert_uint_eq(cb_index, 0x1337);
-	ck_assert_uint_eq(cb_data, &model);
+	ck_assert_ptr_eq(cb_data, &model);
 	ck_assert_int_eq(cb_change, MODEL_ADD);
 }
 END_TEST
