@@ -4,7 +4,7 @@
 #include "dict.h"
 
 struct dict_item {
-	char *key;
+	const char *key;
 	void *value;
 };
 
@@ -22,7 +22,7 @@ void dict_free(list_t *list, bool free_value)
 		item = list_get_item(list, i);
 		if(free_value)
 			free(item->value);
-		free(item->key);
+		free((void*)item->key);
 		free(item);
 	}
 	list_free(list);
@@ -36,7 +36,7 @@ static int compare_key(const void *a, const void *b)
 	return strcmp(item1->key, item2->key);
 }
 
-void dict_set(list_t *list, char *key, void *value)
+void dict_set(list_t *list, const char *key, void *value)
 {
 	struct dict_item *item = malloc(sizeof(*item));
 	size_t index;
@@ -55,7 +55,7 @@ void dict_set(list_t *list, char *key, void *value)
 	item->value = value;
 }
 
-void *dict_get(list_t *list, char *key)
+void *dict_get(list_t *list, const char *key)
 {
 	struct dict_item item;
 	size_t index;
