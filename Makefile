@@ -29,6 +29,7 @@ OBJECTS = \
 	src/list.o \
 	src/listmodel.o \
 	src/listview.o \
+	src/path.o \
 	src/main.o \
 
 TESTEDOBJECTS = \
@@ -36,13 +37,16 @@ TESTEDOBJECTS = \
 	src/list.o \
 	src/listmodel.o \
 	src/listview.o \
+	src/path.o \
 
 TESTOBJECTS = \
 	tests/dict.o \
 	tests/list.o \
 	tests/listmodel.o \
 	tests/listview.o \
+	tests/path.o \
 	tests/tests.o \
+	tests/wrapper/getcwd.o \
 
 DEPS = $(patsubst %.o,%.d,$(OBJECTS) $(TESTOBJECTS))
 GCDAS = $(patsubst %.o,%.gcda,$(OBJECTS) $(TESTOBJECTS))
@@ -61,7 +65,7 @@ endif
 $(TESTOBJECTS): %.o: %.c
 	$(COMPILE.c) $(CHECK_CFLAGS) -c -o $@ $<
 tests/tests: $(TESTEDOBJECTS) $(TESTOBJECTS)
-	$(LINK.c) -o $@ $^ $(CHECK_LIBS) $(NCURSES_LIBS)
+	$(LINK.c) -o $@ $^ $(CHECK_LIBS) $(NCURSES_LIBS) -Wl,--wrap=getcwd
 
 clean:
 	rm -f files $(OBJECTS) $(TESTOBJECTS) $(DEPS) $(GCNOS) $(GCDAS) *.gcov

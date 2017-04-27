@@ -1,9 +1,7 @@
-#include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <locale.h>
 #include <ncurses.h>
-#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -17,14 +15,14 @@
 #include "listview.h"
 #include "dirmodel.h"
 #include "dict.h"
+#include "path.h"
 
 struct loopdata {
 	struct listview view;
 	struct listmodel model;
 	list_t *stored_positions;
 	WINDOW *status;
-	char *cwd;
-	size_t cwdsize;
+	struct path cwd;
 };
 
 void init_ncurses()
@@ -38,71 +36,15 @@ void init_ncurses()
 	init_pair(1, COLOR_WHITE, COLOR_BLUE);
 }
 
-static void cwd_make_room(struct loopdata *data)
-{
-	data->cwdsize *= 2 ;
-	data->cwd = realloc(data->cwd, data->cwdsize);
-}
-
-bool get_current_working_directory(struct loopdata *data)
-{
-	data->cwdsize = PATH_MAX;
-	data->cwd = malloc(data->cwdsize);
-	while(getcwd(data->cwd, data->cwdsize) == NULL)
-	{
-		if(errno == ERANGE) {
-			cwd_make_room(data);
-		} else {
-			free(data->cwd);
-			return false;
-		}
-	}
-	return true;
-}
-
-static bool remove_path_component(struct loopdata *data, char **removed_component)
-{
-	if(strlen(data->cwd) == 1)
-		return false;
-
-	char *slash = strrchr(data->cwd, '/');
-
-	if(removed_component) {
-		*removed_component = slash + 1;
-		if(slash == data->cwd) {
-			size_t component_length = strlen(data->cwd + 1);
-			if(component_length + 3 > data->cwdsize)
-				cwd_make_room(data);
-			memmove(data->cwd + 2, data->cwd + 1, component_length + 1);
-			(*removed_component)++;
-		}
-	}
-
-	if(slash == data->cwd)
-		*(slash + 1) = 0;
-	else
-		*slash = 0;
-	return true;
-}
-
-static void add_path_component(struct loopdata *data, const char *filename)
-{
-	while(strlen(data->cwd) + strlen(filename) + 2 > data->cwdsize)
-		cwd_make_room(data);
-	if(strlen(data->cwd) != 1)
-		strcat(data->cwd, "/");
-	strcat(data->cwd, filename);
-}
-
 static void save_current_position(struct loopdata *data)
 {
 	if(listmodel_count(&data->model) != 0) {
-		free(dict_get(data->stored_positions, data->cwd));
+		free(dict_get(data->stored_positions, path_tocstr(&data->cwd)));
 
 		size_t index = listview_getindex(&data->view);
 		const char *filename = dirmodel_getfilename(&data->model, index);
 
-		dict_set(data->stored_positions, data->cwd, strdup(filename));
+		dict_set(data->stored_positions, path_tocstr(&data->cwd), strdup(filename));
 	}
 }
 
@@ -114,7 +56,7 @@ static void select_stored_position(struct loopdata *data, const char *oldfilenam
 	if(oldfilename)
 		filename = oldfilename;
 	else
-		filename = dict_get(data->stored_positions, data->cwd);
+		filename = dict_get(data->stored_positions, path_tocstr(&data->cwd));
 
 	if(filename) {
 		dirmodel_get_index(&data->model, filename, &index);
@@ -128,7 +70,7 @@ static void display_current_path(struct loopdata *data)
 {
 	wmove(data->status, 0, 0);
 	wclear(data->status);
-	wprintw(data->status, "%s", data->cwd);
+	wprintw(data->status, "%s", path_tocstr(&data->cwd));
 	wrefresh(data->status);
 }
 
@@ -181,7 +123,7 @@ static void stdin_cb(EV_P_ ev_io *w, int revents)
 	struct loopdata *data = ev_userdata(EV_A);
 	wint_t key;
 	int ret;
-	char *oldpathname = NULL;
+	const char *oldpathname = NULL;
 
 	ret = wget_wch(data->status, &key);
 	if(ret == ERR)
@@ -204,9 +146,9 @@ static void stdin_cb(EV_P_ ev_io *w, int revents)
 		case KEY_LEFT:
 			save_current_position(data);
 
-			if(remove_path_component(data, &oldpathname)) {
-				while(!dirmodel_change_directory(&data->model, data->cwd))
-					remove_path_component(data, &oldpathname);
+			if(path_remove_component(&data->cwd, &oldpathname)) {
+				while(!dirmodel_change_directory(&data->model, path_tocstr(&data->cwd)))
+					path_remove_component(&data->cwd, &oldpathname);
 
 				select_stored_position(data, oldpathname);
 				display_current_path(data);
@@ -222,15 +164,15 @@ static void stdin_cb(EV_P_ ev_io *w, int revents)
 			size_t index = listview_getindex(&data->view);
 			if(dirmodel_isdir(&data->model, index)) {
 				const char *filename = dirmodel_getfilename(&data->model, index);
-				add_path_component(data, filename);
-				while(!dirmodel_change_directory(&data->model, data->cwd))
-					remove_path_component(data, &oldpathname);
+				path_add_component(&data->cwd, filename);
+				while(!dirmodel_change_directory(&data->model, path_tocstr(&data->cwd)))
+					path_remove_component(&data->cwd, &oldpathname);
 
 				select_stored_position(data, oldpathname);
 				display_current_path(data);
 			} else {
 				const char *filename = dirmodel_getfilename(&data->model, index);
-				open_file(data->cwd, filename);
+				open_file(path_tocstr(&data->cwd), filename);
 			}
 			break;
 		}
@@ -248,16 +190,18 @@ int main(void)
 
 	setlocale(LC_ALL, "");
 
-	if(!get_current_working_directory(&data)) {
+	path_init(&data.cwd, PATH_MAX);
+	if(!path_set_to_current_working_directory(&data.cwd)) {
 		puts("Cannot get current working directory, exiting!");
+		path_free(&data.cwd);
 		return -1;
 	}
 
 	dirmodel_init(&data.model);
-	if(!dirmodel_change_directory(&data.model, data.cwd)) {
+	if(!dirmodel_change_directory(&data.model, path_tocstr(&data.cwd))) {
 		puts("Cannot open current working directory, exiting!");
 		dirmodel_free(&data.model);
-		free(data.cwd);
+		path_free(&data.cwd);
 		return -1;
 	}
 
@@ -285,7 +229,7 @@ int main(void)
 	listview_free(&data.view);
 	dirmodel_free(&data.model);
 	dict_free(data.stored_positions, true);
-	free(data.cwd);
+	path_free(&data.cwd);
 	endwin();
 
 	return 0;
