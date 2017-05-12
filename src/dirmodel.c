@@ -94,6 +94,15 @@ static size_t render_info(wchar_t *buffer, struct filedata *filedata)
 static size_t render_filename(wchar_t *buffer, size_t len, size_t width, const char *filename)
 {
 	size_t wc_count = mbstowcs(NULL, filename, 0);
+
+	if(wc_count == (size_t)-1) {
+		buffer[0] = L'\0';
+		if(len > 3)
+			len = 3;
+		wcsncat(buffer, L"???", len);
+		return wcslen(buffer);
+	}
+
 	wchar_t name[wc_count + 1];
 
 	mbstowcs(name, filename, wc_count);
@@ -130,10 +139,10 @@ static size_t dirmodel_render(struct listmodel *model, wchar_t *buffer, size_t l
 
 	if(width > info_size) {
 		char_count = render_filename(buffer, len - info_size, width - info_size, filedata->filename);
-		display_count = wcswidth(buffer, len);
-
 		if(char_count + info_size > len)
 			return char_count + info_size;
+
+		display_count = wcswidth(buffer, len);
 	} else
 		info_size = width;
 
@@ -275,13 +284,9 @@ bool dirmodel_isdir(struct listmodel *model, size_t index)
 static bool internal_init(struct listmodel *model, const char *path)
 {
 	DIR *dir;
-	struct dirent *entry;
 	struct filedata *filedata;
 	struct data *data = model->data;
-	list_t *list = list_new(0);
 	struct ev_loop *loop = EV_DEFAULT;
-
-	data->list = list;
 
 	dir = opendir(path);
 	if(dir == NULL)
@@ -312,7 +317,10 @@ static bool internal_init(struct listmodel *model, const char *path)
 	ev_io_init(&data->inotify_watcher, inotify_cb, data->inotify_fd, EV_READ);
 	ev_io_start(loop, &data->inotify_watcher);
 
-	entry = readdir(dir);
+	list_t *list = list_new(0);
+	data->list = list;
+	struct dirent *entry = readdir(dir);
+
 	while(entry) {
 		if(strcmp(entry->d_name, ".") != 0 &&
 		   strcmp(entry->d_name, "..") != 0) {

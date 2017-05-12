@@ -17,6 +17,8 @@
 #include "dict.h"
 #include "path.h"
 
+void _nc_freeall();
+
 struct loopdata {
 	struct listview view;
 	struct listmodel model;
@@ -231,6 +233,8 @@ int main(void)
 	dict_free(data.stored_positions, true);
 	path_free(&data.cwd);
 	endwin();
+       _nc_freeall();
+       ev_loop_destroy(EV_DEFAULT);
 
 	return 0;
 }

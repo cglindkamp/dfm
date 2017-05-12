@@ -9,7 +9,7 @@ all: files
 -include coverage.mk
 COVERAGE = 0
 CPPFLAGS =-DNDEBUG -D_XOPEN_SOURCE=700 -D_XOPEN_SOURCE_EXTENDED
-CFLAGS = -std=c99 -pedantic -Wall -Wextra $(NCURSES_CFLAGS)
+CFLAGS = -std=c11 -pedantic -Wall -Wextra $(NCURSES_CFLAGS)
 LIBS = $(NCURSES_LIBS) $(LIBEV_LIBS)
 
 ifeq ($(COVERAGE),1)
@@ -34,6 +34,7 @@ OBJECTS = \
 
 TESTEDOBJECTS = \
 	src/dict.o \
+	src/dirmodel.o \
 	src/list.o \
 	src/listmodel.o \
 	src/listview.o \
@@ -41,6 +42,7 @@ TESTEDOBJECTS = \
 
 TESTOBJECTS = \
 	tests/dict.o \
+	tests/dirmodel.o \
 	tests/list.o \
 	tests/listmodel.o \
 	tests/listview.o \
@@ -65,7 +67,7 @@ endif
 $(TESTOBJECTS): %.o: %.c
 	$(COMPILE.c) $(CHECK_CFLAGS) -c -o $@ $<
 tests/tests: $(TESTEDOBJECTS) $(TESTOBJECTS)
-	$(LINK.c) -o $@ $^ $(CHECK_LIBS) $(NCURSES_LIBS) -Wl,--wrap=getcwd
+	$(LINK.c) -o $@ $^ $(CHECK_LIBS) $(NCURSES_LIBS) $(LIBEV_LIBS) -Wl,--wrap=getcwd
 
 clean:
 	rm -f files $(OBJECTS) $(TESTOBJECTS) $(DEPS) $(GCNOS) $(GCDAS) *.gcov
