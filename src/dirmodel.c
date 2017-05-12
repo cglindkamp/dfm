@@ -37,6 +37,7 @@ struct filedata {
 	const char *filename;
 	bool is_link;
 	struct stat stat;
+	bool is_marked;
 };
 
 static void free_filedata(struct filedata *filedata)
@@ -163,6 +164,22 @@ static size_t dirmodel_render(struct listmodel *model, wchar_t *buffer, size_t l
 	return char_count + info_size;
 }
 
+static void dirmodel_setmark(struct listmodel *model, size_t index, bool mark)
+{
+	struct data *data = model->data;
+	list_t *list = data->list;
+	struct filedata *filedata = list_get_item(list, index);
+	filedata->is_marked = mark;
+}
+
+static bool dirmodel_ismarked(struct listmodel *model, size_t index)
+{
+	struct data *data = model->data;
+	list_t *list = data->list;
+	struct filedata *filedata = list_get_item(list, index);
+	return filedata->is_marked;
+}
+
 static int sort_filename(const void *a, const void *b)
 {
 	struct filedata *filedata1 = *(struct filedata **)a;
@@ -185,6 +202,7 @@ static bool read_file_data(int dirfd, struct filedata *filedata)
 		filedata->is_link = true;
 		fstatat(dirfd, filedata->filename, &filedata->stat, 0);
 	}
+	filedata->is_marked = false;
 	return true;
 }
 
@@ -381,6 +399,8 @@ void dirmodel_init(struct listmodel *model)
 	model->data = malloc(sizeof(struct data));
 	model->count = dirmodel_count;
 	model->render = dirmodel_render;
+	model->setmark = dirmodel_setmark;
+	model->ismarked = dirmodel_ismarked;
 
 	struct data *data = model->data;
 	data->loaded = false;

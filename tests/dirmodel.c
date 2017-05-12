@@ -321,6 +321,27 @@ START_TEST(test_dirmodel_addedfileremovedbeforeeventhandled)
 }
 END_TEST
 
+START_TEST(test_dirmodel_markfiles)
+{
+	create_file(dir_fd, "0", 0);
+	create_file(dir_fd, "1", 0);
+	create_file(dir_fd, "2", 0);
+	create_file(dir_fd, "3", 0);
+	create_file(dir_fd, "4", 0);
+
+	ck_assert(dirmodel_change_directory(&model, path) == true);
+
+	listmodel_setmark(&model, 1, true);
+	listmodel_setmark(&model, 3, true);
+
+	ck_assert(listmodel_ismarked(&model, 0) == false);
+	ck_assert(listmodel_ismarked(&model, 1) == true);
+	ck_assert(listmodel_ismarked(&model, 2) == false);
+	ck_assert(listmodel_ismarked(&model, 3) == true);
+	ck_assert(listmodel_ismarked(&model, 4) == false);
+}
+END_TEST
+
 Suite *dirmodel_suite(void)
 {
 	Suite *suite;
@@ -344,6 +365,7 @@ Suite *dirmodel_suite(void)
 	tcase_add_test(tcase, test_dirmodel_removedfileevent);
 	tcase_add_test(tcase, test_dirmodel_changedfileevent);
 	tcase_add_test(tcase, test_dirmodel_addedfileremovedbeforeeventhandled);
+	tcase_add_test(tcase, test_dirmodel_markfiles);
 	suite_add_tcase(suite, tcase);
 
 	return suite;
