@@ -19,6 +19,7 @@
 #define INFO_SEPARATOR        L" "
 #define INFO_SEPARATOR_LENGTH 1
 #define INFO_LINK             L"-> "
+#define INFO_LINK_BROKEN      L"-X "
 #define INFO_LINK_LENGTH      3
 #define INFO_DIR              L"<DIR>"
 #define INFO_SIZE_OVERFLOW    L">9000"
@@ -36,6 +37,7 @@ struct data {
 struct filedata {
 	const char *filename;
 	bool is_link;
+	bool is_link_broken;
 	struct stat stat;
 	bool is_marked;
 };
@@ -81,7 +83,10 @@ static size_t render_info(wchar_t *buffer, struct filedata *filedata)
 
 	if(filedata->is_link) {
 		info_size += INFO_LINK_LENGTH;
-		wcscat(buffer, INFO_LINK);
+		if(filedata->is_link_broken)
+			wcscat(buffer, INFO_LINK_BROKEN);
+		else
+			wcscat(buffer, INFO_LINK);
 	}
 
 	if(S_ISDIR(filedata->stat.st_mode))
@@ -201,7 +206,10 @@ static bool read_file_data(int dirfd, struct filedata *filedata)
 	filedata->is_link = false;
 	if(S_ISLNK(filedata->stat.st_mode)) {
 		filedata->is_link = true;
-		fstatat(dirfd, filedata->filename, &filedata->stat, 0);
+		if(fstatat(dirfd, filedata->filename, &filedata->stat, 0) != 0)
+			filedata->is_link_broken = true;
+		else
+			filedata->is_link_broken = false;
 	}
 	filedata->is_marked = false;
 	return true;

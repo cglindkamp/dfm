@@ -153,7 +153,7 @@ START_TEST(test_dirmodel_populateddirectory_brokenlink)
 	ck_assert_uint_eq(listmodel_count(&model), 1);
 	ck_assert_str_eq(dirmodel_getfilename(&model, 0), "foo");
 	ck_assert_uint_eq(listmodel_render(&model, buf, 20, 20, 0), 20);
-	ck_assert_int_eq(wcscmp(buf, L"foo         ->    7 "), 0);
+	ck_assert_int_eq(wcscmp(buf, L"foo         -X    7 "), 0);
 }
 END_TEST
 
