@@ -19,12 +19,16 @@ size_t listmodel_render(struct listmodel *model, wchar_t *buffer, size_t len, si
 
 void listmodel_setmark(struct listmodel *model, size_t index, bool mark)
 {
-	model->setmark(model, index, mark);
+	if(model->setmark)
+		model->setmark(model, index, mark);
 }
 
 bool listmodel_ismarked(struct listmodel *model, size_t index)
 {
-	return model->ismarked(model, index);
+	if(model->ismarked)
+		return model->ismarked(model, index);
+	else
+		return false;
 }
 
 void listmodel_register_change_callback(struct listmodel *model, model_change_callback callback, void *data)
