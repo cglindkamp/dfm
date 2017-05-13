@@ -36,6 +36,8 @@ void init_ncurses()
 
 	start_color();
 	init_pair(1, COLOR_WHITE, COLOR_BLUE);
+	init_pair(2, COLOR_YELLOW, COLOR_BLACK);
+	init_pair(3, COLOR_YELLOW, COLOR_BLUE);
 }
 
 static void save_current_position(struct loopdata *data)

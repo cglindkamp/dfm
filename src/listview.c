@@ -4,6 +4,20 @@
 #include "listmodel.h"
 #include "listview.h"
 
+static int attrs_for_index(struct listmodel *model, size_t index, size_t selected)
+{
+	if(index == selected) {
+		if(listmodel_ismarked(model, index))
+			return A_BOLD | COLOR_PAIR(3);
+		else
+			return A_BOLD | COLOR_PAIR(1);
+	} else {
+		if(listmodel_ismarked(model, index))
+			return COLOR_PAIR(2);
+	}
+	return 0;
+}
+
 static void print_list(struct listview *view)
 {
 	unsigned int height, width;
@@ -26,14 +40,12 @@ static void print_list(struct listview *view)
 			continue;
 		}
 
-		if(i + view->first == view->index) {
-			wattron(view->window, A_BOLD | COLOR_PAIR(1) );
-		} else {
-			wattroff(view->window, A_BOLD | COLOR_PAIR(1) );
-		}
+		int attrs = attrs_for_index(view->model, view->first + i, view->index);
 
 		wmove(view->window, i, 0);
+		wattron(view->window, attrs);
 		waddwstr(view->window, buffer);
+		wattroff(view->window, attrs);
 
 		i++;
 	}
