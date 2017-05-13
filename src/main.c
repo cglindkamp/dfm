@@ -180,6 +180,15 @@ static void stdin_cb(EV_P_ ev_io *w, int revents)
 			}
 			break;
 		}
+	} else {
+		switch(key) {
+		case L' ':
+			{
+				size_t index = listview_getindex(&data->view);
+				listmodel_setmark(&data->model, index, !listmodel_ismarked(&data->model, index));
+				break;
+			}
+		}
 	}
 	if(ret == OK && key == 3) // ^C
 		ev_break(EV_A_ EVBREAK_ONE);
