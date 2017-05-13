@@ -170,6 +170,7 @@ static void dirmodel_setmark(struct listmodel *model, size_t index, bool mark)
 	list_t *list = data->list;
 	struct filedata *filedata = list_get_item(list, index);
 	filedata->is_marked = mark;
+	listmodel_notify_change(model, index, MODEL_CHANGE);
 }
 
 static bool dirmodel_ismarked(struct listmodel *model, size_t index)

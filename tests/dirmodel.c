@@ -342,6 +342,27 @@ START_TEST(test_dirmodel_markfiles)
 }
 END_TEST
 
+START_TEST(test_dirmodel_markfiles_changeevent)
+{
+	cb_count = 0;
+	cb_index = 0;
+	cb_change = MODEL_RELOAD;
+
+	create_file(dir_fd, "0", 0);
+	create_file(dir_fd, "1", 0);
+	create_file(dir_fd, "2", 0);
+
+	ck_assert(dirmodel_change_directory(&model, path) == true);
+	listmodel_register_change_callback(&model, change_callback, NULL);
+
+	listmodel_setmark(&model, 1, true);
+
+	ck_assert_uint_eq(cb_count, 1);
+	ck_assert_uint_eq(cb_index, 1);
+	ck_assert_uint_eq(cb_change, MODEL_CHANGE);
+}
+END_TEST
+
 Suite *dirmodel_suite(void)
 {
 	Suite *suite;
@@ -366,6 +387,7 @@ Suite *dirmodel_suite(void)
 	tcase_add_test(tcase, test_dirmodel_changedfileevent);
 	tcase_add_test(tcase, test_dirmodel_addedfileremovedbeforeeventhandled);
 	tcase_add_test(tcase, test_dirmodel_markfiles);
+	tcase_add_test(tcase, test_dirmodel_markfiles_changeevent);
 	suite_add_tcase(suite, tcase);
 
 	return suite;
