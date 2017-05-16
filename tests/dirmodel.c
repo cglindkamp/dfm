@@ -363,6 +363,47 @@ START_TEST(test_dirmodel_markfiles_changeevent)
 }
 END_TEST
 
+START_TEST(test_dirmodel_markfiles_getfilenames)
+{
+	create_file(dir_fd, "0", 0);
+	create_file(dir_fd, "1", 0);
+	create_file(dir_fd, "2", 0);
+	create_file(dir_fd, "3", 0);
+	create_file(dir_fd, "4", 0);
+
+	ck_assert(dirmodel_change_directory(&model, path) == true);
+
+	listmodel_setmark(&model, 1, true);
+	listmodel_setmark(&model, 3, true);
+	listmodel_setmark(&model, 4, true);
+
+	list_t *list = dirmodel_getmarkedfilenames(&model);
+	ck_assert_uint_eq(list_length(list), 3);
+	ck_assert_str_eq(list_get_item(list, 0), "1");
+	ck_assert_str_eq(list_get_item(list, 1), "3");
+	ck_assert_str_eq(list_get_item(list, 2), "4");
+
+	for(size_t i = 0; i < list_length(list); i++)
+		free(list_get_item(list, i));
+	list_free(list);
+}
+END_TEST
+
+START_TEST(test_dirmodel_markfiles_getfilenames_nomarkedfiles)
+{
+	create_file(dir_fd, "0", 0);
+	create_file(dir_fd, "1", 0);
+	create_file(dir_fd, "2", 0);
+	create_file(dir_fd, "3", 0);
+	create_file(dir_fd, "4", 0);
+
+	ck_assert(dirmodel_change_directory(&model, path) == true);
+
+	list_t *list = dirmodel_getmarkedfilenames(&model);
+	ck_assert_ptr_null(list);
+}
+END_TEST
+
 Suite *dirmodel_suite(void)
 {
 	Suite *suite;
@@ -388,6 +429,8 @@ Suite *dirmodel_suite(void)
 	tcase_add_test(tcase, test_dirmodel_addedfileremovedbeforeeventhandled);
 	tcase_add_test(tcase, test_dirmodel_markfiles);
 	tcase_add_test(tcase, test_dirmodel_markfiles_changeevent);
+	tcase_add_test(tcase, test_dirmodel_markfiles_getfilenames);
+	tcase_add_test(tcase, test_dirmodel_markfiles_getfilenames_nomarkedfiles);
 	suite_add_tcase(suite, tcase);
 
 	return suite;

@@ -186,6 +186,25 @@ static bool dirmodel_ismarked(struct listmodel *model, size_t index)
 	return filedata->is_marked;
 }
 
+list_t *dirmodel_getmarkedfilenames(struct listmodel *model)
+{
+	struct data *data = model->data;
+	list_t *list = data->list;
+	list_t *markedlist = list_new(0);
+
+	for(size_t i = 0; i < list_length(list); i++)
+	{
+		struct filedata *filedata = list_get_item(list, i);
+		if(filedata->is_marked)
+			list_append(markedlist, strdup(filedata->filename));
+	}
+	if(list_length(markedlist) == 0) {
+		list_free(markedlist);
+		return NULL;
+	}
+	return markedlist;
+}
+
 static int sort_filename(const void *a, const void *b)
 {
 	struct filedata *filedata1 = *(struct filedata **)a;

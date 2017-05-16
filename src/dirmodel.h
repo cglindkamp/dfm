@@ -4,6 +4,7 @@
 #include "listmodel.h"
 
 const char *dirmodel_getfilename(struct listmodel *model, size_t index);
+list_t *dirmodel_getmarkedfilenames(struct listmodel *model);
 bool dirmodel_isdir(struct listmodel *model, size_t index);
 bool dirmodel_get_index(struct listmodel *model, const char *filename, size_t *index);
 bool dirmodel_change_directory(struct listmodel *model, const char *path);
