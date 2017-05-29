@@ -321,14 +321,18 @@ START_TEST(test_dirmodel_addedfileremovedbeforeeventhandled)
 }
 END_TEST
 
-START_TEST(test_dirmodel_markfiles)
+static void setup_markfiles(void)
 {
+	setup();
 	create_file(dir_fd, "0", 0);
 	create_file(dir_fd, "1", 0);
 	create_file(dir_fd, "2", 0);
 	create_file(dir_fd, "3", 0);
 	create_file(dir_fd, "4", 0);
+}
 
+START_TEST(test_dirmodel_markfiles)
+{
 	ck_assert(dirmodel_change_directory(&model, path) == true);
 
 	listmodel_setmark(&model, 1, true);
@@ -348,10 +352,6 @@ START_TEST(test_dirmodel_markfiles_changeevent)
 	cb_index = 0;
 	cb_change = MODEL_RELOAD;
 
-	create_file(dir_fd, "0", 0);
-	create_file(dir_fd, "1", 0);
-	create_file(dir_fd, "2", 0);
-
 	ck_assert(dirmodel_change_directory(&model, path) == true);
 	listmodel_register_change_callback(&model, change_callback, NULL);
 
@@ -365,12 +365,6 @@ END_TEST
 
 START_TEST(test_dirmodel_markfiles_getfilenames)
 {
-	create_file(dir_fd, "0", 0);
-	create_file(dir_fd, "1", 0);
-	create_file(dir_fd, "2", 0);
-	create_file(dir_fd, "3", 0);
-	create_file(dir_fd, "4", 0);
-
 	ck_assert(dirmodel_change_directory(&model, path) == true);
 
 	listmodel_setmark(&model, 1, true);
@@ -391,12 +385,6 @@ END_TEST
 
 START_TEST(test_dirmodel_markfiles_getfilenames_nomarkedfiles)
 {
-	create_file(dir_fd, "0", 0);
-	create_file(dir_fd, "1", 0);
-	create_file(dir_fd, "2", 0);
-	create_file(dir_fd, "3", 0);
-	create_file(dir_fd, "4", 0);
-
 	ck_assert(dirmodel_change_directory(&model, path) == true);
 
 	list_t *list = dirmodel_getmarkedfilenames(&model);
@@ -427,6 +415,10 @@ Suite *dirmodel_suite(void)
 	tcase_add_test(tcase, test_dirmodel_removedfileevent);
 	tcase_add_test(tcase, test_dirmodel_changedfileevent);
 	tcase_add_test(tcase, test_dirmodel_addedfileremovedbeforeeventhandled);
+	suite_add_tcase(suite, tcase);
+
+	tcase = tcase_create("Mark Files");
+	tcase_add_checked_fixture(tcase, setup_markfiles, teardown);
 	tcase_add_test(tcase, test_dirmodel_markfiles);
 	tcase_add_test(tcase, test_dirmodel_markfiles_changeevent);
 	tcase_add_test(tcase, test_dirmodel_markfiles_getfilenames);
