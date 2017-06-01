@@ -6,10 +6,14 @@
 
 #include "path.h"
 
-static void path_make_room(struct path *path)
+static void path_make_room(struct path *path, size_t size)
 {
-	path->allocated_size *= 2;
-	path->path = realloc(path->path, path->allocated_size);
+	size_t target_size = size ? size : path->allocated_size * 2;
+
+	if(target_size > path->allocated_size) {
+		path->allocated_size = target_size;
+		path->path = realloc(path->path, path->allocated_size);
+	}
 }
 
 const char *path_tocstr(struct path *path)
@@ -22,7 +26,7 @@ const char *path_tocstr(struct path *path)
 void path_add_component(struct path *path, const char *component)
 {
 	while(strlen(path->path) + strlen(component) + 2 > path->allocated_size)
-		path_make_room(path);
+		path_make_room(path, 0);
 	strcat(path->path, "/");
 	strcat(path->path, component);
 }
@@ -46,10 +50,37 @@ bool path_set_to_current_working_directory(struct path *path)
 	while(getcwd(path->path, path->allocated_size) == NULL)
 	{
 		if(errno == ERANGE)
-			path_make_room(path);
+			path_make_room(path, 0);
 		else
 			return false;
 	}
+	return true;
+}
+
+bool path_set_from_string(struct path *path, const char *cstr)
+{
+	/* paths not starting with '/' are invalid */
+	if(cstr[0] != '/')
+		return false;
+
+	path_make_room(path, strlen(cstr) + 1);
+	strcpy(path->path, cstr);
+
+	/* reduce multiple consecutive slashes to a single one */
+	size_t s = 0, d = 0;
+	do {
+		s++;
+		if(path->path[s] == '/' && path->path[d] == '/')
+			continue;
+		d++;
+		path->path[d] = path->path[s];
+	} while(path->path[s] != '\0');
+
+	/* remove trailing slash, this also ensures that the string will be
+	 * empty for the root directory */
+	if(path->path[d - 1] == '/')
+		path->path[d - 1] = '\0';
+
 	return true;
 }
 

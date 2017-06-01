@@ -105,6 +105,33 @@ START_TEST(test_path_settocurrentworkingdirectory_getcwdfailed)
 }
 END_TEST
 
+START_TEST(test_path_setfromstring)
+{
+	path_init(&path, 0);
+	ck_assert(path_set_from_string(&path, "/foo/bar") == true);
+	ck_assert_str_eq(path_tocstr(&path), "/foo/bar");
+	path_free(&path);
+}
+END_TEST
+
+START_TEST(test_path_setfromstring_reduceslashes)
+{
+	path_init(&path, 0);
+	ck_assert(path_set_from_string(&path, "//foo////bar/") == true);
+	ck_assert_str_eq(path_tocstr(&path), "/foo/bar");
+	path_free(&path);
+}
+END_TEST
+
+START_TEST(test_path_setfromstring_illegalpath)
+{
+	path_init(&path, 0);
+	ck_assert(path_set_from_string(&path, "foo/bar") == false);
+	ck_assert_str_eq(path_tocstr(&path), "/");
+	path_free(&path);
+}
+END_TEST
+
 Suite *path_suite(void)
 {
 	Suite *suite;
@@ -123,6 +150,9 @@ Suite *path_suite(void)
 	tcase_add_test(tcase, test_path_removelastcomponent_returnremovedcomponent);
 	tcase_add_test(tcase, test_path_settocurrentworkingdirectory);
 	tcase_add_test(tcase, test_path_settocurrentworkingdirectory_getcwdfailed);
+	tcase_add_test(tcase, test_path_setfromstring);
+	tcase_add_test(tcase, test_path_setfromstring_reduceslashes);
+	tcase_add_test(tcase, test_path_setfromstring_illegalpath);
 	suite_add_tcase(suite, tcase);
 
 	return suite;
