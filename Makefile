@@ -1,14 +1,16 @@
+PROJECT = files
+
 NCURSES_CFLAGS := $(shell pkg-config --cflags ncursesw)
 NCURSES_LIBS := $(shell pkg-config --libs ncursesw)
 LIBEV_LIBS := -lev
 CHECK_CFLAGS := $(shell pkg-config --cflags check)
 CHECK_LIBS := $(shell pkg-config --libs check)
 
-all: files
+all: $(PROJECT)
 
 -include coverage.mk
 COVERAGE = 0
-CPPFLAGS =-DNDEBUG -D_XOPEN_SOURCE=700 -D_XOPEN_SOURCE_EXTENDED
+CPPFLAGS =-DNDEBUG -D_XOPEN_SOURCE=700 -D_XOPEN_SOURCE_EXTENDED -DPROJECT=$(PROJECT)
 CFLAGS = -std=c11 -pedantic -Wall -Wextra $(NCURSES_CFLAGS)
 LIBS = $(NCURSES_LIBS) $(LIBEV_LIBS)
 
@@ -54,8 +56,8 @@ DEPS = $(patsubst %.o,%.d,$(OBJECTS) $(TESTOBJECTS))
 GCDAS = $(patsubst %.o,%.gcda,$(OBJECTS) $(TESTOBJECTS))
 GCNOS = $(patsubst %.o,%.gcno,$(OBJECTS) $(TESTOBJECTS))
 
-files: $(OBJECTS)
-	$(LINK.c) -o files $^ $(LIBS)
+$(PROJECT): $(OBJECTS)
+	$(LINK.c) -o $(PROJECT) $^ $(LIBS)
 
 test: tests/tests
 	rm -f $(patsubst %.o,%.gcda,$(TESTEDOBJECTS))
@@ -70,7 +72,7 @@ tests/tests: $(TESTEDOBJECTS) $(TESTOBJECTS)
 	$(LINK.c) -o $@ $^ $(CHECK_LIBS) $(NCURSES_LIBS) $(LIBEV_LIBS) -Wl,--wrap=getcwd
 
 clean:
-	rm -f files $(OBJECTS) $(TESTOBJECTS) $(DEPS) $(GCNOS) $(GCDAS) *.gcov
+	rm -f $(PROJECT) $(OBJECTS) $(TESTOBJECTS) $(DEPS) $(GCNOS) $(GCDAS) *.gcov
 
 $(OBJECTS) $(TESTOBJECTS): Makefile coverage.mk
 -include $(DEPS)
