@@ -23,7 +23,7 @@ bool xdg_get_config_home(struct path *path)
 	return valid;
 }
 
-list_t *xdg_get_config_dirs()
+list_t *xdg_get_config_dirs(bool include_config_home)
 {
 	struct path *path;
 	list_t *list = list_new(0);
@@ -54,6 +54,17 @@ list_t *xdg_get_config_dirs()
 		path_init(path, 0);
 		path_set_from_string(path, "/etc/xdg");
 		list_append(list, path);
+	}
+
+	if(include_config_home) {
+		path = malloc(sizeof(*path));
+		path_init(path, 0);
+		if(xdg_get_config_home(path)) {
+			list_insert(list, 0, path);
+		} else {
+			path_free(path);
+			free(path);
+		}
 	}
 
 	return list;

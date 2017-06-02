@@ -102,7 +102,7 @@ START_TEST(test_xdg_configdirs_unset)
 {
 	unsetenv("XDG_CONFIG_DIRS");
 
-	list_t *list = xdg_get_config_dirs();
+	list_t *list = xdg_get_config_dirs(false);
 
 	ck_assert_uint_eq(list_length(list), 1);
 
@@ -119,7 +119,7 @@ START_TEST(test_xdg_configdirs_set)
 {
 	setenv("XDG_CONFIG_DIRS", "/foo:/bar:/baz", 1);
 
-	list_t *list = xdg_get_config_dirs();
+	list_t *list = xdg_get_config_dirs(false);
 
 	ck_assert_uint_eq(list_length(list), 3);
 
@@ -146,7 +146,7 @@ START_TEST(test_xdg_configdirs_partlyinvalid)
 {
 	setenv("XDG_CONFIG_DIRS", "/foo:bar:/baz", 1);
 
-	list_t *list = xdg_get_config_dirs();
+	list_t *list = xdg_get_config_dirs(false);
 
 	ck_assert_uint_eq(list_length(list), 2);
 
@@ -168,12 +168,64 @@ START_TEST(test_xdg_configdirs_completelyinvalid)
 {
 	setenv("XDG_CONFIG_DIRS", "foo:bar:baz", 1);
 
-	list_t *list = xdg_get_config_dirs();
+	list_t *list = xdg_get_config_dirs(false);
 
 	ck_assert_uint_eq(list_length(list), 1);
 
 	struct path *path = list_get_item(list, 0);
 	ck_assert_str_eq(path_tocstr(path), "/etc/xdg");
+	path_free(path);
+	free(path);
+
+	list_free(list);
+}
+END_TEST
+
+START_TEST(test_xdg_configdirs_includeconfighome)
+{
+	setenv("XDG_CONFIG_HOME", "/foo", 1);
+	setenv("XDG_CONFIG_DIRS", "/bar:/baz", 1);
+
+	list_t *list = xdg_get_config_dirs(true);
+
+	ck_assert_uint_eq(list_length(list), 3);
+
+	struct path *path = list_get_item(list, 0);
+	ck_assert_str_eq(path_tocstr(path), "/foo");
+	path_free(path);
+	free(path);
+
+	path = list_get_item(list, 1);
+	ck_assert_str_eq(path_tocstr(path), "/bar");
+	path_free(path);
+	free(path);
+
+	path = list_get_item(list, 2);
+	ck_assert_str_eq(path_tocstr(path), "/baz");
+	path_free(path);
+	free(path);
+
+	list_free(list);
+}
+END_TEST
+
+START_TEST(test_xdg_configdirs_includeconfighome_homeinvalid)
+{
+	setenv("HOME", "foo", 1);
+	setenv("XDG_CONFIG_HOME", "foo", 1);
+	setenv("XDG_CONFIG_DIRS", "/bar:/baz", 1);
+
+	list_t *list = xdg_get_config_dirs(true);
+
+	ck_assert_uint_eq(list_length(list), 2);
+
+	struct path *path = list_get_item(list, 0);
+	ck_assert_str_eq(path_tocstr(path), "/bar");
+	path_free(path);
+	free(path);
+
+	path = list_get_item(list, 1);
+	ck_assert_str_eq(path_tocstr(path), "/baz");
 	path_free(path);
 	free(path);
 
@@ -199,6 +251,8 @@ Suite *xdg_suite(void)
 	tcase_add_test(tcase, test_xdg_configdirs_set);
 	tcase_add_test(tcase, test_xdg_configdirs_partlyinvalid);
 	tcase_add_test(tcase, test_xdg_configdirs_completelyinvalid);
+	tcase_add_test(tcase, test_xdg_configdirs_includeconfighome);
+	tcase_add_test(tcase, test_xdg_configdirs_includeconfighome_homeinvalid);
 	suite_add_tcase(suite, tcase);
 
 	return suite;
