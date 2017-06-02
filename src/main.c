@@ -103,12 +103,10 @@ static struct path *determine_usable_config_file(const char *project, const char
 		struct path *curpath = list_get_item(list, i);
 		path_add_component(curpath, project);
 		path_add_component(curpath, config);
-		if(path == NULL && access(path_tocstr(curpath), flags) == 0) {
+		if(path == NULL && access(path_tocstr(curpath), flags) == 0)
 			path = curpath;
-		} else {
-			path_free(curpath);
-			free(curpath);
-		}
+		else
+			path_free_heap_allocated(curpath);
 	}
 	list_free(list);
 	return path;
@@ -144,8 +142,7 @@ static void open_file(const char *cwd, const char *filename)
 	};
 	spawn(cwd, path_tocstr(open_handler), args);
 
-	path_free(open_handler);
-	free(open_handler);
+	path_free_heap_allocated(open_handler);
 }
 
 static void stdin_cb(EV_P_ ev_io *w, int revents)

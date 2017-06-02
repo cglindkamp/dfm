@@ -97,3 +97,9 @@ void path_free(struct path *path)
 {
 	free(path->path);
 }
+
+void path_free_heap_allocated(struct path *path)
+{
+	path_free(path);
+	free(path);
+}

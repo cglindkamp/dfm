@@ -37,12 +37,10 @@ list_t *xdg_get_config_dirs(bool include_config_home)
 			do {
 				path = malloc(sizeof(*path));
 				path_init(path, 0);
-				if(path_set_from_string(path, curpath)) {
+				if(path_set_from_string(path, curpath))
 					list_append(list, path);
-				} else {
-					path_free(path);
-					free(path);
-				}
+				else
+					path_free_heap_allocated(path);
 			} while((curpath = strtok_r(NULL, ":", &saveptr)));
 
 		}
@@ -59,12 +57,10 @@ list_t *xdg_get_config_dirs(bool include_config_home)
 	if(include_config_home) {
 		path = malloc(sizeof(*path));
 		path_init(path, 0);
-		if(xdg_get_config_home(path)) {
+		if(xdg_get_config_home(path))
 			list_insert(list, 0, path);
-		} else {
-			path_free(path);
-			free(path);
-		}
+		else
+			path_free_heap_allocated(path);
 	}
 
 	return list;
