@@ -16,6 +16,7 @@
 #include "dirmodel.h"
 #include "dict.h"
 #include "path.h"
+#include "xdg.h"
 
 void _nc_freeall();
 
@@ -93,6 +94,26 @@ static void sigwinch_cb(EV_P_ ev_signal *w, int revents)
 	listview_resize(&data->view, COLS, LINES - 1);
 }
 
+static struct path *determine_usable_config_file(const char *project, const char *config, int flags)
+{
+	struct path *path = NULL;
+	list_t *list = xdg_get_config_dirs(true);
+
+	for(size_t i = 0; i < list_length(list); i++) {
+		struct path *curpath = list_get_item(list, i);
+		path_add_component(curpath, project);
+		path_add_component(curpath, config);
+		if(path == NULL && access(path_tocstr(curpath), flags) == 0) {
+			path = curpath;
+		} else {
+			path_free(curpath);
+			free(curpath);
+		}
+	}
+	list_free(list);
+	return path;
+}
+
 static void spawn(const char *cwd, const char *program, char * const argv[])
 {
 	int pid = fork();
@@ -111,12 +132,20 @@ static void spawn(const char *cwd, const char *program, char * const argv[])
 
 static void open_file(const char *cwd, const char *filename)
 {
+	struct path *open_handler = determine_usable_config_file(PROJECT, "open", X_OK);
+
+	if(open_handler == NULL)
+		return;
+
 	char * const args[] = {
-		"xdg-open",
+		"open",
 		(char *)filename,
 		NULL
 	};
-	spawn(cwd, "xdg-open", args);
+	spawn(cwd, path_tocstr(open_handler), args);
+
+	path_free(open_handler);
+	free(open_handler);
 }
 
 static void stdin_cb(EV_P_ ev_io *w, int revents)
