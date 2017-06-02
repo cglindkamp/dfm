@@ -5,9 +5,10 @@
 #include <stddef.h>
 
 typedef struct list list_t;
+typedef void (*list_item_deallocator)(void *);
 
 list_t *list_new(size_t initial_size);
-void list_free(list_t *list);
+void list_free(list_t *list, list_item_deallocator deallocator);
 
 size_t list_length(list_t *list);
 void list_append(list_t *list, void *item);

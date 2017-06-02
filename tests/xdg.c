@@ -108,9 +108,8 @@ START_TEST(test_xdg_configdirs_unset)
 
 	struct path *path = list_get_item(list, 0);
 	ck_assert_str_eq(path_tocstr(path), "/etc/xdg");
-	path_free_heap_allocated(path);
 
-	list_free(list);
+	list_free(list, (list_item_deallocator)path_free_heap_allocated);
 }
 END_TEST
 
@@ -124,17 +123,14 @@ START_TEST(test_xdg_configdirs_set)
 
 	struct path *path = list_get_item(list, 0);
 	ck_assert_str_eq(path_tocstr(path), "/foo");
-	path_free_heap_allocated(path);
 
 	path = list_get_item(list, 1);
 	ck_assert_str_eq(path_tocstr(path), "/bar");
-	path_free_heap_allocated(path);
 
 	path = list_get_item(list, 2);
 	ck_assert_str_eq(path_tocstr(path), "/baz");
-	path_free_heap_allocated(path);
 
-	list_free(list);
+	list_free(list, (list_item_deallocator)path_free_heap_allocated);
 }
 END_TEST
 
@@ -148,13 +144,11 @@ START_TEST(test_xdg_configdirs_partlyinvalid)
 
 	struct path *path = list_get_item(list, 0);
 	ck_assert_str_eq(path_tocstr(path), "/foo");
-	path_free_heap_allocated(path);
 
 	path = list_get_item(list, 1);
 	ck_assert_str_eq(path_tocstr(path), "/baz");
-	path_free_heap_allocated(path);
 
-	list_free(list);
+	list_free(list, (list_item_deallocator)path_free_heap_allocated);
 }
 END_TEST
 
@@ -168,9 +162,8 @@ START_TEST(test_xdg_configdirs_completelyinvalid)
 
 	struct path *path = list_get_item(list, 0);
 	ck_assert_str_eq(path_tocstr(path), "/etc/xdg");
-	path_free_heap_allocated(path);
 
-	list_free(list);
+	list_free(list, (list_item_deallocator)path_free_heap_allocated);
 }
 END_TEST
 
@@ -185,17 +178,14 @@ START_TEST(test_xdg_configdirs_includeconfighome)
 
 	struct path *path = list_get_item(list, 0);
 	ck_assert_str_eq(path_tocstr(path), "/foo");
-	path_free_heap_allocated(path);
 
 	path = list_get_item(list, 1);
 	ck_assert_str_eq(path_tocstr(path), "/bar");
-	path_free_heap_allocated(path);
 
 	path = list_get_item(list, 2);
 	ck_assert_str_eq(path_tocstr(path), "/baz");
-	path_free_heap_allocated(path);
 
-	list_free(list);
+	list_free(list, (list_item_deallocator)path_free_heap_allocated);
 }
 END_TEST
 
@@ -211,13 +201,11 @@ START_TEST(test_xdg_configdirs_includeconfighome_homeinvalid)
 
 	struct path *path = list_get_item(list, 0);
 	ck_assert_str_eq(path_tocstr(path), "/bar");
-	path_free_heap_allocated(path);
 
 	path = list_get_item(list, 1);
 	ck_assert_str_eq(path_tocstr(path), "/baz");
-	path_free_heap_allocated(path);
 
-	list_free(list);
+	list_free(list, (list_item_deallocator)path_free_heap_allocated);
 }
 END_TEST
 

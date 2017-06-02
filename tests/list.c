@@ -12,7 +12,7 @@ static void setup(void)
 
 static void teardown(void)
 {
-	list_free(list);
+	list_free(list, NULL);
 	list = NULL;
 }
 

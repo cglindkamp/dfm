@@ -108,7 +108,7 @@ static struct path *determine_usable_config_file(const char *project, const char
 		else
 			path_free_heap_allocated(curpath);
 	}
-	list_free(list);
+	list_free(list, NULL);
 	return path;
 }
 

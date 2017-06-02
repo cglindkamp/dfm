@@ -377,9 +377,7 @@ START_TEST(test_dirmodel_markfiles_getfilenames)
 	ck_assert_str_eq(list_get_item(list, 1), "3");
 	ck_assert_str_eq(list_get_item(list, 2), "4");
 
-	for(size_t i = 0; i < list_length(list); i++)
-		free(list_get_item(list, i));
-	list_free(list);
+	list_free(list, free);
 }
 END_TEST
 

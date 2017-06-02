@@ -74,9 +74,6 @@ void listmodel_init(struct listmodel *model)
 void listmodel_free(struct listmodel *model)
 {
 	struct list *list = model->change_callbacks;
-	size_t i;
 
-	for(i = 0; i < list_length(list); i++)
-		free(list_get_item(list, i));
-	list_free(list);
+	list_free(list, free);
 }

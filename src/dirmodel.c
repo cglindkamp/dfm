@@ -199,7 +199,7 @@ list_t *dirmodel_getmarkedfilenames(struct listmodel *model)
 			list_append(markedlist, strdup(filedata->filename));
 	}
 	if(list_length(markedlist) == 0) {
-		list_free(markedlist);
+		list_free(markedlist, NULL);
 		return NULL;
 	}
 	return markedlist;
@@ -392,9 +392,7 @@ static void internal_free(struct listmodel *model)
 {
 	struct data *data = model->data;
 	list_t *list = data->list;
-	struct filedata *filedata;
 	struct ev_loop *loop = EV_DEFAULT;
-	size_t i;
 
 	if(!data->loaded)
 		return;
@@ -403,11 +401,7 @@ static void internal_free(struct listmodel *model)
 	inotify_rm_watch(data->inotify_fd, data->inotify_watch);
 	close(data->inotify_fd);
 	closedir(data->dir);
-	for(i = 0; i < list_length(list); i++) {
-		filedata = list_get_item(list, i);
-		free_filedata(filedata);
-	}
-	list_free(list);
+	list_free(list, (list_item_deallocator)free_filedata);
 	data->loaded = false;
 }
 

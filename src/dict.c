@@ -25,7 +25,7 @@ void dict_free(list_t *list, bool free_value)
 		free((void*)item->key);
 		free(item);
 	}
-	list_free(list);
+	list_free(list, NULL);
 }
 
 static int compare_key(const void *a, const void *b)
