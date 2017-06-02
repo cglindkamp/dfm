@@ -2,6 +2,7 @@
 #define LIST_H
 
 #include <stdbool.h>
+#include <stddef.h>
 
 typedef struct list list_t;
 

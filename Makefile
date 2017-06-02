@@ -32,6 +32,7 @@ OBJECTS = \
 	src/listmodel.o \
 	src/listview.o \
 	src/path.o \
+	src/xdg.o \
 	src/main.o \
 
 TESTEDOBJECTS = \
@@ -41,6 +42,7 @@ TESTEDOBJECTS = \
 	src/listmodel.o \
 	src/listview.o \
 	src/path.o \
+	src/xdg.o \
 
 TESTOBJECTS = \
 	tests/dict.o \
@@ -49,6 +51,7 @@ TESTOBJECTS = \
 	tests/listmodel.o \
 	tests/listview.o \
 	tests/path.o \
+	tests/xdg.o \
 	tests/tests.o \
 	tests/wrapper/getcwd.o \
 

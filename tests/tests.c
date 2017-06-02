@@ -12,6 +12,7 @@ Suite *listmodel_suite(void);
 Suite *listview_suite(void);
 Suite *path_suite(void);
 Suite *dirmodel_suite(void);
+Suite *xdg_suite(void);
 
 int main(void)
 {
@@ -31,6 +32,7 @@ int main(void)
 	srunner_add_suite(suite_runner, listview_suite());
 	srunner_add_suite(suite_runner, path_suite());
 	srunner_add_suite(suite_runner, dirmodel_suite());
+	srunner_add_suite(suite_runner, xdg_suite());
 
 	srunner_run_all(suite_runner, CK_NORMAL);
 	number_failed = srunner_ntests_failed(suite_runner);

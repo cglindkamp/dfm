@@ -2,6 +2,7 @@
 #define PATH_H
 
 #include <stdbool.h>
+#include <stddef.h>
 
 struct path {
 	char *path;
