@@ -11,6 +11,7 @@
 
 #include <ev.h>
 
+#include "list.h"
 #include "listmodel.h"
 #include "listview.h"
 #include "dirmodel.h"
@@ -112,12 +113,47 @@ static struct path *determine_usable_config_file(const char *project, const char
 	return path;
 }
 
-static void spawn(const char *cwd, const char *program, char * const argv[])
+static bool dump_string_to_file(int dir_fd, const char *filename, const char *value)
+{
+	int fd = openat(dir_fd, filename, O_CREAT|O_WRONLY, 0700);
+	if(fd < 0)
+		return false;
+
+	int ret = write(fd, value, strlen(value));
+
+	close(fd);
+
+	return ret < 0 ? false : true;
+}
+
+static bool dump_filelist_to_file(int dir_fd, const char *filename, list_t *list)
+{
+	int ret = 0;
+
+	int fd = openat(dir_fd, filename, O_CREAT|O_WRONLY, 0700);
+	if(fd < 0)
+		return false;
+
+	for(size_t i = 0; i < list_length(list); i++) {
+		const char *file = list_get_item(list, i);
+		if((ret = write(fd, file, strlen(file)) < 0))
+			break;
+		if((ret = write(fd, "\0", 1)) < 0)
+			break;
+	}
+	close(fd);
+
+	return ret < 0 ? false : true;
+}
+
+static bool spawn(const char *cwd, const char *program, char * const argv[])
 {
 	int pid = fork();
 
-	if(pid != 0)
-		return;
+	if(pid < 0)
+		return false;
+	if(pid > 0)
+		return true;
 
 	int fd = open("/dev/null", O_RDWR);
 
@@ -126,23 +162,51 @@ static void spawn(const char *cwd, const char *program, char * const argv[])
 	dup2(fd, 2);
 	chdir(cwd);
 	execvp(program, argv);
+	exit(EXIT_FAILURE);
 }
 
-static void open_file(const char *cwd, const char *filename)
+static void invoke_handler(struct loopdata *data, const char *handler_name)
 {
-	struct path *open_handler = determine_usable_config_file(PROJECT, "open", X_OK);
-
-	if(open_handler == NULL)
+	struct path *handler_path = determine_usable_config_file(PROJECT, handler_name, X_OK);
+	if(handler_name == NULL)
 		return;
+
+	char path_template[] = "/tmp/"PROJECT".XXXXXX";
+	char *path = mkdtemp(path_template);
+	if(path == NULL)
+		goto err_dir;
+
+	int dir_fd = open(path, O_RDONLY);
+	if(dir_fd < 0)
+		goto err_dircreated;
+
+	size_t index = listview_getindex(&data->view);
+	const char *selected = dirmodel_getfilename(&data->model, index);
+	if(!dump_string_to_file(dir_fd, "selected", selected))
+		goto err_dircreated;
+
+	list_t *list = dirmodel_getmarkedfilenames(&data->model);
+	if(list != NULL) {
+		bool ret = dump_filelist_to_file(dir_fd, "marked", list);
+		list_free(list, free);
+		if(!ret)
+			goto err_dircreated;
+	}
 
 	char * const args[] = {
 		"open",
-		(char *)filename,
+		path,
 		NULL
 	};
-	spawn(cwd, path_tocstr(open_handler), args);
+	if(spawn(path_tocstr(&data->cwd), path_tocstr(handler_path), args))
+		goto succes;
 
-	path_free_heap_allocated(open_handler);
+err_dircreated:
+	remove(path);
+succes:
+	close(dir_fd);
+err_dir:
+	path_free_heap_allocated(handler_path);
 }
 
 static void stdin_cb(EV_P_ ev_io *w, int revents)
@@ -201,8 +265,7 @@ static void stdin_cb(EV_P_ ev_io *w, int revents)
 				select_stored_position(data, oldpathname);
 				display_current_path(data);
 			} else {
-				const char *filename = dirmodel_getfilename(&data->model, index);
-				open_file(path_tocstr(&data->cwd), filename);
+				invoke_handler(data, "open");
 			}
 			break;
 		}

@@ -1,0 +1,9 @@
+#!/bin/sh
+
+if grep -q -x -z `cat "$1"/selected` "$1"/marked; then
+	xargs -0 -n 1 -a "$1"/marked xdg-open
+else
+	xdg-open "`cat \"$1\"/selected`"
+fi
+
+rm -r "$1"
