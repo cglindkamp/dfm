@@ -277,6 +277,9 @@ static void stdin_cb(EV_P_ ev_io *w, int revents)
 				listmodel_setmark(&data->model, index, !listmodel_ismarked(&data->model, index));
 				break;
 			}
+		case L'D':
+			invoke_handler(data, "delete");
+			break;
 		}
 	}
 	if(ret == OK && key == 3) // ^C

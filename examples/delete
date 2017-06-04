@@ -1,0 +1,17 @@
+#!/bin/sh
+
+if [ -e "$1"/marked ]; then
+	count=`grep -c -z '.' "$1"/marked`
+	reply=`echo -e "Yes\nNo"|dmenu -b -p "Do you want to delete $count file(s)?"`
+	if [ "x$reply" == "xYes" ]; then
+		xargs -0 -a "$1"/marked rm -rf
+	fi
+else
+	filename="`cat $1/selected`"
+	reply=`echo -e "Yes\nNo"|dmenu -b -p "Do you want to delete $filename?"`
+	if [ "x$reply" == "xYes" ]; then
+		rm -rf "`cat $1/selected`"
+	fi
+fi
+
+rm -rf "$1"
