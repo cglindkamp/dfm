@@ -275,6 +275,7 @@ static void stdin_cb(EV_P_ ev_io *w, int revents)
 			{
 				size_t index = listview_getindex(&data->view);
 				listmodel_setmark(&data->model, index, !listmodel_ismarked(&data->model, index));
+				listview_down(&data->view);
 				break;
 			}
 		case L'D':
