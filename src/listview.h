@@ -1,3 +1,4 @@
+/* See LICENSE file for copyright and license details. */
 #ifndef LISTVIEW_H
 #define LISTVIEW_H
 

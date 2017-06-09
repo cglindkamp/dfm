@@ -1,3 +1,4 @@
+/* See LICENSE file for copyright and license details. */
 #ifndef DICT_H
 #define DICT_H
 

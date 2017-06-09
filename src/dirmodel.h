@@ -1,3 +1,4 @@
+/* See LICENSE file for copyright and license details. */
 #ifndef DIRMODEL_H
 #define DIRMODEL_H
 

@@ -1,3 +1,4 @@
+/* See LICENSE file for copyright and license details. */
 #ifndef XDG_H
 #define XDG_H
 

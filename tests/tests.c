@@ -1,3 +1,4 @@
+/* See LICENSE file for copyright and license details. */
 #include <check.h>
 #include <locale.h>
 #include <stdlib.h>

@@ -1,3 +1,4 @@
+/* See LICENSE file for copyright and license details. */
 #ifndef LISTMODEL_IMPL_H
 #define LISTMODEL_IMPL_H
 

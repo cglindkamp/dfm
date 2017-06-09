@@ -1,3 +1,4 @@
+/* See LICENSE file for copyright and license details. */
 #ifndef GETCWD_H
 #define GETCWD_H
 

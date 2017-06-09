@@ -1,3 +1,4 @@
+/* See LICENSE file for copyright and license details. */
 #include <fcntl.h>
 #include <limits.h>
 #include <locale.h>
