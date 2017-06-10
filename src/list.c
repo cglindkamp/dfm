@@ -24,7 +24,7 @@ list_t *list_new(size_t initial_size)
 	return list;
 }
 
-void list_free(list_t *list, list_item_deallocator deallocator)
+void list_free(const list_t *list, list_item_deallocator deallocator)
 {
 	if(list == NULL)
 		return;
@@ -32,10 +32,10 @@ void list_free(list_t *list, list_item_deallocator deallocator)
 		for(size_t i = 0; i < list->length; i++)
 			deallocator(list->items[i]);
 	free(list->items);
-	free(list);
+	free((void *)list);
 }
 
-size_t list_length(list_t *list)
+size_t list_length(const list_t *list)
 {
 	return list->length;
 }
@@ -75,7 +75,7 @@ void list_remove(list_t *list, size_t index)
 	list->length--;
 }
 
-void *list_get_item(list_t *list, size_t index)
+void *list_get_item(const list_t *list, size_t index)
 {
 	assert(index < list->length);
 
@@ -94,7 +94,7 @@ void list_sort(list_t *list, int (*compare)(const void *, const void *))
 	qsort(list->items, list->length, sizeof(void *), compare);
 }
 
-bool list_find_item_or_insertpoint(list_t *list, int (*compare)(const void *, const void *), void *item, size_t *index)
+bool list_find_item_or_insertpoint(const list_t *list, int (*compare)(const void *, const void *), void *item, size_t *index)
 {
 	void *currentitem;
 	size_t min, middle, max;
