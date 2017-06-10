@@ -23,6 +23,13 @@ START_TEST(test_list_new)
 }
 END_TEST
 
+START_TEST(test_list_freenull)
+{
+	/* test should not crash */
+	list_free(NULL, NULL);
+}
+END_TEST
+
 START_TEST(test_list_add_items)
 {
 	for(size_t i = 0; i < 8192; i++)
@@ -130,6 +137,7 @@ Suite *list_suite(void)
 	tcase = tcase_create("Core");
 	tcase_add_checked_fixture(tcase, setup, teardown);
 	tcase_add_test(tcase, test_list_new);
+	tcase_add_test(tcase, test_list_freenull);
 	tcase_add_test(tcase, test_list_add_items);
 	tcase_add_test(tcase, test_list_set_items);
 	tcase_add_test(tcase, test_list_remove_items);

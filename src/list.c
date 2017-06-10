@@ -26,6 +26,8 @@ list_t *list_new(size_t initial_size)
 
 void list_free(list_t *list, list_item_deallocator deallocator)
 {
+	if(list == NULL)
+		return;
 	if(deallocator)
 		for(size_t i = 0; i < list->length; i++)
 			deallocator(list->items[i]);
