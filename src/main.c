@@ -12,6 +12,7 @@
 
 #include <ev.h>
 
+#include "clipboard.h"
 #include "list.h"
 #include "listmodel.h"
 #include "listview.h"
@@ -28,6 +29,7 @@ struct loopdata {
 	list_t *stored_positions;
 	WINDOW *status;
 	struct path cwd;
+	struct clipboard clipboard;
 };
 
 void init_ncurses()
@@ -279,6 +281,13 @@ static void stdin_cb(EV_P_ ev_io *w, int revents)
 				listview_down(&data->view);
 				break;
 			}
+		case L'y':
+			{
+				const list_t *list = dirmodel_getmarkedfilenames(&data->model);
+				if(list)
+					clipboard_set_contents(&data->clipboard, strdup(path_tocstr(&data->cwd)), list);
+			}
+			break;
 		case L'D':
 			invoke_handler(data, "delete");
 			break;
@@ -322,6 +331,7 @@ int main(void)
 	display_current_path(&data);
 
 	listview_init(&data.view, &data.model, 0, 0, COLS, LINES - 1);
+	clipboard_init(&data.clipboard);
 
 	ev_set_userdata(loop, &data);
 
@@ -333,6 +343,7 @@ int main(void)
 
 	ev_run(loop, 0);
 
+	clipboard_free(&data.clipboard);
 	listview_free(&data.view);
 	dirmodel_free(&data.model);
 	dict_free(data.stored_positions, true);

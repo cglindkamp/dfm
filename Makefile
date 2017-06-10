@@ -26,6 +26,7 @@ ifneq ($(COVERAGE),$(LAST_COVERAGE))
 endif
 
 OBJECTS = \
+	src/clipboard.o \
 	src/dict.o \
 	src/dirmodel.o \
 	src/list.o \
