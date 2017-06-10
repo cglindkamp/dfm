@@ -171,7 +171,7 @@ static bool spawn(const char *cwd, const char *program, char * const argv[])
 static void invoke_handler(struct loopdata *data, const char *handler_name)
 {
 	struct path *handler_path = determine_usable_config_file(PROJECT, handler_name, X_OK);
-	if(handler_name == NULL)
+	if(handler_path == NULL)
 		return;
 
 	char path_template[] = "/tmp/"PROJECT".XXXXXX";
