@@ -183,12 +183,14 @@ static void invoke_handler(struct loopdata *data, const char *handler_name)
 	if(dir_fd < 0)
 		goto err_dircreated;
 
-	size_t index = listview_getindex(&data->view);
-	const char *selected = dirmodel_getfilename(&data->model, index);
-	if(!dump_string_to_file(dir_fd, "selected", selected))
-		goto err_dircreated;
+	if(listmodel_count(&data->model) > 0) {
+		size_t index = listview_getindex(&data->view);
+		const char *selected = dirmodel_getfilename(&data->model, index);
+		if(!dump_string_to_file(dir_fd, "selected", selected))
+			goto err_dircreated;
+	}
 
-	list_t *list = dirmodel_getmarkedfilenames(&data->model);
+	const list_t *list = dirmodel_getmarkedfilenames(&data->model);
 	if(list != NULL) {
 		bool ret = dump_filelist_to_file(dir_fd, "marked", list);
 		list_free(list, free);
