@@ -1,17 +1,13 @@
 #!/bin/sh
 
+if [ "$RUNNING_IN_XTERM" != t ] ; then
+        RUNNING_IN_XTERM=t exec xterm -title `basename $0` -e "$0 $*"
+fi
+
 if [ -e "$1"/marked ]; then
-	count=`grep -c -z '.' "$1"/marked`
-	reply=`echo -e "Yes\nNo"|dmenu -b -p "Do you want to delete $count file(s)?"`
-	if [ "x$reply" == "xYes" ]; then
-		xargs -0 -a "$1"/marked rm -rf
-	fi
+	xargs -0 -a "$1"/marked rm -rvfI
 else
-	filename="`cat $1/selected`"
-	reply=`echo -e "Yes\nNo"|dmenu -b -p "Do you want to delete $filename?"`
-	if [ "x$reply" == "xYes" ]; then
-		rm -rf "`cat $1/selected`"
-	fi
+	rm -rvfI "`cat $1/selected`"
 fi
 
 rm -rf "$1"
