@@ -298,6 +298,9 @@ static void stdin_cb(EV_P_ ev_io *w, int revents)
 				listview_down(&data->view);
 				break;
 			}
+		case L'p':
+			invoke_handler(data, "copy");
+			break;
 		case L'y':
 			{
 				const list_t *list = dirmodel_getmarkedfilenames(&data->model);
