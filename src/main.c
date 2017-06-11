@@ -129,7 +129,7 @@ static bool dump_string_to_file(int dir_fd, const char *filename, const char *va
 	return ret < 0 ? false : true;
 }
 
-static bool dump_filelist_to_file(int dir_fd, const char *filename, list_t *list)
+static bool dump_filelist_to_file(int dir_fd, const char *filename, const list_t *list)
 {
 	int ret = 0;
 
@@ -194,6 +194,21 @@ static void invoke_handler(struct loopdata *data, const char *handler_name)
 	if(list != NULL) {
 		bool ret = dump_filelist_to_file(dir_fd, "marked", list);
 		list_free(list, free);
+		if(!ret)
+			goto err_dircreated;
+	}
+
+	if(!dump_string_to_file(dir_fd, "cwd", path_tocstr(&data->cwd)))
+		goto err_dircreated;
+
+	const char *clipboard_path = clipboard_get_path(&data->clipboard);
+	if(clipboard_path)
+		if(!dump_string_to_file(dir_fd, "clipboard_path", clipboard_path))
+			goto err_dircreated;
+
+	list = clipboard_get_filelist(&data->clipboard);
+	if(list != NULL) {
+		bool ret = dump_filelist_to_file(dir_fd, "clipboard_list", list);
 		if(!ret)
 			goto err_dircreated;
 	}
