@@ -1,5 +1,8 @@
 PROJECT = files
 
+SYSCONFDIR = /etc
+BINDIR = /usr/local/bin
+
 NCURSES_CFLAGS := $(shell pkg-config --cflags ncursesw)
 NCURSES_LIBS := $(shell pkg-config --libs ncursesw)
 LIBEV_LIBS := -lev
@@ -24,6 +27,12 @@ coverage.mk: FORCE
 ifneq ($(COVERAGE),$(LAST_COVERAGE))
 	@echo "LAST_COVERAGE = $(COVERAGE)" > coverage.mk
 endif
+
+EXAMPLES = \
+	open \
+	delete \
+	copy \
+	move \
 
 OBJECTS = \
 	src/clipboard.o \
@@ -74,6 +83,19 @@ $(TESTOBJECTS): %.o: %.c
 	$(COMPILE.c) $(CHECK_CFLAGS) -c -o $@ $<
 tests/tests: $(TESTEDOBJECTS) $(TESTOBJECTS)
 	$(LINK.c) -o $@ $^ $(CHECK_LIBS) $(NCURSES_LIBS) $(LIBEV_LIBS) -Wl,--wrap=getcwd
+
+install:
+	install -m 755 -D $(PROJECT) $(BINDIR)/$(PROJECT)
+	for FILE in $(EXAMPLES); do \
+		install -m 755 -D examples/$$FILE $(SYSCONFDIR)/xdg/$(PROJECT)/$$FILE; \
+	done
+
+uninstall:
+	rm $(BINDIR)/$(PROJECT)
+	for FILE in $(EXAMPLES); do \
+		rm $(SYSCONFDIR)/xdg/$(PROJECT)/$$FILE; \
+	done
+	rmdir $(SYSCONFDIR)/xdg/$(PROJECT)/$$FILE;
 
 clean:
 	rm -f $(PROJECT) $(OBJECTS) $(TESTOBJECTS) $(DEPS) $(GCNOS) $(GCDAS) *.gcov
