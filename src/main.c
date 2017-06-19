@@ -7,6 +7,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <wchar.h>
 
@@ -149,20 +150,46 @@ static bool dump_filelist_to_file(int dir_fd, const char *filename, const list_t
 	return ret < 0 ? false : true;
 }
 
+static bool run_in_foreground()
+{
+	const char *display = getenv("DISPLAY");
+
+	if(display == NULL || strlen(display) == 0)
+		return true;
+
+	const char *foreground = getenv("FILES_FOREGROUND");
+
+	if(foreground != NULL && strcmp(foreground, "yes") == 0)
+		return true;
+
+	return false;
+}
+
 static bool spawn(const char *cwd, const char *program, char * const argv[])
 {
+	bool foreground = run_in_foreground();
+
+	if(foreground)
+		endwin();
+
 	int pid = fork();
 
 	if(pid < 0)
 		return false;
-	if(pid > 0)
+	if(pid > 0) {
+		if(foreground) {
+			waitpid(pid, NULL, 0);
+			doupdate();
+		}
 		return true;
+	}
 
-	int fd = open("/dev/null", O_RDWR);
-
-	dup2(fd, 0);
-	dup2(fd, 1);
-	dup2(fd, 2);
+	if(!foreground) {
+		int fd = open("/dev/null", O_RDWR);
+		dup2(fd, 0);
+		dup2(fd, 1);
+		dup2(fd, 2);
+	}
 	chdir(cwd);
 	execvp(program, argv);
 	exit(EXIT_FAILURE);
