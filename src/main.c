@@ -341,10 +341,11 @@ static void stdin_cb(EV_P_ ev_io *w, int revents)
 		case L'D':
 			invoke_handler(data, "delete");
 			break;
+		case L'\03': // ^C
+			ev_break(EV_A_ EVBREAK_ONE);
+			break;
 		}
 	}
-	if(ret == OK && key == 3) // ^C
-		ev_break(EV_A_ EVBREAK_ONE);
 }
 
 int main(void)
