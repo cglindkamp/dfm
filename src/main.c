@@ -99,7 +99,7 @@ static void sigwinch_cb(EV_P_ ev_signal *w, int revents)
 	listview_resize(&data->view, COLS, LINES - 1);
 }
 
-static struct path *determine_usable_config_file(const char *project, const char *config, int flags)
+static struct path *determine_usable_config_file(const char *project, const char *subdir, const char *config, int flags)
 {
 	struct path *path = NULL;
 	list_t *list = xdg_get_config_dirs(true);
@@ -107,6 +107,8 @@ static struct path *determine_usable_config_file(const char *project, const char
 	for(size_t i = 0; i < list_length(list); i++) {
 		struct path *curpath = list_get_item(list, i);
 		path_add_component(curpath, project);
+		if(subdir)
+			path_add_component(curpath, subdir);
 		path_add_component(curpath, config);
 		if(path == NULL && access(path_tocstr(curpath), flags) == 0)
 			path = curpath;
@@ -197,7 +199,7 @@ static bool spawn(const char *cwd, const char *program, char * const argv[])
 
 static void invoke_handler(struct loopdata *data, const char *handler_name)
 {
-	struct path *handler_path = determine_usable_config_file(PROJECT, handler_name, X_OK);
+	struct path *handler_path = determine_usable_config_file(PROJECT, "handlers", handler_name, X_OK);
 	if(handler_path == NULL)
 		return;
 

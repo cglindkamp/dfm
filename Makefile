@@ -87,15 +87,16 @@ tests/tests: $(TESTEDOBJECTS) $(TESTOBJECTS)
 install:
 	install -m 755 -D $(PROJECT) $(BINDIR)/$(PROJECT)
 	for FILE in $(EXAMPLES); do \
-		install -m 755 -D examples/$$FILE $(SYSCONFDIR)/xdg/$(PROJECT)/$$FILE; \
+		install -m 755 -D examples/handlers/$$FILE $(SYSCONFDIR)/xdg/$(PROJECT)/handlers/$$FILE; \
 	done
 
 uninstall:
 	rm $(BINDIR)/$(PROJECT)
 	for FILE in $(EXAMPLES); do \
-		rm $(SYSCONFDIR)/xdg/$(PROJECT)/$$FILE; \
+		rm $(SYSCONFDIR)/xdg/$(PROJECT)/handlers/$$FILE; \
 	done
-	rmdir $(SYSCONFDIR)/xdg/$(PROJECT)/$$FILE;
+	rmdir $(SYSCONFDIR)/xdg/$(PROJECT)/handlers;
+	rmdir $(SYSCONFDIR)/xdg/$(PROJECT);
 
 clean:
 	rm -f $(PROJECT) $(OBJECTS) $(TESTOBJECTS) $(DEPS) $(GCNOS) $(GCDAS) *.gcov
