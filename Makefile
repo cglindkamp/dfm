@@ -33,6 +33,7 @@ EXAMPLES = \
 	delete \
 	copy \
 	move \
+	xterminal \
 
 OBJECTS = \
 	src/clipboard.o \

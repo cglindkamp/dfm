@@ -1,8 +1,6 @@
 #!/bin/sh
 
-if [ ! "x$FILES_FOREGROUND" = "xyes" ] && [ ! "x$DISPLAY" = "x" ] && [ "$RUNNING_IN_XTERM" != t ] ; then
-        RUNNING_IN_XTERM=t exec xterm -title `basename $0` -e "$0 $*"
-fi
+source `dirname $0`/xterminal "$@"
 
 if [ -e "$1"/marked ]; then
 	xargs -0 -a "$1"/marked rm -rvfI
