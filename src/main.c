@@ -333,6 +333,9 @@ static void stdin_cb(EV_P_ ev_io *w, int revents)
 		case L'P':
 			invoke_handler(data, "move");
 			break;
+		case L's':
+			invoke_handler(data, "shell");
+			break;
 		case L'y':
 			{
 				const list_t *list = dirmodel_getmarkedfilenames(&data->model);
