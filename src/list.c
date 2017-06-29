@@ -15,11 +15,12 @@ list_t *list_new(size_t initial_size)
 {
 	list_t *list;
 
-	list = calloc(1, sizeof(list_t));
+	list = malloc(sizeof(list_t));
 	list->allocated_items = initial_size;
 	if(list->allocated_items == 0)
 		list->allocated_items = 8;
-	list->items = calloc(list->allocated_items, sizeof(void *));
+	list->items = malloc(list->allocated_items * sizeof(void *));
+	list->length = 0;
 
 	return list;
 }
