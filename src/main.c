@@ -25,6 +25,7 @@
 void _nc_freeall();
 
 struct loopdata {
+	struct ev_loop *loop;
 	struct listview view;
 	struct listmodel model;
 	list_t *stored_positions;
@@ -258,6 +259,117 @@ err_dir:
 	path_free_heap_allocated(handler_path);
 }
 
+void navigate_up(struct loopdata *data, const char *unused)
+{
+	(void)unused;
+	listview_up(&data->view);
+}
+
+void navigate_down(struct loopdata *data, const char *unused)
+{
+	(void)unused;
+	listview_down(&data->view);
+}
+
+void navigate_pageup(struct loopdata *data, const char *unused)
+{
+	(void)unused;
+	listview_pageup(&data->view);
+}
+
+void navigate_pagedown(struct loopdata *data, const char *unused)
+{
+	(void)unused;
+	listview_pagedown(&data->view);
+}
+
+void navigate_left(struct loopdata *data, const char *unused)
+{
+	(void)unused;
+	const char *oldpathname = NULL;
+
+	save_current_position(data);
+
+	if(path_remove_component(&data->cwd, &oldpathname)) {
+		while(!dirmodel_change_directory(&data->model, path_tocstr(&data->cwd)))
+			path_remove_component(&data->cwd, &oldpathname);
+
+		select_stored_position(data, oldpathname);
+		display_current_path(data);
+	}
+}
+
+void navigate_right(struct loopdata *data, const char *unused)
+{
+	(void)unused;
+	const char *oldpathname = NULL;
+
+	if(listmodel_count(&data->model) == 0)
+		return;
+
+	save_current_position(data);
+
+	size_t index = listview_getindex(&data->view);
+	if(dirmodel_isdir(&data->model, index)) {
+		const char *filename = dirmodel_getfilename(&data->model, index);
+		path_add_component(&data->cwd, filename);
+		while(!dirmodel_change_directory(&data->model, path_tocstr(&data->cwd)))
+			path_remove_component(&data->cwd, &oldpathname);
+
+		select_stored_position(data, oldpathname);
+		display_current_path(data);
+	} else {
+		invoke_handler(data, "open");
+	}
+}
+
+void mark(struct loopdata *data, const char *unused)
+{
+	(void)unused;
+	size_t index = listview_getindex(&data->view);
+	listmodel_setmark(&data->model, index, !listmodel_ismarked(&data->model, index));
+	listview_down(&data->view);
+}
+
+void yank(struct loopdata *data, const char *unused)
+{
+	(void)unused;
+	const list_t *list = dirmodel_getmarkedfilenames(&data->model);
+	if(list)
+		clipboard_set_contents(&data->clipboard, strdup(path_tocstr(&data->cwd)), list);
+}
+
+void quit(struct loopdata *data, const char *unused)
+{
+	(void)unused;
+	ev_break(data->loop, EVBREAK_ONE);
+}
+
+struct keyspec {
+	int type;
+	wint_t key;
+};
+
+struct keymap {
+	struct keyspec keyspec;
+	void (*cmd)(struct loopdata *, const char *);
+	const char *param;
+} keymap[] = {
+	{ { KEY_CODE_YES, KEY_UP }, navigate_up, NULL },
+	{ { KEY_CODE_YES, KEY_DOWN }, navigate_down, NULL },
+	{ { KEY_CODE_YES, KEY_PPAGE }, navigate_pageup, NULL },
+	{ { KEY_CODE_YES, KEY_NPAGE }, navigate_pagedown, NULL },
+	{ { KEY_CODE_YES, KEY_LEFT }, navigate_left, NULL },
+	{ { KEY_CODE_YES, KEY_RIGHT }, navigate_right, NULL },
+	{ { OK, L' ' }, mark, NULL },
+	{ { OK, L'D' }, invoke_handler, "delete" },
+	{ { OK, L'p' }, invoke_handler, "copy" },
+	{ { OK, L'P' }, invoke_handler, "move" },
+	{ { OK, L's' }, invoke_handler, "shell" },
+	{ { OK, L'y' }, yank, NULL },
+	{ { OK, L'q' }, quit, NULL },
+};
+
 static void stdin_cb(EV_P_ ev_io *w, int revents)
 {
 	(void)w;
@@ -266,88 +378,14 @@ static void stdin_cb(EV_P_ ev_io *w, int revents)
 	struct loopdata *data = ev_userdata(EV_A);
 	wint_t key;
 	int ret;
-	const char *oldpathname = NULL;
 
 	ret = wget_wch(data->status, &key);
 	if(ret == ERR)
 		return;
 
-	if(ret == KEY_CODE_YES) {
-		switch(key) {
-		case KEY_UP:
-			listview_up(&data->view);
-			break;
-		case KEY_DOWN:
-			listview_down(&data->view);
-			break;
-		case KEY_PPAGE:
-			listview_pageup(&data->view);
-			break;
-		case KEY_NPAGE:
-			listview_pagedown(&data->view);
-			break;
-		case KEY_LEFT:
-			save_current_position(data);
-
-			if(path_remove_component(&data->cwd, &oldpathname)) {
-				while(!dirmodel_change_directory(&data->model, path_tocstr(&data->cwd)))
-					path_remove_component(&data->cwd, &oldpathname);
-
-				select_stored_position(data, oldpathname);
-				display_current_path(data);
-			}
-
-			break;
-		case KEY_RIGHT:
-			if(listmodel_count(&data->model) == 0)
-				break;
-
-			save_current_position(data);
-
-			size_t index = listview_getindex(&data->view);
-			if(dirmodel_isdir(&data->model, index)) {
-				const char *filename = dirmodel_getfilename(&data->model, index);
-				path_add_component(&data->cwd, filename);
-				while(!dirmodel_change_directory(&data->model, path_tocstr(&data->cwd)))
-					path_remove_component(&data->cwd, &oldpathname);
-
-				select_stored_position(data, oldpathname);
-				display_current_path(data);
-			} else {
-				invoke_handler(data, "open");
-			}
-			break;
-		}
-	} else {
-		switch(key) {
-		case L' ':
-			{
-				size_t index = listview_getindex(&data->view);
-				listmodel_setmark(&data->model, index, !listmodel_ismarked(&data->model, index));
-				listview_down(&data->view);
-				break;
-			}
-		case L'p':
-			invoke_handler(data, "copy");
-			break;
-		case L'P':
-			invoke_handler(data, "move");
-			break;
-		case L's':
-			invoke_handler(data, "shell");
-			break;
-		case L'y':
-			{
-				const list_t *list = dirmodel_getmarkedfilenames(&data->model);
-				if(list)
-					clipboard_set_contents(&data->clipboard, strdup(path_tocstr(&data->cwd)), list);
-			}
-			break;
-		case L'D':
-			invoke_handler(data, "delete");
-			break;
-		case L'\03': // ^C
-			ev_break(EV_A_ EVBREAK_ONE);
+	for(size_t i = 0; i < sizeof(keymap)/sizeof(keymap[0]); i++) {
+		if(keymap[i].keyspec.type == ret && keymap[i].keyspec.key == key) {
+			keymap[i].cmd(data, keymap[i].param);
 			break;
 		}
 	}
@@ -356,7 +394,7 @@ static void stdin_cb(EV_P_ ev_io *w, int revents)
 int main(void)
 {
 	struct loopdata data;
-	struct ev_loop *loop = EV_DEFAULT;
+	data.loop = EV_DEFAULT;
 	ev_io stdin_watcher;
 	ev_signal sigwinch_watcher;
 
@@ -389,15 +427,15 @@ int main(void)
 	listview_init(&data.view, &data.model, 0, 0, COLS, LINES - 1);
 	clipboard_init(&data.clipboard);
 
-	ev_set_userdata(loop, &data);
+	ev_set_userdata(data.loop, &data);
 
 	ev_io_init(&stdin_watcher, stdin_cb, 0, EV_READ);
-	ev_io_start(loop, &stdin_watcher);
+	ev_io_start(data.loop, &stdin_watcher);
 
 	ev_signal_init(&sigwinch_watcher, sigwinch_cb, SIGWINCH);
-	ev_signal_start(loop, &sigwinch_watcher);
+	ev_signal_start(data.loop, &sigwinch_watcher);
 
-	ev_run(loop, 0);
+	ev_run(data.loop, 0);
 
 	clipboard_free(&data.clipboard);
 	listview_free(&data.view);
