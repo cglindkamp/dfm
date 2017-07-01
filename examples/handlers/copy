@@ -12,6 +12,6 @@ if [ `cat "$1"/clipboard_path` = `cat "$1"/cwd` ]; then
 	exit 0;
 fi
 
-xargs -0 -a "$1"/clipboard_list -I '{}' cp -avi `cat "$1"/clipboard_path`/{} .
+xargs -0 -a "$1"/clipboard_list -I '{}' cp -avi "`cat \"$1\"/clipboard_path`/{}" .
 
 rm -rf "$1"
