@@ -12,8 +12,8 @@ list_t *list_new(size_t initial_size);
 void list_free(const list_t *list, list_item_deallocator deallocator);
 
 size_t list_length(const list_t *list);
-void list_append(list_t *list, void *item);
-void list_insert(list_t *list, size_t index, void *item);
+bool list_append(list_t *list, void *item);
+bool list_insert(list_t *list, size_t index, void *item);
 void list_remove(list_t *list, size_t index);
 void *list_get_item(const list_t *list, size_t index);
 void list_set_item(list_t *list, size_t index, void *item);

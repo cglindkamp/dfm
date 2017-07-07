@@ -16,11 +16,19 @@ list_t *list_new(size_t initial_size)
 	list_t *list;
 
 	list = malloc(sizeof(list_t));
+	if(list == NULL)
+		return NULL;
+
+	list->length = 0;
 	list->allocated_items = initial_size;
 	if(list->allocated_items == 0)
 		list->allocated_items = 8;
+
 	list->items = malloc(list->allocated_items * sizeof(void *));
-	list->length = 0;
+	if(list->items == NULL) {
+		free(list);
+		return NULL;
+	}
 
 	return list;
 }
@@ -41,31 +49,43 @@ size_t list_length(const list_t *list)
 	return list->length;
 }
 
-static void list_make_room(list_t *list)
+static bool list_make_room(list_t *list)
 {
+	void *newitems = realloc(list->items, 2 * list->allocated_items * sizeof(void *));
+	if(newitems == NULL)
+		return false;
+
 	list->allocated_items *= 2;
-	list->items = realloc(list->items, list->allocated_items * sizeof(void *));
+	list->items = newitems;
+
+	return true;
 }
 
-void list_append(list_t *list, void *item)
+bool list_append(list_t *list, void *item)
 {
 	if(list->length == list->allocated_items)
-		list_make_room(list);
+		if(!list_make_room(list))
+			return false;
 
 	list->items[list->length] = item;
 	list->length++;
+
+	return true;
 }
 
-void list_insert(list_t *list, size_t index, void *item)
+bool list_insert(list_t *list, size_t index, void *item)
 {
 	assert(index <= list->length);
 
 	if(list->length == list->allocated_items)
-		list_make_room(list);
+		if(!list_make_room(list))
+			return false;
 
 	memmove(&list->items[index + 1], &list->items[index], (list->length - index) * sizeof(list->items[0]));
 	list->items[index] = item;
 	list->length++;
+
+	return true;
 }
 
 void list_remove(list_t *list, size_t index)
