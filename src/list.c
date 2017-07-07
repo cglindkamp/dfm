@@ -22,7 +22,7 @@ list_t *list_new(size_t initial_size)
 	list->length = 0;
 	list->allocated_items = initial_size;
 	if(list->allocated_items == 0)
-		list->allocated_items = 8;
+		list->allocated_items = 1;
 
 	list->items = malloc(list->allocated_items * sizeof(void *));
 	if(list->items == NULL) {

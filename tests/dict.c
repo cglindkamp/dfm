@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 #include "../src/dict.h"
+#include "tests.h"
 
 list_t *dict;
 
@@ -14,34 +15,35 @@ static void setup(void)
 static void static_teardown(void)
 {
 	dict_free(dict, false);
-	dict = NULL;
 }
 
 static void dynamic_teardown(void)
 {
 	dict_free(dict, true);
-	dict = NULL;
 }
 
 START_TEST(test_dict_new)
 {
+	assert_oom(dict != NULL);
+
 	ck_assert_int_eq(list_length(dict), 0);
 }
 END_TEST
 
 START_TEST(test_dict_set_and_get_static_items)
 {
-	dict_set(dict, "foo", "bar");
-	dict_set(dict, "bar", "baz");
-	dict_set(dict, "baz", "foo");
+	assert_oom(dict != NULL);
+
+	assert_oom(dict_set(dict, "foo", "bar") == true);
+	assert_oom(dict_set(dict, "bar", "baz") == true);
+	assert_oom(dict_set(dict, "baz", "foo") == true);
 
 	ck_assert_int_eq(list_length(dict), 3);
-
 	ck_assert_int_eq(strcmp(dict_get(dict, "foo"), "bar"), 0);
 	ck_assert_int_eq(strcmp(dict_get(dict, "bar"), "baz"), 0);
 	ck_assert_int_eq(strcmp(dict_get(dict, "baz"), "foo"), 0);
 
-	dict_set(dict, "foo", "baz");
+	assert_oom(dict_set(dict, "foo", "baz") == true);
 	ck_assert_int_eq(strcmp(dict_get(dict, "foo"), "baz"), 0);
 
 	ck_assert_ptr_eq(dict_get(dict, "foobar"), NULL);
@@ -51,9 +53,18 @@ END_TEST
 
 START_TEST(test_dict_set_and_get_dynamic_items)
 {
-	dict_set(dict, "foo", strdup("bar"));
-	dict_set(dict, "bar", strdup("baz"));
-	dict_set(dict, "baz", strdup("foo"));
+	assert_oom(dict != NULL);
+
+	char *foo = strdup("foo");
+	char *bar = strdup("bar");
+	char *baz = strdup("baz");
+	assert_oom(foo != NULL);
+	assert_oom(bar != NULL);
+	assert_oom(baz != NULL);
+
+	assert_oom(dict_set(dict, "foo", bar) == true);
+	assert_oom(dict_set(dict, "bar", baz) == true);
+	assert_oom(dict_set(dict, "baz", foo) == true);
 
 	ck_assert_int_eq(list_length(dict), 3);
 
@@ -62,7 +73,7 @@ START_TEST(test_dict_set_and_get_dynamic_items)
 	ck_assert_int_eq(strcmp(dict_get(dict, "baz"), "foo"), 0);
 
 	free(dict_get(dict, "foo"));
-	dict_set(dict, "foo", strdup("baz"));
+	assert_oom(dict_set(dict, "foo", baz) == true);
 	ck_assert_int_eq(strcmp(dict_get(dict, "foo"), "baz"), 0);
 
 	ck_assert_ptr_eq(dict_get(dict, "foobar"), NULL);

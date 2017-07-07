@@ -19,6 +19,9 @@ void dict_free(list_t *list, bool free_value)
 	struct dict_item *item;
 	size_t i;
 
+	if(list == NULL)
+		return;
+
 	for(i = 0; i < list_length(list); i++) {
 		item = list_get_item(list, i);
 		if(free_value)
@@ -37,9 +40,12 @@ static int compare_key(const void *a, const void *b)
 	return strcmp(item1->key, item2->key);
 }
 
-void dict_set(list_t *list, const char *key, void *value)
+bool dict_set(list_t *list, const char *key, void *value)
 {
 	struct dict_item *item = malloc(sizeof(*item));
+	if(item == NULL)
+		return false;
+
 	size_t index;
 	bool found;
 
@@ -50,10 +56,20 @@ void dict_set(list_t *list, const char *key, void *value)
 		free(item);
 		item = list_get_item(list, index);
 	} else {
-		list_insert(list, index, item);
 		item->key = strdup(key);
+		if(item->key == NULL) {
+			free(item);
+			return false;
+		}
+		if(!list_insert(list, index, item)) {
+			free((void*)item->key);
+			free(item);
+			return false;
+		}
 	}
 	item->value = value;
+
+	return true;
 }
 
 void *dict_get(list_t *list, const char *key)
