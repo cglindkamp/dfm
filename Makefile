@@ -65,6 +65,7 @@ TESTOBJECTS = \
 	tests/xdg.o \
 	tests/tests.o \
 	tests/wrapper/getcwd.o \
+	tests/wrapper/alloc.o \
 
 DEPS = $(patsubst %.o,%.d,$(OBJECTS) $(TESTOBJECTS))
 GCDAS = $(patsubst %.o,%.gcda,$(OBJECTS) $(TESTOBJECTS))
@@ -80,10 +81,17 @@ ifeq ($(COVERAGE),1)
 	gcov -n $(TESTEDOBJECTS)
 endif
 
+testoom: tests/tests
+	rm -f $(patsubst %.o,%.gcda,$(TESTEDOBJECTS))
+	tests/tests oom
+ifeq ($(COVERAGE),1)
+	gcov -n $(TESTEDOBJECTS)
+endif
+
 $(TESTOBJECTS): %.o: %.c
 	$(COMPILE.c) $(CHECK_CFLAGS) -c -o $@ $<
 tests/tests: $(TESTEDOBJECTS) $(TESTOBJECTS)
-	$(LINK.c) -o $@ $^ $(CHECK_LIBS) $(NCURSES_LIBS) $(LIBEV_LIBS) -Wl,--wrap=getcwd
+	$(LINK.c) -o $@ $^ $(CHECK_LIBS) $(NCURSES_LIBS) $(LIBEV_LIBS) -Wl,--wrap=getcwd -Wl,--wrap=malloc -Wl,--wrap=realloc -Wl,--wrap=strdup
 
 install:
 	install -m 755 -D $(PROJECT) $(BINDIR)/$(PROJECT)
