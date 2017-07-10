@@ -169,14 +169,24 @@ static void change_cb(size_t index, enum model_change change, void *data)
 	}
 }
 
-void listview_init(struct listview *view, struct listmodel *model, unsigned int x, unsigned int y, unsigned int width, unsigned int height)
+bool listview_init(struct listview *view, struct listmodel *model, unsigned int x, unsigned int y, unsigned int width, unsigned int height)
 {
 	view->window = newwin(height, width, y, x);
+	if(view->window == NULL)
+		return false;
+
 	view->index = 0;
 	view->first = 0;
 	view->model = model;
-	listmodel_register_change_callback(view->model, change_cb, view);
+
+	if(!listmodel_register_change_callback(view->model, change_cb, view)) {
+		delwin(view->window);
+		return false;
+	}
+
 	print_list(view);
+
+	return true;
 }
 
 void listview_free(struct listview *view)
