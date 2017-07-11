@@ -3,12 +3,13 @@
 
 #include "wrapper/getcwd.h"
 #include "../src/path.h"
+#include "tests.h"
 
 struct path path;
 
 START_TEST(test_path_initialize)
 {
-	path_init(&path, 0);
+	assert_oom(path_init(&path, 0) == true);
 	ck_assert_str_eq(path_tocstr(&path), "/");
 	path_free(&path);
 }
@@ -16,8 +17,8 @@ END_TEST
 
 START_TEST(test_path_addcomponent)
 {
-	path_init(&path, 0);
-	path_add_component(&path, "foo");
+	assert_oom(path_init(&path, 0) == true);
+	assert_oom(path_add_component(&path, "foo") == true);
 	ck_assert_str_eq(path_tocstr(&path), "/foo");
 	path_free(&path);
 }
@@ -25,9 +26,9 @@ END_TEST
 
 START_TEST(test_path_addtwocomponents)
 {
-	path_init(&path, 0);
-	path_add_component(&path, "foo");
-	path_add_component(&path, "bar");
+	assert_oom(path_init(&path, 0) == true);
+	assert_oom(path_add_component(&path, "foo") == true);
+	assert_oom(path_add_component(&path, "bar") == true);
 	ck_assert_str_eq(path_tocstr(&path), "/foo/bar");
 	path_free(&path);
 }
@@ -35,9 +36,9 @@ END_TEST
 
 START_TEST(test_path_removecomponent)
 {
-	path_init(&path, 0);
-	path_add_component(&path, "foo");
-	path_add_component(&path, "bar");
+	assert_oom(path_init(&path, 0) == true);
+	assert_oom(path_add_component(&path, "foo") == true);
+	assert_oom(path_add_component(&path, "bar") == true);
 	ck_assert(path_remove_component(&path, NULL) == true);
 	ck_assert_str_eq(path_tocstr(&path), "/foo");
 	path_free(&path);
@@ -46,8 +47,8 @@ END_TEST
 
 START_TEST(test_path_removelastcomponent)
 {
-	path_init(&path, 0);
-	path_add_component(&path, "foo");
+	assert_oom(path_init(&path, 0) == true);
+	assert_oom(path_add_component(&path, "foo") == true);
 	ck_assert(path_remove_component(&path, NULL) == true);
 	ck_assert_str_eq(path_tocstr(&path), "/");
 	path_free(&path);
@@ -56,7 +57,7 @@ END_TEST
 
 START_TEST(test_path_removecomponentonroot)
 {
-	path_init(&path, 0);
+	assert_oom(path_init(&path, 0) == true);
 	ck_assert(path_remove_component(&path, NULL) == false);
 	ck_assert_str_eq(path_tocstr(&path), "/");
 	path_free(&path);
@@ -66,9 +67,9 @@ END_TEST
 START_TEST(test_path_removecomponent_returnremovedcomponent)
 {
 	const char *component;
-	path_init(&path, 0);
-	path_add_component(&path, "foo");
-	path_add_component(&path, "bar");
+	assert_oom(path_init(&path, 0) == true);
+	assert_oom(path_add_component(&path, "foo") == true);
+	assert_oom(path_add_component(&path, "bar") == true);
 	ck_assert(path_remove_component(&path, &component) == true);
 	ck_assert_str_eq(component, "bar");
 	path_free(&path);
@@ -78,8 +79,8 @@ END_TEST
 START_TEST(test_path_removelastcomponent_returnremovedcomponent)
 {
 	const char *component;
-	path_init(&path, 0);
-	path_add_component(&path, "foo");
+	assert_oom(path_init(&path, 0) == true);
+	assert_oom(path_add_component(&path, "foo") == true);
 	ck_assert(path_remove_component(&path, &component) == true);
 	ck_assert_str_eq(component, "foo");
 	path_free(&path);
@@ -88,9 +89,9 @@ END_TEST
 
 START_TEST(test_path_settocurrentworkingdirectory)
 {
-	path_init(&path, 0);
+	assert_oom(path_init(&path, 0) == true);
 	getcwd_setbehaviour("/foo/bar", false);
-	ck_assert(path_set_to_current_working_directory(&path) == true);
+	assert_oom(path_set_to_current_working_directory(&path) == true);
 	ck_assert_str_eq(path_tocstr(&path), "/foo/bar");
 	path_free(&path);
 }
@@ -98,7 +99,7 @@ END_TEST
 
 START_TEST(test_path_settocurrentworkingdirectory_getcwdfailed)
 {
-	path_init(&path, 0);
+	assert_oom(path_init(&path, 0) == true);
 	getcwd_setbehaviour(NULL, true);
 	ck_assert(path_set_to_current_working_directory(&path) == false);
 	ck_assert_str_eq(path_tocstr(&path), "/");
@@ -108,7 +109,7 @@ END_TEST
 
 START_TEST(test_path_setfromstring)
 {
-	path_init(&path, 0);
+	assert_oom(path_init(&path, 0) == true);
 	ck_assert(path_set_from_string(&path, "/foo/bar") == true);
 	ck_assert_str_eq(path_tocstr(&path), "/foo/bar");
 	path_free(&path);
@@ -117,7 +118,7 @@ END_TEST
 
 START_TEST(test_path_setfromstring_reduceslashes)
 {
-	path_init(&path, 0);
+	assert_oom(path_init(&path, 0) == true);
 	ck_assert(path_set_from_string(&path, "//foo////bar/") == true);
 	ck_assert_str_eq(path_tocstr(&path), "/foo/bar");
 	path_free(&path);
@@ -126,7 +127,7 @@ END_TEST
 
 START_TEST(test_path_setfromstring_illegalpath)
 {
-	path_init(&path, 0);
+	assert_oom(path_init(&path, 0) == true);
 	ck_assert(path_set_from_string(&path, "foo/bar") == false);
 	ck_assert_str_eq(path_tocstr(&path), "/");
 	path_free(&path);
