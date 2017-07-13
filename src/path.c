@@ -12,7 +12,7 @@ static bool path_make_room(struct path *path, size_t size)
 	size_t target_size = size ? size : path->allocated_size * 2;
 
 	if(target_size > path->allocated_size) {
-		char *newpath = realloc(path->path, path->allocated_size);
+		char *newpath = realloc(path->path, target_size);
 		if(newpath == NULL)
 			return false;
 
@@ -74,7 +74,8 @@ bool path_set_from_string(struct path *path, const char *cstr)
 	if(cstr[0] != '/')
 		return false;
 
-	path_make_room(path, strlen(cstr) + 1);
+	if(!path_make_room(path, strlen(cstr) + 1))
+		return false;
 	strcpy(path->path, cstr);
 
 	/* reduce multiple consecutive slashes to a single one */

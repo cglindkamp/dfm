@@ -110,7 +110,7 @@ END_TEST
 START_TEST(test_path_setfromstring)
 {
 	assert_oom(path_init(&path, 0) == true);
-	ck_assert(path_set_from_string(&path, "/foo/bar") == true);
+	assert_oom(path_set_from_string(&path, "/foo/bar") == true);
 	ck_assert_str_eq(path_tocstr(&path), "/foo/bar");
 	path_free(&path);
 }
@@ -119,7 +119,7 @@ END_TEST
 START_TEST(test_path_setfromstring_reduceslashes)
 {
 	assert_oom(path_init(&path, 0) == true);
-	ck_assert(path_set_from_string(&path, "//foo////bar/") == true);
+	assert_oom(path_set_from_string(&path, "//foo////bar/") == true);
 	ck_assert_str_eq(path_tocstr(&path), "/foo/bar");
 	path_free(&path);
 }
@@ -128,7 +128,7 @@ END_TEST
 START_TEST(test_path_setfromstring_illegalpath)
 {
 	assert_oom(path_init(&path, 0) == true);
-	ck_assert(path_set_from_string(&path, "foo/bar") == false);
+	assert_oom(path_set_from_string(&path, "foo/bar") == false);
 	ck_assert_str_eq(path_tocstr(&path), "/");
 	path_free(&path);
 }
