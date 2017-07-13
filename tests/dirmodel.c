@@ -13,15 +13,18 @@
 #include <ev.h>
 
 #include "../src/dirmodel.h"
+#include "tests.h"
+
+#define PATH_TEMPLATE "/tmp/dirmodel.XXXXXX"
 
 struct listmodel model;
+char path[] = PATH_TEMPLATE;
+static int dir_fd;
 
-static char *create_temp_directory()
+static void create_temp_directory()
 {
-	char path_template[] = "/tmp/dirmodel.XXXXXX";
-	char *path = mkdtemp(path_template);
-
-	return strdup(path);
+	strcpy(path, PATH_TEMPLATE);
+	ck_assert_ptr_nonnull(mkdtemp(path));
 }
 
 static int remove_file(const char *path, const struct stat *sbuf, int type, struct FTW *ftwb)
@@ -37,7 +40,6 @@ static int remove_file(const char *path, const struct stat *sbuf, int type, stru
 static void remove_temp_directory(char *path)
 {
 	nftw(path, remove_file, 10, FTW_DEPTH|FTW_MOUNT|FTW_PHYS);
-	free(path);
 }
 
 static void create_file(int dir_fd, const char *filename, off_t size)
@@ -50,12 +52,9 @@ static void create_file(int dir_fd, const char *filename, off_t size)
 	close(fd);
 }
 
-static char *path;
-static int dir_fd;
-
 static void setup(void)
 {
-	path = create_temp_directory();
+	create_temp_directory();
 	dir_fd = open(path, O_RDONLY);
 	dirmodel_init(&model);
 }
@@ -68,7 +67,7 @@ static void teardown(void)
 
 START_TEST(test_dirmodel_emptydirectory)
 {
-	ck_assert(dirmodel_change_directory(&model, path) == true);
+	assert_oom(dirmodel_change_directory(&model, path) == true);
 	ck_assert_uint_eq(listmodel_count(&model), 0);
 }
 END_TEST
@@ -86,7 +85,7 @@ START_TEST(test_dirmodel_populateddirectory_singledirectory)
 	mkdirat(dir_fd, "foo", 0x700);
 
 	wchar_t buf[21];
-	ck_assert(dirmodel_change_directory(&model, path) == true);
+	assert_oom(dirmodel_change_directory(&model, path) == true);
 	ck_assert_uint_eq(listmodel_count(&model), 1);
 	ck_assert_str_eq(dirmodel_getfilename(&model, 0), "foo");
 	ck_assert_uint_eq(listmodel_render(&model, buf, 20, 20, 0), 20);
@@ -110,7 +109,7 @@ START_TEST(test_dirmodel_populateddirectory_singlefile)
 	create_file(dir_fd, singlefiletesttable[_i].filename, singlefiletesttable[_i].size);
 
 	wchar_t buf[21];
-	ck_assert(dirmodel_change_directory(&model, path) == true);
+	assert_oom(dirmodel_change_directory(&model, path) == true);
 	ck_assert_uint_eq(listmodel_count(&model), 1);
 	ck_assert_str_eq(dirmodel_getfilename(&model, 0), singlefiletesttable[_i].filename);
 	ck_assert_uint_eq(listmodel_render(&model, buf, 20, 20, 0), 20);
@@ -123,7 +122,7 @@ START_TEST(test_dirmodel_populateddirectory_singlelinktodirectory)
 	symlinkat(".", dir_fd, "foo");
 
 	wchar_t buf[21];
-	ck_assert(dirmodel_change_directory(&model, path) == true);
+	assert_oom(dirmodel_change_directory(&model, path) == true);
 	ck_assert_uint_eq(listmodel_count(&model), 1);
 	ck_assert_str_eq(dirmodel_getfilename(&model, 0), "foo");
 	ck_assert_uint_eq(listmodel_render(&model, buf, 20, 20, 0), 20);
@@ -137,7 +136,7 @@ START_TEST(test_dirmodel_populateddirectory_linktofile)
 	symlinkat("foofile", dir_fd, "foo");
 
 	wchar_t buf[21];
-	ck_assert(dirmodel_change_directory(&model, path) == true);
+	assert_oom(dirmodel_change_directory(&model, path) == true);
 	ck_assert_uint_eq(listmodel_count(&model), 2);
 	ck_assert_str_eq(dirmodel_getfilename(&model, 0), "foo");
 	ck_assert_uint_eq(listmodel_render(&model, buf, 20, 20, 0), 20);
@@ -150,7 +149,7 @@ START_TEST(test_dirmodel_populateddirectory_brokenlink)
 	symlinkat("foofile", dir_fd, "foo");
 
 	wchar_t buf[21];
-	ck_assert(dirmodel_change_directory(&model, path) == true);
+	assert_oom(dirmodel_change_directory(&model, path) == true);
 	ck_assert_uint_eq(listmodel_count(&model), 1);
 	ck_assert_str_eq(dirmodel_getfilename(&model, 0), "foo");
 	ck_assert_uint_eq(listmodel_render(&model, buf, 20, 20, 0), 20);
@@ -168,7 +167,7 @@ START_TEST(test_dirmodel_populateddirectory_order)
 	symlinkat("foof", dir_fd, "fool");
 	symlinkat("baz", dir_fd, "bazlbroken");
 
-	ck_assert(dirmodel_change_directory(&model, path) == true);
+	assert_oom(dirmodel_change_directory(&model, path) == true);
 	ck_assert_uint_eq(listmodel_count(&model), 7);
 	ck_assert_str_eq(dirmodel_getfilename(&model, 0), "bard");
 	ck_assert_str_eq(dirmodel_getfilename(&model, 1), "barl");
@@ -203,7 +202,7 @@ START_TEST(test_dirmodel_render_specialcases)
 	mkdirat(dir_fd, renderspecialcasestesttable[_i].name, 0x700);
 
 	wchar_t buf[renderspecialcasestesttable[_i].length + 1];
-	ck_assert(dirmodel_change_directory(&model, path) == true);
+	assert_oom(dirmodel_change_directory(&model, path) == true);
 	ck_assert_uint_eq(listmodel_render(&model, buf, renderspecialcasestesttable[_i].length, renderspecialcasestesttable[_i].width, 0), renderspecialcasestesttable[_i].neededlength);
 	if(renderspecialcasestesttable[_i].rendered)
 		ck_assert_int_eq(wcscmp(buf, renderspecialcasestesttable[_i].rendered), 0);
@@ -227,9 +226,9 @@ START_TEST(test_dirmodel_reloadevent)
 	cb_count = 0;
 	cb_change = MODEL_CHANGE;
 
-	listmodel_register_change_callback(&model, change_callback, NULL);
+	assert_oom(listmodel_register_change_callback(&model, change_callback, NULL) == true);
 
-	ck_assert(dirmodel_change_directory(&model, path) == true);
+	assert_oom(dirmodel_change_directory(&model, path) == true);
 
 	ck_assert_uint_eq(cb_count, 1);
 	ck_assert_uint_eq(cb_change, MODEL_RELOAD);
@@ -245,14 +244,14 @@ START_TEST(test_dirmodel_addedfileevent)
 	create_file(dir_fd, "1", 0);
 	create_file(dir_fd, "3", 0);
 	create_file(dir_fd, "4", 0);
-	listmodel_register_change_callback(&model, change_callback, NULL);
+	assert_oom(listmodel_register_change_callback(&model, change_callback, NULL) == true);
 
-	ck_assert(dirmodel_change_directory(&model, path) == true);
+	assert_oom(dirmodel_change_directory(&model, path) == true);
 	struct ev_loop *loop = EV_DEFAULT;
 	create_file(dir_fd, "2", 0);
 	ev_run(loop, EVRUN_NOWAIT);
 
-	ck_assert_uint_eq(cb_count, 2);
+	assert_oom(cb_count == 2);
 	ck_assert_uint_eq(cb_index, 2);
 	ck_assert_uint_eq(cb_change, MODEL_ADD);
 }
@@ -268,9 +267,9 @@ START_TEST(test_dirmodel_removedfileevent)
 	create_file(dir_fd, "2", 0);
 	create_file(dir_fd, "3", 0);
 	create_file(dir_fd, "4", 0);
-	listmodel_register_change_callback(&model, change_callback, NULL);
+	assert_oom(listmodel_register_change_callback(&model, change_callback, NULL) == true);
 
-	ck_assert(dirmodel_change_directory(&model, path) == true);
+	assert_oom(dirmodel_change_directory(&model, path) == true);
 	struct ev_loop *loop = EV_DEFAULT;
 	unlinkat(dir_fd, "3", 0);
 	ev_run(loop, EVRUN_NOWAIT);
@@ -291,14 +290,14 @@ START_TEST(test_dirmodel_changedfileevent)
 	create_file(dir_fd, "2", 0);
 	create_file(dir_fd, "3", 0);
 	create_file(dir_fd, "4", 0);
-	listmodel_register_change_callback(&model, change_callback, NULL);
+	assert_oom(listmodel_register_change_callback(&model, change_callback, NULL) == true);
 
-	ck_assert(dirmodel_change_directory(&model, path) == true);
+	assert_oom(dirmodel_change_directory(&model, path) == true);
 	struct ev_loop *loop = EV_DEFAULT;
 	create_file(dir_fd, "1", 1);
 	ev_run(loop, EVRUN_NOWAIT);
 
-	ck_assert_uint_eq(cb_count, 2);
+	assert_oom(cb_count == 2);
 	ck_assert_uint_eq(cb_index, 1);
 	ck_assert_uint_eq(cb_change, MODEL_CHANGE);
 }
@@ -309,9 +308,9 @@ START_TEST(test_dirmodel_addedfileremovedbeforeeventhandled)
 	cb_count = 0;
 	cb_change = MODEL_CHANGE;
 
-	listmodel_register_change_callback(&model, change_callback, NULL);
+	assert_oom(listmodel_register_change_callback(&model, change_callback, NULL) == true);
 
-	ck_assert(dirmodel_change_directory(&model, path) == true);
+	assert_oom(dirmodel_change_directory(&model, path) == true);
 	struct ev_loop *loop = EV_DEFAULT;
 	create_file(dir_fd, "foo", 0);
 	unlinkat(dir_fd, "foo", 0);
@@ -334,7 +333,7 @@ static void setup_markfiles(void)
 
 START_TEST(test_dirmodel_markfiles)
 {
-	ck_assert(dirmodel_change_directory(&model, path) == true);
+	assert_oom(dirmodel_change_directory(&model, path) == true);
 
 	listmodel_setmark(&model, 1, true);
 	listmodel_setmark(&model, 3, true);
@@ -353,8 +352,8 @@ START_TEST(test_dirmodel_markfiles_changeevent)
 	cb_index = 0;
 	cb_change = MODEL_RELOAD;
 
-	ck_assert(dirmodel_change_directory(&model, path) == true);
-	listmodel_register_change_callback(&model, change_callback, NULL);
+	assert_oom(dirmodel_change_directory(&model, path) == true);
+	assert_oom(listmodel_register_change_callback(&model, change_callback, NULL) == true);
 
 	listmodel_setmark(&model, 1, true);
 
@@ -366,13 +365,14 @@ END_TEST
 
 START_TEST(test_dirmodel_markfiles_getfilenames)
 {
-	ck_assert(dirmodel_change_directory(&model, path) == true);
+	assert_oom(dirmodel_change_directory(&model, path) == true);
 
 	listmodel_setmark(&model, 1, true);
 	listmodel_setmark(&model, 3, true);
 	listmodel_setmark(&model, 4, true);
 
 	list_t *list = dirmodel_getmarkedfilenames(&model);
+	assert_oom(list != NULL);
 	ck_assert_uint_eq(list_length(list), 3);
 	ck_assert_str_eq(list_get_item(list, 0), "1");
 	ck_assert_str_eq(list_get_item(list, 1), "3");
@@ -384,7 +384,7 @@ END_TEST
 
 START_TEST(test_dirmodel_markfiles_getfilenames_nomarkedfiles)
 {
-	ck_assert(dirmodel_change_directory(&model, path) == true);
+	assert_oom(dirmodel_change_directory(&model, path) == true);
 
 	list_t *list = dirmodel_getmarkedfilenames(&model);
 	ck_assert_ptr_null(list);

@@ -44,6 +44,8 @@ struct filedata {
 
 static void free_filedata(struct filedata *filedata)
 {
+	if(filedata == NULL)
+		return;
 	free((void *)filedata->filename);
 	free(filedata);
 }
@@ -192,11 +194,24 @@ list_t *dirmodel_getmarkedfilenames(struct listmodel *model)
 	list_t *list = data->list;
 	list_t *markedlist = list_new(0);
 
+	if(markedlist == NULL)
+		return NULL;
+
 	for(size_t i = 0; i < list_length(list); i++)
 	{
 		struct filedata *filedata = list_get_item(list, i);
-		if(filedata->is_marked)
-			list_append(markedlist, strdup(filedata->filename));
+		if(filedata->is_marked) {
+			char *filename = strdup(filedata->filename);
+			if(filename == NULL) {
+				list_free(markedlist, free);
+				return NULL;
+			}
+			if(!list_append(markedlist, filename)) {
+				free(filename);
+				list_free(markedlist, free);
+				return NULL;
+			}
+		}
 	}
 	if(list_length(markedlist) == 0) {
 		list_free(markedlist, NULL);
@@ -291,7 +306,14 @@ static void inotify_cb(EV_P_ ev_io *w, int revents)
 			}
 		} else if(event->mask & (IN_CREATE | IN_MOVED_TO | IN_MODIFY)) {
 			filedata = malloc(sizeof(*filedata));
+			if(filedata == NULL)
+				continue;
+
 			filedata->filename = strdup(event->name);
+			if(filedata->filename == NULL) {
+				free(filedata);
+				continue;
+			}
 
 			if(!read_file_data(dirfd(data->dir), filedata)) {
 				free_filedata(filedata);
@@ -304,7 +326,10 @@ static void inotify_cb(EV_P_ ev_io *w, int revents)
 				free_filedata(filedataold);
 				listmodel_notify_change(model, index, MODEL_CHANGE);
 			} else {
-				list_insert(list, index, filedata);
+				if(!list_insert(list, index, filedata)) {
+					free_filedata(filedata);
+					continue;
+				}
 				listmodel_notify_change(model, index, MODEL_ADD);
 			}
 		}
@@ -364,6 +389,9 @@ static bool internal_init(struct listmodel *model, const char *path)
 	ev_io_start(loop, &data->inotify_watcher);
 
 	list_t *list = list_new(0);
+	if(list == NULL)
+		goto err_newlist;
+
 	data->list = list;
 	struct dirent *entry = readdir(dir);
 
@@ -371,12 +399,19 @@ static bool internal_init(struct listmodel *model, const char *path)
 		if(strcmp(entry->d_name, ".") != 0 &&
 		   strcmp(entry->d_name, "..") != 0) {
 			filedata = malloc(sizeof(*filedata));
+			if(filedata == NULL)
+				goto err_readdir;
+
 			filedata->filename = strdup(entry->d_name);
+			if(filedata->filename == NULL)
+				goto err_readdir;
+
 			if(!read_file_data(dirfd(dir), filedata)) {
 				free_filedata(filedata);
 				continue;
 			}
-			list_append(list, filedata);
+			if(!list_append(list, filedata))
+				goto err_readdir;
 		}
 		entry = readdir(dir);
 	}
@@ -386,6 +421,10 @@ static bool internal_init(struct listmodel *model, const char *path)
 
 	return true;
 
+err_readdir:
+	free_filedata(filedata);
+err_newlist:
+	list_free(list, (list_item_deallocator)free_filedata);
 err_inotify_watch:
 	close(data->inotify_fd);
 err_inotify:
