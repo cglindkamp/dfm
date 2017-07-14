@@ -42,20 +42,21 @@ static int compare_key(const void *a, const void *b)
 
 bool dict_set(list_t *list, const char *key, void *value)
 {
-	struct dict_item *item = malloc(sizeof(*item));
-	if(item == NULL)
-		return false;
+	struct dict_item *item, needle;
 
 	size_t index;
 	bool found;
 
-	item->key = key;
+	needle.key = key;
 
-	found = list_find_item_or_insertpoint(list, compare_key, item, &index);
+	found = list_find_item_or_insertpoint(list, compare_key, &needle, &index);
 	if(found) {
-		free(item);
 		item = list_get_item(list, index);
 	} else {
+		item = malloc(sizeof(*item));
+		if(item == NULL)
+			return false;
+
 		item->key = strdup(key);
 		if(item->key == NULL) {
 			free(item);

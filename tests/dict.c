@@ -5,6 +5,8 @@
 #include "../src/dict.h"
 #include "tests.h"
 
+char *__real_strdup(const char *s);
+
 list_t *dict;
 
 static void setup(void)
@@ -43,7 +45,7 @@ START_TEST(test_dict_set_and_get_static_items)
 	ck_assert_int_eq(strcmp(dict_get(dict, "bar"), "baz"), 0);
 	ck_assert_int_eq(strcmp(dict_get(dict, "baz"), "foo"), 0);
 
-	assert_oom(dict_set(dict, "foo", "baz") == true);
+	ck_assert(dict_set(dict, "foo", "baz") == true);
 	ck_assert_int_eq(strcmp(dict_get(dict, "foo"), "baz"), 0);
 
 	ck_assert_ptr_eq(dict_get(dict, "foobar"), NULL);
@@ -55,16 +57,13 @@ START_TEST(test_dict_set_and_get_dynamic_items)
 {
 	assert_oom(dict != NULL);
 
-	char *foo = strdup("foo");
-	char *bar = strdup("bar");
-	char *baz = strdup("baz");
-	assert_oom(foo != NULL);
-	assert_oom(bar != NULL);
-	assert_oom(baz != NULL);
+	char *foo = __real_strdup("foo");
+	char *bar = __real_strdup("bar");
+	char *baz = __real_strdup("baz");
 
-	assert_oom(dict_set(dict, "foo", bar) == true);
-	assert_oom(dict_set(dict, "bar", baz) == true);
-	assert_oom(dict_set(dict, "baz", foo) == true);
+	assert_oom_cleanup(dict_set(dict, "foo", bar) == true, free(bar), free(baz), free(foo));
+	assert_oom_cleanup(dict_set(dict, "bar", baz) == true, free(baz), free(foo));
+	assert_oom_cleanup(dict_set(dict, "baz", foo) == true, free(foo));
 
 	ck_assert_int_eq(list_length(dict), 3);
 
@@ -73,7 +72,7 @@ START_TEST(test_dict_set_and_get_dynamic_items)
 	ck_assert_int_eq(strcmp(dict_get(dict, "baz"), "foo"), 0);
 
 	free(dict_get(dict, "foo"));
-	assert_oom(dict_set(dict, "foo", baz) == true);
+	ck_assert(dict_set(dict, "foo", __real_strdup("baz")) == true);
 	ck_assert_int_eq(strcmp(dict_get(dict, "foo"), "baz"), 0);
 
 	ck_assert_ptr_eq(dict_get(dict, "foobar"), NULL);
