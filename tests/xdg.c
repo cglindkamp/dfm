@@ -1,10 +1,12 @@
 /* See LICENSE file for copyright and license details. */
 #include <check.h>
+#include <errno.h>
 #include <stdlib.h>
 
 #include "../src/list.h"
 #include "../src/path.h"
 #include "../src/xdg.h"
+#include "tests.h"
 
 const char *home;
 const char *config_home;
@@ -34,68 +36,68 @@ void teardown(void)
 
 START_TEST(test_xdg_confighome_confighomeset)
 {
-	struct path path;
+	struct path *path;
 
 	setenv("XDG_CONFIG_HOME", "/foo/bar", 1);
 
-	path_init(&path, 0);
-	ck_assert(xdg_get_config_home(&path) == true);
-	ck_assert_str_eq(path_tocstr(&path), "/foo/bar");
-	path_free(&path);
+	int ret = xdg_get_config_home(&path);
+	assert_oom(ret == 0);
+	ck_assert_str_eq(path_tocstr(path), "/foo/bar");
+	path_free_heap_allocated(path);
 }
 END_TEST
 
 START_TEST(test_xdg_confighome_confighomeunset)
 {
-	struct path path;
+	struct path *path;
 
 	setenv("HOME", "/foo/bar", 1);
 	unsetenv("XDG_CONFIG_HOME");
 
-	path_init(&path, 0);
-	ck_assert(xdg_get_config_home(&path) == true);
-	ck_assert_str_eq(path_tocstr(&path), "/foo/bar/.config");
-	path_free(&path);
+	int ret = xdg_get_config_home(&path);
+	assert_oom(ret == 0);
+	ck_assert_str_eq(path_tocstr(path), "/foo/bar/.config");
+	path_free_heap_allocated(path);
 }
 END_TEST
 
 START_TEST(test_xdg_confighome_confighomeinvalid)
 {
-	struct path path;
+	struct path *path;
 
 	setenv("HOME", "/foo/bar", 1);
 	setenv("XDG_CONFIG_HOME", "bar/baz", 1);
 
-	path_init(&path, 0);
-	ck_assert(xdg_get_config_home(&path) == true);
-	ck_assert_str_eq(path_tocstr(&path), "/foo/bar/.config");
-	path_free(&path);
+	int ret = xdg_get_config_home(&path);
+	assert_oom(ret == 0);
+	ck_assert_str_eq(path_tocstr(path), "/foo/bar/.config");
+	path_free_heap_allocated(path);
 }
 END_TEST
 
 START_TEST(test_xdg_confighome_confighomeandhomeunset)
 {
-	struct path path;
+	struct path *path;
 
 	unsetenv("HOME");
 	unsetenv("XDG_CONFIG_HOME");
 
-	path_init(&path, 0);
-	ck_assert(xdg_get_config_home(&path) == false);
-	path_free(&path);
+	int ret = xdg_get_config_home(&path);
+	ck_assert_int_eq(ret, ENOENT);
+	ck_assert_ptr_null(path);
 }
 END_TEST
 
 START_TEST(test_xdg_confighome_confighomeandhomeinvalid)
 {
-	struct path path;
+	struct path *path;
 
 	setenv("HOME", "foo/bar", 1);
 	setenv("XDG_CONFIG_HOME", "bar/baz", 1);
 
-	path_init(&path, 0);
-	ck_assert(xdg_get_config_home(&path) == false);
-	path_free(&path);
+	int ret = xdg_get_config_home(&path);
+	ck_assert_int_eq(ret, ENOENT);
+	ck_assert_ptr_null(path);
 }
 END_TEST
 
@@ -104,6 +106,7 @@ START_TEST(test_xdg_configdirs_unset)
 	unsetenv("XDG_CONFIG_DIRS");
 
 	list_t *list = xdg_get_config_dirs(false);
+	assert_oom(list != NULL);
 
 	ck_assert_uint_eq(list_length(list), 1);
 
@@ -119,6 +122,7 @@ START_TEST(test_xdg_configdirs_set)
 	setenv("XDG_CONFIG_DIRS", "/foo:/bar:/baz", 1);
 
 	list_t *list = xdg_get_config_dirs(false);
+	assert_oom(list != NULL);
 
 	ck_assert_uint_eq(list_length(list), 3);
 
@@ -140,6 +144,7 @@ START_TEST(test_xdg_configdirs_partlyinvalid)
 	setenv("XDG_CONFIG_DIRS", "/foo:bar:/baz", 1);
 
 	list_t *list = xdg_get_config_dirs(false);
+	assert_oom(list != NULL);
 
 	ck_assert_uint_eq(list_length(list), 2);
 
@@ -158,6 +163,7 @@ START_TEST(test_xdg_configdirs_completelyinvalid)
 	setenv("XDG_CONFIG_DIRS", "foo:bar:baz", 1);
 
 	list_t *list = xdg_get_config_dirs(false);
+	assert_oom(list != NULL);
 
 	ck_assert_uint_eq(list_length(list), 1);
 
@@ -174,6 +180,7 @@ START_TEST(test_xdg_configdirs_includeconfighome)
 	setenv("XDG_CONFIG_DIRS", "/bar:/baz", 1);
 
 	list_t *list = xdg_get_config_dirs(true);
+	assert_oom(list != NULL);
 
 	ck_assert_uint_eq(list_length(list), 3);
 
@@ -197,6 +204,7 @@ START_TEST(test_xdg_configdirs_includeconfighome_homeinvalid)
 	setenv("XDG_CONFIG_DIRS", "/bar:/baz", 1);
 
 	list_t *list = xdg_get_config_dirs(true);
+	assert_oom(list != NULL);
 
 	ck_assert_uint_eq(list_length(list), 2);
 

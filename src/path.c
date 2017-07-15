@@ -68,14 +68,20 @@ bool path_set_to_current_working_directory(struct path *path)
 	return true;
 }
 
-bool path_set_from_string(struct path *path, const char *cstr)
+static bool path_cstr_is_valid(const char *cstr)
 {
-	/* paths not starting with '/' are invalid */
 	if(cstr[0] != '/')
 		return false;
+	return true;
+}
+
+int path_set_from_string(struct path *path, const char *cstr)
+{
+	if(!(path_cstr_is_valid(cstr)))
+		return EINVAL;
 
 	if(!path_make_room(path, strlen(cstr) + 1))
-		return false;
+		return ENOMEM;
 	strcpy(path->path, cstr);
 
 	/* reduce multiple consecutive slashes to a single one */
@@ -93,7 +99,39 @@ bool path_set_from_string(struct path *path, const char *cstr)
 	if(path->path[d - 1] == '/')
 		path->path[d - 1] = '\0';
 
-	return true;
+	return 0;
+}
+
+int path_new_from_string(struct path **path, const char *cstr)
+{
+	/* this check is done again in path_set_from_string,
+	 * but the the allocations can be saved, if cstr is invalid */
+	if(!(path_cstr_is_valid(cstr)))
+		return EINVAL;
+
+	*path = path_new();
+	if(*path == NULL)
+		return ENOMEM;
+
+	int ret = path_set_from_string(*path, cstr);
+	if(ret != 0) {
+		path_free_heap_allocated(*path);
+		*path = NULL;
+	}
+	return ret;
+}
+
+struct path *path_new(void)
+{
+	struct path *path = malloc(sizeof(*path));
+	if(path == NULL)
+		return NULL;
+
+	if(!path_init(path, 0)) {
+		free(path);
+		return NULL;
+	}
+	return path;
 }
 
 bool path_init(struct path *path, size_t size)

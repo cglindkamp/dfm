@@ -1,5 +1,6 @@
 /* See LICENSE file for copyright and license details. */
 #include <check.h>
+#include <errno.h>
 
 #include "wrapper/getcwd.h"
 #include "../src/path.h"
@@ -110,7 +111,7 @@ END_TEST
 START_TEST(test_path_setfromstring)
 {
 	assert_oom(path_init(&path, 0) == true);
-	assert_oom(path_set_from_string(&path, "/foo/bar") == true);
+	assert_oom(path_set_from_string(&path, "/foo/bar") == 0);
 	ck_assert_str_eq(path_tocstr(&path), "/foo/bar");
 	path_free(&path);
 }
@@ -119,7 +120,7 @@ END_TEST
 START_TEST(test_path_setfromstring_reduceslashes)
 {
 	assert_oom(path_init(&path, 0) == true);
-	assert_oom(path_set_from_string(&path, "//foo////bar/") == true);
+	assert_oom(path_set_from_string(&path, "//foo////bar/") == 0);
 	ck_assert_str_eq(path_tocstr(&path), "/foo/bar");
 	path_free(&path);
 }
@@ -128,7 +129,7 @@ END_TEST
 START_TEST(test_path_setfromstring_illegalpath)
 {
 	assert_oom(path_init(&path, 0) == true);
-	assert_oom(path_set_from_string(&path, "foo/bar") == false);
+	assert_oom(path_set_from_string(&path, "foo/bar") == EINVAL);
 	ck_assert_str_eq(path_tocstr(&path), "/");
 	path_free(&path);
 }

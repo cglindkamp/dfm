@@ -1,4 +1,5 @@
 /* See LICENSE file for copyright and license details. */
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -6,64 +7,95 @@
 
 #include "path.h"
 
-bool xdg_get_config_home(struct path *path)
+int xdg_get_config_home(struct path **path)
 {
-	bool valid = false;
+	int ret = 0;
+	*path = NULL;
 
 	const char *config_home = getenv("XDG_CONFIG_HOME");
 	if(config_home)
-		valid = path_set_from_string(path, config_home);
+		ret = path_new_from_string(path, config_home);
 
-	if(!valid) {
+	if(ret == ENOMEM)
+		return ENOMEM;
+
+	if(*path == NULL) {
 		const char *home = getenv("HOME");
-		if(home)
-			valid = path_set_from_string(path, home);
-		if(valid)
-			path_add_component(path, ".config");
+		if(home) {
+			ret = path_new_from_string(path, home);
+
+			if(ret == ENOMEM)
+				return ENOMEM;
+
+			if(*path == NULL)
+				return ENOENT;
+
+			if(!path_add_component(*path, ".config")) {
+				path_free_heap_allocated(*path);
+				*path = NULL;
+				return ENOMEM;
+			}
+		} else
+			return ENOENT;
 	}
-	return valid;
+	return 0;
 }
 
 list_t *xdg_get_config_dirs(bool include_config_home)
 {
 	struct path *path;
+	int ret;
+
 	list_t *list = list_new(0);
+	if(list == NULL)
+		return NULL;
 
 	const char *config_dirs = getenv("XDG_CONFIG_DIRS");
 	if(config_dirs) {
-		char *config_dirs_copy = strdup(config_dirs);
 		char *curpath, *saveptr;
+		char config_dirs_copy[strlen(config_dirs) + 1];
+
+		strcpy(config_dirs_copy, config_dirs);
 
 		if((curpath = strtok_r(config_dirs_copy, ":", &saveptr))) {
 			do {
-				path = malloc(sizeof(*path));
-				path_init(path, 0);
-				if(path_set_from_string(path, curpath))
-					list_append(list, path);
-				else
-					path_free_heap_allocated(path);
+				ret = path_new_from_string(&path, curpath);
+				if(ret == EINVAL)
+					continue;
+				if(path != NULL) {
+					if(!list_append(list, path))
+						goto err_free_list_and_path;
+				} else
+					goto err_free_list;
 			} while((curpath = strtok_r(NULL, ":", &saveptr)));
 
 		}
-		free(config_dirs_copy);
 	}
 
 	if(list_length(list) == 0) {
-		path = malloc(sizeof(*path));
-		path_init(path, 0);
-		path_set_from_string(path, "/etc/xdg");
-		list_append(list, path);
+		ret = path_new_from_string(&path, "/etc/xdg");
+		if(path != NULL) {
+			if(!list_append(list, path))
+				goto err_free_list_and_path;
+		} else
+			goto err_free_list;
 	}
 
 	if(include_config_home) {
-		path = malloc(sizeof(*path));
-		path_init(path, 0);
-		if(xdg_get_config_home(path))
-			list_insert(list, 0, path);
-		else
-			path_free_heap_allocated(path);
+		ret = xdg_get_config_home(&path);
+		if(path != NULL) {
+			if(!list_insert(list, 0, path))
+				goto err_free_list_and_path;
+		} else if(ret == ENOMEM)
+			goto err_free_list;
 	}
 
 	return list;
+
+err_free_list_and_path:
+	path_free_heap_allocated(path);
+err_free_list:
+	list_free(list, (list_item_deallocator)path_free_heap_allocated);
+	return NULL;
 }
 
