@@ -156,6 +156,8 @@ void path_free(struct path *path)
 
 void path_free_heap_allocated(struct path *path)
 {
+	if(path == NULL)
+		return;
 	path_free(path);
 	free(path);
 }

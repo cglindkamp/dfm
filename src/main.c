@@ -55,7 +55,11 @@ static void save_current_position(struct loopdata *data)
 		size_t index = listview_getindex(&data->view);
 		const char *filename = dirmodel_getfilename(&data->model, index);
 
-		dict_set(data->stored_positions, path_tocstr(&data->cwd), strdup(filename));
+		char *filename_copy = strdup(filename);
+		if(filename_copy == NULL)
+			return;
+		if(!dict_set(data->stored_positions, path_tocstr(&data->cwd), filename_copy))
+			free(filename_copy);
 	}
 }
 
@@ -105,18 +109,26 @@ static struct path *determine_usable_config_file(const char *project, const char
 	struct path *path = NULL;
 	list_t *list = xdg_get_config_dirs(true);
 
+	if(list == NULL)
+		return NULL;
+
 	for(size_t i = 0; i < list_length(list); i++) {
 		struct path *curpath = list_get_item(list, i);
-		path_add_component(curpath, project);
-		if(subdir)
-			path_add_component(curpath, subdir);
-		path_add_component(curpath, config);
-		if(path == NULL && access(path_tocstr(curpath), flags) == 0)
+		if(!path_add_component(curpath, project))
+			goto err;
+		if(subdir) {
+			if(!path_add_component(curpath, subdir))
+				goto err;
+		}
+		if(!path_add_component(curpath, config))
+			goto err;
+		if(path == NULL && access(path_tocstr(curpath), flags) == 0) {
 			path = curpath;
-		else
-			path_free_heap_allocated(curpath);
+			list_set_item(list, i, NULL);
+		}
 	}
-	list_free(list, NULL);
+err:
+	list_free(list, (list_item_deallocator)path_free_heap_allocated);
 	return path;
 }
 
@@ -291,8 +303,13 @@ void navigate_left(struct loopdata *data, const char *unused)
 	save_current_position(data);
 
 	if(path_remove_component(&data->cwd, &oldpathname)) {
-		while(!dirmodel_change_directory(&data->model, path_tocstr(&data->cwd)))
+		while(!dirmodel_change_directory(&data->model, path_tocstr(&data->cwd))) {
+			if(strcmp(path_tocstr(&data->cwd), "/") == 0) {
+				puts("Cannot even open \"/\", exiting");
+				ev_break(data->loop, EVBREAK_ONE);
+			}
 			path_remove_component(&data->cwd, &oldpathname);
+		}
 
 		select_stored_position(data, oldpathname);
 		display_current_path(data);
@@ -312,9 +329,15 @@ void navigate_right(struct loopdata *data, const char *unused)
 	size_t index = listview_getindex(&data->view);
 	if(dirmodel_isdir(&data->model, index)) {
 		const char *filename = dirmodel_getfilename(&data->model, index);
-		path_add_component(&data->cwd, filename);
-		while(!dirmodel_change_directory(&data->model, path_tocstr(&data->cwd)))
+		if(!path_add_component(&data->cwd, filename))
+			return;
+		while(!dirmodel_change_directory(&data->model, path_tocstr(&data->cwd))) {
+			if(strcmp(path_tocstr(&data->cwd), "/") == 0) {
+				puts("Cannot even open \"/\", exiting");
+				ev_break(data->loop, EVBREAK_ONE);
+			}
 			path_remove_component(&data->cwd, &oldpathname);
+		}
 
 		select_stored_position(data, oldpathname);
 		display_current_path(data);
@@ -335,8 +358,14 @@ void yank(struct loopdata *data, const char *unused)
 {
 	(void)unused;
 	const list_t *list = dirmodel_getmarkedfilenames(&data->model);
-	if(list)
-		clipboard_set_contents(&data->clipboard, strdup(path_tocstr(&data->cwd)), list);
+	if(list) {
+		char *cwd_copy = strdup(path_tocstr(&data->cwd));
+		if(cwd_copy == NULL) {
+			list_free(list, free);
+			clipboard_set_contents(&data->clipboard, NULL, NULL);
+		} else
+			clipboard_set_contents(&data->clipboard, cwd_copy, list);
+	}
 }
 
 void quit(struct loopdata *data, const char *unused)
@@ -397,35 +426,62 @@ int main(void)
 	data.loop = EV_DEFAULT;
 	ev_io stdin_watcher;
 	ev_signal sigwinch_watcher;
+	int ret = 0;
 
 	setlocale(LC_ALL, "");
 
-	path_init(&data.cwd, PATH_MAX);
+	if(!path_init(&data.cwd, PATH_MAX)) {
+		puts("Cannot get current working directory, exiting!");
+		ret = -1;
+		goto err_path;
+	}
+
 	if(!path_set_to_current_working_directory(&data.cwd)) {
 		puts("Cannot get current working directory, exiting!");
-		path_free(&data.cwd);
-		return -1;
+		ret = -1;
+		goto err_path_cwd;
 	}
 
 	dirmodel_init(&data.model);
 	if(!dirmodel_change_directory(&data.model, path_tocstr(&data.cwd))) {
 		puts("Cannot open current working directory, exiting!");
-		dirmodel_free(&data.model);
-		path_free(&data.cwd);
-		return -1;
+		ret = -1;
+		goto err_dirmodel;
 	}
 
 	init_ncurses();
 
-	data.stored_positions = dict_new();
+	if(!listview_init(&data.view, &data.model, 0, 0, COLS, LINES - 1))
+	{
+		endwin();
+		puts("Cannot create list view, exiting!");
+		ret = -1;
+		goto err_listview;
+	};
+
 	data.status = newwin(1, COLS, LINES - 1, 0);
+	if(data.status == NULL) {
+		endwin();
+		puts("Cannot create status line, exiting!");
+		ret = -1;
+		goto err_status_line;
+	}
+
+	data.stored_positions = dict_new();
+	if(data.stored_positions == NULL) {
+		endwin();
+		puts("Cannot allocate stored positions, exiting!");
+		ret = -1;
+		goto err_stored_positions;
+	}
+
 	keypad(data.status, TRUE);
 	nodelay(data.status, TRUE);
 
+	clipboard_init(&data.clipboard);
+
 	display_current_path(&data);
 
-	listview_init(&data.view, &data.model, 0, 0, COLS, LINES - 1);
-	clipboard_init(&data.clipboard);
 
 	ev_set_userdata(data.loop, &data);
 
@@ -437,14 +493,22 @@ int main(void)
 
 	ev_run(data.loop, 0);
 
-	clipboard_free(&data.clipboard);
-	listview_free(&data.view);
-	dirmodel_free(&data.model);
-	dict_free(data.stored_positions, true);
-	path_free(&data.cwd);
-	endwin();
-       _nc_freeall();
-       ev_loop_destroy(EV_DEFAULT);
 
-	return 0;
+	endwin();
+	clipboard_free(&data.clipboard);
+	dict_free(data.stored_positions, true);
+err_stored_positions:
+	delwin(data.status);
+err_status_line:
+	listview_free(&data.view);
+err_listview:
+	_nc_freeall();
+err_dirmodel:
+	dirmodel_free(&data.model);
+err_path_cwd:
+	path_free(&data.cwd);
+err_path:
+	ev_loop_destroy(EV_DEFAULT);
+
+	return ret;
 }
