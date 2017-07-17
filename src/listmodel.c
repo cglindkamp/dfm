@@ -32,12 +32,27 @@ bool listmodel_ismarked(struct listmodel *model, size_t index)
 		return false;
 }
 
-void listmodel_register_change_callback(struct listmodel *model, model_change_callback callback, void *data)
+bool listmodel_register_change_callback(struct listmodel *model, model_change_callback callback, void *data)
 {
+	if(model->change_callbacks == NULL)
+		model->change_callbacks = list_new(0);
+
+	if(model->change_callbacks == NULL)
+		return false;
+
 	struct callback *cb = malloc(sizeof(*cb));
+	if(cb == NULL)
+		return false;
+
 	cb->cb = callback;
 	cb->data = data;
-	list_append(model->change_callbacks, cb);
+
+	if(!list_append(model->change_callbacks, cb)) {
+		free(cb);
+		return false;
+	}
+
+	return true;
 }
 
 void listmodel_unregister_change_callback(struct listmodel *model, model_change_callback callback, void *data)
@@ -58,6 +73,9 @@ void listmodel_unregister_change_callback(struct listmodel *model, model_change_
 void listmodel_notify_change(struct listmodel *model, size_t index, enum model_change change)
 {
 	struct list *list = model->change_callbacks;
+	if(list == NULL)
+		return;
+
 	struct callback *cb;
 	size_t i;
 
@@ -69,7 +87,7 @@ void listmodel_notify_change(struct listmodel *model, size_t index, enum model_c
 
 void listmodel_init(struct listmodel *model)
 {
-	model->change_callbacks = list_new(0);
+	model->change_callbacks = NULL;
 }
 
 void listmodel_free(struct listmodel *model)

@@ -4,6 +4,7 @@
 
 #include "../src/listmodel.h"
 #include "../src/listmodel_impl.h"
+#include "tests.h"
 
 static struct listmodel model;
 
@@ -36,7 +37,7 @@ static void teardown(void)
 
 START_TEST(test_single_callback)
 {
-	listmodel_register_change_callback(&model, change_callback, &model);
+	assert_oom(listmodel_register_change_callback(&model, change_callback, &model) == true);
 	ck_assert_uint_eq(cb_count, 0);
 	ck_assert_uint_eq(cb_index, 0);
 	ck_assert_ptr_eq(cb_data, NULL);
@@ -58,8 +59,8 @@ END_TEST
 
 START_TEST(test_two_callbacks)
 {
-	listmodel_register_change_callback(&model, change_callback, &model);
-	listmodel_register_change_callback(&model, change_callback, &cb_count);
+	assert_oom(listmodel_register_change_callback(&model, change_callback, &model) == true);
+	assert_oom(listmodel_register_change_callback(&model, change_callback, &cb_count) == true);
 
 	listmodel_notify_change(&model, 0x1337, MODEL_ADD);
 	ck_assert_uint_eq(cb_count, 2);
@@ -71,7 +72,7 @@ END_TEST
 
 START_TEST(test_unregister_callback)
 {
-	listmodel_register_change_callback(&model, change_callback, &model);
+	assert_oom(listmodel_register_change_callback(&model, change_callback, &model) == true);
 
 	listmodel_unregister_change_callback(&model, change_callback, NULL);
 

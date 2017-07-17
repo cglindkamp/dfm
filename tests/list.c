@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 #include "../src/list.h"
+#include "tests.h"
 
 list_t *list;
 
@@ -14,11 +15,12 @@ static void setup(void)
 static void teardown(void)
 {
 	list_free(list, NULL);
-	list = NULL;
 }
 
 START_TEST(test_list_new)
 {
+	assert_oom(list != NULL);
+
 	ck_assert_int_eq(list_length(list), 0);
 }
 END_TEST
@@ -32,8 +34,10 @@ END_TEST
 
 START_TEST(test_list_add_items)
 {
+	assert_oom(list != NULL);
+
 	for(size_t i = 0; i < 8192; i++)
-		list_append(list, (void*)i);
+		assert_oom(list_append(list, (void*)i) == true);
 
 	ck_assert_int_eq(list_length(list), 8192);
 
@@ -44,8 +48,10 @@ END_TEST
 
 START_TEST(test_list_set_items)
 {
+	assert_oom(list != NULL);
+
 	for(size_t i = 0; i < 8192; i++)
-		list_append(list, 0);
+		assert_oom(list_append(list, 0) == true);
 
 	ck_assert_int_eq(list_length(list), 8192);
 
@@ -62,8 +68,10 @@ END_TEST
 
 START_TEST(test_list_remove_items)
 {
+	assert_oom(list != NULL);
+
 	for(size_t i = 0; i < 4; i++)
-		list_append(list, (void*)i);
+		assert_oom(list_append(list, (void*)i) == true);
 
 	ck_assert_int_eq(list_length(list), 4);
 
@@ -103,9 +111,11 @@ static int int_list_is_sorted(list_t *list)
 
 START_TEST(test_list_sort)
 {
+	assert_oom(list != NULL);
+
 	for(size_t i = 0; i < 8192; i++) {
 		intptr_t value = rand();
-		list_append(list, (void*)value);
+		assert_oom(list_append(list, (void*)value) == true);
 	}
 
 	list_sort(list, compare_int);
@@ -116,11 +126,13 @@ END_TEST
 
 START_TEST(test_list_insert_sort)
 {
+	assert_oom(list != NULL);
+
 	for(size_t i = 0; i < 8192; i++) {
 		intptr_t value = rand();
 		size_t insert_point;
 		list_find_item_or_insertpoint(list, compare_int, (void*)value, &insert_point);
-		list_insert(list, insert_point, (void*)value);
+		assert_oom(list_insert(list, insert_point, (void*)value) == true);;
 	}
 	ck_assert_int_eq(list_length(list), 8192);
 	ck_assert_int_eq(int_list_is_sorted(list), 1);

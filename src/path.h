@@ -11,11 +11,13 @@ struct path {
 };
 
 const char *path_tocstr(struct path *path);
-void path_add_component(struct path *path, const char *component);
+bool path_add_component(struct path *path, const char *component) __attribute__((warn_unused_result));
 bool path_remove_component(struct path *path, const char **component);
-bool path_set_to_current_working_directory(struct path *path);
-bool path_set_from_string(struct path *path, const char *cstr);
-void path_init(struct path *path, size_t size);
+bool path_set_to_current_working_directory(struct path *path) __attribute__((warn_unused_result));
+int path_set_from_string(struct path *path, const char *cstr) __attribute__((warn_unused_result));
+int path_new_from_string(struct path **path, const char *cstr) __attribute__((warn_unused_result));
+struct path *path_new(void) __attribute__((warn_unused_result));
+bool path_init(struct path *path, size_t size) __attribute__((warn_unused_result));
 void path_free(struct path *path);
 void path_free_heap_allocated(struct path *path);
 
