@@ -14,7 +14,7 @@ list_t *dict_new()
 	return list_new(0);
 }
 
-void dict_free(list_t *list, bool free_value)
+void dict_delete(list_t *list, bool free_value)
 {
 	struct dict_item *item;
 	size_t i;
@@ -29,7 +29,7 @@ void dict_free(list_t *list, bool free_value)
 		free((void*)item->key);
 		free(item);
 	}
-	list_free(list, NULL);
+	list_delete(list, NULL);
 }
 
 static int compare_key(const void *a, const void *b)

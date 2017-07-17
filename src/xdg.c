@@ -31,7 +31,7 @@ int xdg_get_config_home(struct path **path)
 				return ENOENT;
 
 			if(!path_add_component(*path, ".config")) {
-				path_free_heap_allocated(*path);
+				path_delete(*path);
 				*path = NULL;
 				return ENOMEM;
 			}
@@ -64,9 +64,9 @@ list_t *xdg_get_config_dirs(bool include_config_home)
 					continue;
 				if(path != NULL) {
 					if(!list_append(list, path))
-						goto err_free_list_and_path;
+						goto err_delete_list_and_path;
 				} else
-					goto err_free_list;
+					goto err_delete_list;
 			} while((curpath = strtok_r(NULL, ":", &saveptr)));
 
 		}
@@ -76,26 +76,26 @@ list_t *xdg_get_config_dirs(bool include_config_home)
 		ret = path_new_from_string(&path, "/etc/xdg");
 		if(path != NULL) {
 			if(!list_append(list, path))
-				goto err_free_list_and_path;
+				goto err_delete_list_and_path;
 		} else
-			goto err_free_list;
+			goto err_delete_list;
 	}
 
 	if(include_config_home) {
 		ret = xdg_get_config_home(&path);
 		if(path != NULL) {
 			if(!list_insert(list, 0, path))
-				goto err_free_list_and_path;
+				goto err_delete_list_and_path;
 		} else if(ret == ENOMEM)
-			goto err_free_list;
+			goto err_delete_list;
 	}
 
 	return list;
 
-err_free_list_and_path:
-	path_free_heap_allocated(path);
-err_free_list:
-	list_free(list, (list_item_deallocator)path_free_heap_allocated);
+err_delete_list_and_path:
+	path_delete(path);
+err_delete_list:
+	list_delete(list, (list_item_deallocator)path_delete);
 	return NULL;
 }
 

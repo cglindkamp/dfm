@@ -43,7 +43,7 @@ START_TEST(test_xdg_confighome_confighomeset)
 	int ret = xdg_get_config_home(&path);
 	assert_oom(ret == 0);
 	ck_assert_str_eq(path_tocstr(path), "/foo/bar");
-	path_free_heap_allocated(path);
+	path_delete(path);
 }
 END_TEST
 
@@ -57,7 +57,7 @@ START_TEST(test_xdg_confighome_confighomeunset)
 	int ret = xdg_get_config_home(&path);
 	assert_oom(ret == 0);
 	ck_assert_str_eq(path_tocstr(path), "/foo/bar/.config");
-	path_free_heap_allocated(path);
+	path_delete(path);
 }
 END_TEST
 
@@ -71,7 +71,7 @@ START_TEST(test_xdg_confighome_confighomeinvalid)
 	int ret = xdg_get_config_home(&path);
 	assert_oom(ret == 0);
 	ck_assert_str_eq(path_tocstr(path), "/foo/bar/.config");
-	path_free_heap_allocated(path);
+	path_delete(path);
 }
 END_TEST
 
@@ -113,7 +113,7 @@ START_TEST(test_xdg_configdirs_unset)
 	struct path *path = list_get_item(list, 0);
 	ck_assert_str_eq(path_tocstr(path), "/etc/xdg");
 
-	list_free(list, (list_item_deallocator)path_free_heap_allocated);
+	list_delete(list, (list_item_deallocator)path_delete);
 }
 END_TEST
 
@@ -135,7 +135,7 @@ START_TEST(test_xdg_configdirs_set)
 	path = list_get_item(list, 2);
 	ck_assert_str_eq(path_tocstr(path), "/baz");
 
-	list_free(list, (list_item_deallocator)path_free_heap_allocated);
+	list_delete(list, (list_item_deallocator)path_delete);
 }
 END_TEST
 
@@ -154,7 +154,7 @@ START_TEST(test_xdg_configdirs_partlyinvalid)
 	path = list_get_item(list, 1);
 	ck_assert_str_eq(path_tocstr(path), "/baz");
 
-	list_free(list, (list_item_deallocator)path_free_heap_allocated);
+	list_delete(list, (list_item_deallocator)path_delete);
 }
 END_TEST
 
@@ -170,7 +170,7 @@ START_TEST(test_xdg_configdirs_completelyinvalid)
 	struct path *path = list_get_item(list, 0);
 	ck_assert_str_eq(path_tocstr(path), "/etc/xdg");
 
-	list_free(list, (list_item_deallocator)path_free_heap_allocated);
+	list_delete(list, (list_item_deallocator)path_delete);
 }
 END_TEST
 
@@ -193,7 +193,7 @@ START_TEST(test_xdg_configdirs_includeconfighome)
 	path = list_get_item(list, 2);
 	ck_assert_str_eq(path_tocstr(path), "/baz");
 
-	list_free(list, (list_item_deallocator)path_free_heap_allocated);
+	list_delete(list, (list_item_deallocator)path_delete);
 }
 END_TEST
 
@@ -214,7 +214,7 @@ START_TEST(test_xdg_configdirs_includeconfighome_homeinvalid)
 	path = list_get_item(list, 1);
 	ck_assert_str_eq(path_tocstr(path), "/baz");
 
-	list_free(list, (list_item_deallocator)path_free_heap_allocated);
+	list_delete(list, (list_item_deallocator)path_delete);
 }
 END_TEST
 

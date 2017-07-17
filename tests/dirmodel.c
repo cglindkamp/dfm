@@ -61,7 +61,7 @@ static void setup(void)
 
 static void teardown(void)
 {
-	dirmodel_free(&model);
+	dirmodel_destroy(&model);
 	remove_temp_directory(path);
 }
 
@@ -378,7 +378,7 @@ START_TEST(test_dirmodel_markfiles_getfilenames)
 	ck_assert_str_eq(list_get_item(list, 1), "3");
 	ck_assert_str_eq(list_get_item(list, 2), "4");
 
-	list_free(list, free);
+	list_delete(list, free);
 }
 END_TEST
 

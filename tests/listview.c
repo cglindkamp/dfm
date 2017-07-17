@@ -60,8 +60,8 @@ START_TEST(test_listview_initialization)
 	ck_assert_uint_eq(listview_getindex(&listview), 0);
 	ck_assert_uint_eq(listview_getfirst(&listview), 0);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 
@@ -75,8 +75,8 @@ START_TEST(test_listview_setindex_first)
 
 	ck_assert_uint_eq(listview_getindex(&listview), 0);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 
@@ -88,8 +88,8 @@ START_TEST(test_listview_setindex_middle)
 	listview_setindex(&listview, 10);
 	ck_assert_uint_eq(listview_getindex(&listview), 10);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 
@@ -101,8 +101,8 @@ START_TEST(test_listview_setindex_last)
 	listview_setindex(&listview, 99);
 	ck_assert_uint_eq(listview_getindex(&listview), 99);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 
@@ -114,8 +114,8 @@ START_TEST(test_listview_setindex_outofbounds)
 	listview_setindex(&listview, 100);
 	ck_assert_uint_eq(listview_getindex(&listview), 99);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 
@@ -134,8 +134,8 @@ START_TEST(test_listview_setindex_scrollonlywhenneeded)
 	ck_assert_uint_eq(listview_getindex(&listview), 35);
 	ck_assert_uint_eq(listview_getfirst(&listview), 16);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 
@@ -149,8 +149,8 @@ START_TEST(test_listview_up)
 	listview_up(&listview);
 	ck_assert_uint_eq(listview_getindex(&listview), 9);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 
@@ -162,8 +162,8 @@ START_TEST(test_listview_up_onfirstindex)
 	listview_up(&listview);
 	ck_assert_uint_eq(listview_getindex(&listview), 0);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 
@@ -181,8 +181,8 @@ START_TEST(test_listview_up_scroll)
 	ck_assert_uint_eq(listview_getindex(&listview), 15);
 	ck_assert_uint_eq(listview_getfirst(&listview), 15);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 
@@ -195,8 +195,8 @@ START_TEST(test_listview_down)
 	listview_down(&listview);
 	ck_assert_uint_eq(listview_getindex(&listview), 1);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 
@@ -209,8 +209,8 @@ START_TEST(test_listview_down_onlastindex)
 	listview_down(&listview);
 	ck_assert_uint_eq(listview_getindex(&listview), 99);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 
@@ -227,8 +227,8 @@ START_TEST(test_listview_down_scroll)
 	ck_assert_uint_eq(listview_getindex(&listview), 41);
 	ck_assert_uint_eq(listview_getfirst(&listview), 17);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 
@@ -241,8 +241,8 @@ START_TEST(test_listview_pageup_onfirstindex)
 	listview_pageup(&listview);
 	ck_assert_uint_eq(listview_getindex(&listview), 0);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 
@@ -263,8 +263,8 @@ START_TEST(test_listview_pageup_scroll)
 	ck_assert_uint_eq(listview_getindex(&listview), 0);
 	ck_assert_uint_eq(listview_getfirst(&listview), 0);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 
@@ -278,8 +278,8 @@ START_TEST(test_listview_pagedown_onlastindex)
 	listview_pagedown(&listview);
 	ck_assert_uint_eq(listview_getindex(&listview), 99);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 
@@ -296,8 +296,8 @@ START_TEST(test_listview_pagedown_scroll)
 	ck_assert_uint_eq(listview_getindex(&listview), 49);
 	ck_assert_uint_eq(listview_getfirst(&listview), 25);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 
@@ -314,8 +314,8 @@ START_TEST(test_listview_pageupdown_smalllist)
 	ck_assert_uint_eq(listview_getindex(&listview), 0);
 	ck_assert_uint_eq(listview_getfirst(&listview), 0);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 
@@ -330,8 +330,8 @@ START_TEST(test_listview_resize_makebigger)
 	ck_assert_uint_eq(listview_getindex(&listview), 40);
 	ck_assert_uint_eq(listview_getfirst(&listview), 16);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 
@@ -345,8 +345,8 @@ START_TEST(test_listview_resize_makebiggerthanfirsttoendoflist)
 	ck_assert_uint_eq(listview_getindex(&listview), 40);
 	ck_assert_uint_eq(listview_getfirst(&listview), 10);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 
@@ -360,8 +360,8 @@ START_TEST(test_listview_resize_makebiggerthanlist)
 	ck_assert_uint_eq(listview_getindex(&listview), 40);
 	ck_assert_uint_eq(listview_getfirst(&listview), 0);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 
@@ -376,8 +376,8 @@ START_TEST(test_listview_resize_makesmaller)
 	ck_assert_uint_eq(listview_getindex(&listview), 30);
 	ck_assert_uint_eq(listview_getfirst(&listview), 16);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 
@@ -391,8 +391,8 @@ START_TEST(test_listview_resize_makesmallerthanindextofirst)
 	ck_assert_uint_eq(listview_getindex(&listview), 40);
 	ck_assert_uint_eq(listview_getfirst(&listview), 21);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 
@@ -406,8 +406,8 @@ START_TEST(test_listview_resize_toone)
 	ck_assert_uint_eq(listview_getindex(&listview), 40);
 	ck_assert_uint_eq(listview_getfirst(&listview), 40);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 
@@ -428,8 +428,8 @@ START_TEST(test_listview_modelchange_addbeforefirst)
 	ck_assert_uint_eq(listview_getindex(&listview), 26);
 	ck_assert_uint_eq(listview_getfirst(&listview), 17);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 
@@ -443,8 +443,8 @@ START_TEST(test_listview_modelchange_removebeforefirst)
 	ck_assert_uint_eq(listview_getindex(&listview), 24);
 	ck_assert_uint_eq(listview_getfirst(&listview), 15);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 
@@ -458,8 +458,8 @@ START_TEST(test_listview_modelchange_addbetweenfirstandindex)
 	ck_assert_uint_eq(listview_getindex(&listview), 26);
 	ck_assert_uint_eq(listview_getfirst(&listview), 17);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 
@@ -473,8 +473,8 @@ START_TEST(test_listview_modelchange_removebetweenfirstandindex)
 	ck_assert_uint_eq(listview_getindex(&listview), 24);
 	ck_assert_uint_eq(listview_getfirst(&listview), 15);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 
@@ -488,8 +488,8 @@ START_TEST(test_listview_modelchange_addonindex)
 	ck_assert_uint_eq(listview_getindex(&listview), 26);
 	ck_assert_uint_eq(listview_getfirst(&listview), 17);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 
@@ -503,8 +503,8 @@ START_TEST(test_listview_modelchange_removeonindex)
 	ck_assert_uint_eq(listview_getindex(&listview), 25);
 	ck_assert_uint_eq(listview_getfirst(&listview), 16);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 
@@ -518,8 +518,8 @@ START_TEST(test_listview_modelchange_addafterindex)
 	ck_assert_uint_eq(listview_getindex(&listview), 25);
 	ck_assert_uint_eq(listview_getfirst(&listview), 16);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 
@@ -533,8 +533,8 @@ START_TEST(test_listview_modelchange_removeafterindex)
 	ck_assert_uint_eq(listview_getindex(&listview), 25);
 	ck_assert_uint_eq(listview_getfirst(&listview), 16);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 
@@ -553,8 +553,8 @@ START_TEST(test_listview_modelchange_removeafterindex_atendoflist)
 	ck_assert_uint_eq(listview_getindex(&listview), 98);
 	ck_assert_uint_eq(listview_getfirst(&listview), 74);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 
@@ -572,8 +572,8 @@ START_TEST(test_listview_modelchange_addbeforefirst_smallist)
 	ck_assert_uint_eq(listview_getindex(&listview), 6);
 	ck_assert_uint_eq(listview_getfirst(&listview), 0);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 
@@ -587,8 +587,8 @@ START_TEST(test_listview_modelchange_removelastindex_listitemsequalsrows)
 	ck_assert_uint_eq(listview_getindex(&listview), 23);
 	ck_assert_uint_eq(listview_getfirst(&listview), 0);
 
-	listview_free(&listview);
-	listmodel_free(&model);
+	listview_destroy(&listview);
+	listmodel_destroy(&model);
 }
 END_TEST
 

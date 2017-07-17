@@ -90,9 +90,9 @@ void listmodel_init(struct listmodel *model)
 	model->change_callbacks = NULL;
 }
 
-void listmodel_free(struct listmodel *model)
+void listmodel_destroy(struct listmodel *model)
 {
 	struct list *list = model->change_callbacks;
 
-	list_free(list, free);
+	list_delete(list, free);
 }

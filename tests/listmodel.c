@@ -32,7 +32,7 @@ static void setup(void)
 
 static void teardown(void)
 {
-	listmodel_free(&model);
+	listmodel_destroy(&model);
 }
 
 START_TEST(test_single_callback)

@@ -9,7 +9,7 @@ typedef struct list list_t;
 typedef void (*list_item_deallocator)(void *);
 
 list_t *list_new(size_t initial_size) __attribute__((warn_unused_result));
-void list_free(const list_t *list, list_item_deallocator deallocator);
+void list_delete(const list_t *list, list_item_deallocator deallocator);
 
 size_t list_length(const list_t *list);
 bool list_append(list_t *list, void *item) __attribute__((warn_unused_result));

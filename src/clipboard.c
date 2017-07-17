@@ -5,7 +5,7 @@
 
 void clipboard_set_contents(struct clipboard *clipboard, const char *path, const list_t *filelist)
 {
-	clipboard_free(clipboard);
+	clipboard_destroy(clipboard);
 	clipboard->path = path;
 	clipboard->filelist = filelist;
 }
@@ -26,8 +26,8 @@ void clipboard_init(struct clipboard *clipboard)
 	clipboard->filelist = NULL;
 }
 
-void clipboard_free(struct clipboard *clipboard)
+void clipboard_destroy(struct clipboard *clipboard)
 {
 	free((void *)clipboard->path);
-	list_free(clipboard->filelist, free);
+	list_delete(clipboard->filelist, free);
 }

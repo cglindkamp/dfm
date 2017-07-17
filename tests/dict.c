@@ -16,12 +16,12 @@ static void setup(void)
 
 static void static_teardown(void)
 {
-	dict_free(dict, false);
+	dict_delete(dict, false);
 }
 
 static void dynamic_teardown(void)
 {
-	dict_free(dict, true);
+	dict_delete(dict, true);
 }
 
 START_TEST(test_dict_new)

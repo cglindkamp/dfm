@@ -20,6 +20,6 @@ size_t listview_getindex(struct listview *view);
 size_t listview_getfirst(struct listview *view);
 void listview_resize(struct listview *view, unsigned int width, unsigned int height);
 bool listview_init(struct listview *view, struct listmodel *model, unsigned int x, unsigned int y, unsigned int width, unsigned int height) __attribute__((warn_unused_result));
-void listview_free(struct listview *view);
+void listview_destroy(struct listview *view);
 
 #endif

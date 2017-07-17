@@ -203,18 +203,18 @@ list_t *dirmodel_getmarkedfilenames(struct listmodel *model)
 		if(filedata->is_marked) {
 			char *filename = strdup(filedata->filename);
 			if(filename == NULL) {
-				list_free(markedlist, free);
+				list_delete(markedlist, free);
 				return NULL;
 			}
 			if(!list_append(markedlist, filename)) {
 				free(filename);
-				list_free(markedlist, free);
+				list_delete(markedlist, free);
 				return NULL;
 			}
 		}
 	}
 	if(list_length(markedlist) == 0) {
-		list_free(markedlist, NULL);
+		list_delete(markedlist, NULL);
 		return NULL;
 	}
 	return markedlist;
@@ -424,7 +424,7 @@ static bool internal_init(struct listmodel *model, const char *path)
 err_readdir:
 	free_filedata(filedata);
 err_newlist:
-	list_free(list, (list_item_deallocator)free_filedata);
+	list_delete(list, (list_item_deallocator)free_filedata);
 err_inotify_watch:
 	close(data->inotify_fd);
 err_inotify:
@@ -436,7 +436,7 @@ err_malloc:
 	return false;
 }
 
-static void internal_free(struct listmodel *model)
+static void internal_destroy(struct listmodel *model)
 {
 	struct data *data = model->data;
 	if(data == NULL)
@@ -450,14 +450,14 @@ static void internal_free(struct listmodel *model)
 	close(data->inotify_fd);
 	closedir(data->dir);
 
-	list_free(list, (list_item_deallocator)free_filedata);
+	list_delete(list, (list_item_deallocator)free_filedata);
 	free(model->data);
 	model->data = NULL;
 }
 
 bool dirmodel_change_directory(struct listmodel *model, const char *path)
 {
-	internal_free(model);
+	internal_destroy(model);
 	if(!internal_init(model, path))
 		return false;
 	listmodel_notify_change(model, 0, MODEL_RELOAD);
@@ -475,8 +475,8 @@ void dirmodel_init(struct listmodel *model)
 	model->ismarked = dirmodel_ismarked;
 }
 
-void dirmodel_free(struct listmodel *model)
+void dirmodel_destroy(struct listmodel *model)
 {
-	internal_free(model);
-	listmodel_free(model);
+	internal_destroy(model);
+	listmodel_destroy(model);
 }

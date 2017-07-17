@@ -5,7 +5,7 @@
 #include "list.h"
 
 list_t *dict_new() __attribute__((warn_unused_result));
-void dict_free(list_t *list, bool free_value);
+void dict_delete(list_t *list, bool free_value);
 
 bool dict_set(list_t *list, const char *key, void *value) __attribute__((warn_unused_result));
 void *dict_get(list_t *list, const char *key);

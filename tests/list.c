@@ -14,7 +14,7 @@ static void setup(void)
 
 static void teardown(void)
 {
-	list_free(list, NULL);
+	list_delete(list, NULL);
 }
 
 START_TEST(test_list_new)
@@ -25,10 +25,10 @@ START_TEST(test_list_new)
 }
 END_TEST
 
-START_TEST(test_list_freenull)
+START_TEST(test_list_deletenull)
 {
 	/* test should not crash */
-	list_free(NULL, NULL);
+	list_delete(NULL, NULL);
 }
 END_TEST
 
@@ -149,7 +149,7 @@ Suite *list_suite(void)
 	tcase = tcase_create("Core");
 	tcase_add_checked_fixture(tcase, setup, teardown);
 	tcase_add_test(tcase, test_list_new);
-	tcase_add_test(tcase, test_list_freenull);
+	tcase_add_test(tcase, test_list_deletenull);
 	tcase_add_test(tcase, test_list_add_items);
 	tcase_add_test(tcase, test_list_set_items);
 	tcase_add_test(tcase, test_list_remove_items);

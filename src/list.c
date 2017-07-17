@@ -33,7 +33,7 @@ list_t *list_new(size_t initial_size)
 	return list;
 }
 
-void list_free(const list_t *list, list_item_deallocator deallocator)
+void list_delete(const list_t *list, list_item_deallocator deallocator)
 {
 	if(list == NULL)
 		return;

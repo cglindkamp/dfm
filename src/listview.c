@@ -189,7 +189,7 @@ bool listview_init(struct listview *view, struct listmodel *model, unsigned int 
 	return true;
 }
 
-void listview_free(struct listview *view)
+void listview_destroy(struct listview *view)
 {
 	listmodel_unregister_change_callback(view->model, change_cb, view);
 	delwin(view->window);

@@ -115,7 +115,7 @@ int path_new_from_string(struct path **path, const char *cstr)
 
 	int ret = path_set_from_string(*path, cstr);
 	if(ret != 0) {
-		path_free_heap_allocated(*path);
+		path_delete(*path);
 		*path = NULL;
 	}
 	return ret;
@@ -149,15 +149,15 @@ bool path_init(struct path *path, size_t size)
 	return true;
 }
 
-void path_free(struct path *path)
+void path_destroy(struct path *path)
 {
 	free(path->path);
 }
 
-void path_free_heap_allocated(struct path *path)
+void path_delete(struct path *path)
 {
 	if(path == NULL)
 		return;
-	path_free(path);
+	path_destroy(path);
 	free(path);
 }

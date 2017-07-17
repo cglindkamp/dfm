@@ -13,6 +13,6 @@ void clipboard_set_contents(struct clipboard *clipboard, const char *path, const
 const char *clipboard_get_path(struct clipboard *clipboard);
 const list_t *clipboard_get_filelist(struct clipboard *clipboard);
 void clipboard_init(struct clipboard *clipboard);
-void clipboard_free(struct clipboard *clipboard);
+void clipboard_destroy(struct clipboard *clipboard);
 
 #endif

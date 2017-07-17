@@ -128,7 +128,7 @@ static struct path *determine_usable_config_file(const char *project, const char
 		}
 	}
 err:
-	list_free(list, (list_item_deallocator)path_free_heap_allocated);
+	list_delete(list, (list_item_deallocator)path_delete);
 	return path;
 }
 
@@ -235,7 +235,7 @@ static void invoke_handler(struct loopdata *data, const char *handler_name)
 	const list_t *list = dirmodel_getmarkedfilenames(&data->model);
 	if(list != NULL) {
 		bool ret = dump_filelist_to_file(dir_fd, "marked", list);
-		list_free(list, free);
+		list_delete(list, free);
 		if(!ret)
 			goto err_dircreated;
 	}
@@ -268,7 +268,7 @@ err_dircreated:
 succes:
 	close(dir_fd);
 err_dir:
-	path_free_heap_allocated(handler_path);
+	path_delete(handler_path);
 }
 
 void navigate_up(struct loopdata *data, const char *unused)
@@ -361,7 +361,7 @@ void yank(struct loopdata *data, const char *unused)
 	if(list) {
 		char *cwd_copy = strdup(path_tocstr(&data->cwd));
 		if(cwd_copy == NULL) {
-			list_free(list, free);
+			list_delete(list, free);
 			clipboard_set_contents(&data->clipboard, NULL, NULL);
 		} else
 			clipboard_set_contents(&data->clipboard, cwd_copy, list);
@@ -495,18 +495,18 @@ int main(void)
 
 
 	endwin();
-	clipboard_free(&data.clipboard);
-	dict_free(data.stored_positions, true);
+	clipboard_destroy(&data.clipboard);
+	dict_delete(data.stored_positions, true);
 err_stored_positions:
 	delwin(data.status);
 err_status_line:
-	listview_free(&data.view);
+	listview_destroy(&data.view);
 err_listview:
 	_nc_freeall();
 err_dirmodel:
-	dirmodel_free(&data.model);
+	dirmodel_destroy(&data.model);
 err_path_cwd:
-	path_free(&data.cwd);
+	path_destroy(&data.cwd);
 err_path:
 	ev_loop_destroy(EV_DEFAULT);
 
