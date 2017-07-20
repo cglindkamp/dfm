@@ -295,6 +295,20 @@ void navigate_pagedown(struct loopdata *data, const char *unused)
 	listview_pagedown(&data->view);
 }
 
+static void enter_directory(struct loopdata *data, const char *oldpathname)
+{
+	while(!dirmodel_change_directory(&data->model, path_tocstr(&data->cwd))) {
+		if(strcmp(path_tocstr(&data->cwd), "/") == 0) {
+			puts("Cannot even open \"/\", exiting");
+			ev_break(data->loop, EVBREAK_ONE);
+		}
+		path_remove_component(&data->cwd, &oldpathname);
+	}
+
+	select_stored_position(data, oldpathname);
+	display_current_path(data);
+}
+
 void navigate_left(struct loopdata *data, const char *unused)
 {
 	(void)unused;
@@ -302,24 +316,13 @@ void navigate_left(struct loopdata *data, const char *unused)
 
 	save_current_position(data);
 
-	if(path_remove_component(&data->cwd, &oldpathname)) {
-		while(!dirmodel_change_directory(&data->model, path_tocstr(&data->cwd))) {
-			if(strcmp(path_tocstr(&data->cwd), "/") == 0) {
-				puts("Cannot even open \"/\", exiting");
-				ev_break(data->loop, EVBREAK_ONE);
-			}
-			path_remove_component(&data->cwd, &oldpathname);
-		}
-
-		select_stored_position(data, oldpathname);
-		display_current_path(data);
-	}
+	if(path_remove_component(&data->cwd, &oldpathname))
+		enter_directory(data, oldpathname);
 }
 
 void navigate_right(struct loopdata *data, const char *unused)
 {
 	(void)unused;
-	const char *oldpathname = NULL;
 
 	if(listmodel_count(&data->model) == 0)
 		return;
@@ -331,16 +334,7 @@ void navigate_right(struct loopdata *data, const char *unused)
 		const char *filename = dirmodel_getfilename(&data->model, index);
 		if(!path_add_component(&data->cwd, filename))
 			return;
-		while(!dirmodel_change_directory(&data->model, path_tocstr(&data->cwd))) {
-			if(strcmp(path_tocstr(&data->cwd), "/") == 0) {
-				puts("Cannot even open \"/\", exiting");
-				ev_break(data->loop, EVBREAK_ONE);
-			}
-			path_remove_component(&data->cwd, &oldpathname);
-		}
-
-		select_stored_position(data, oldpathname);
-		display_current_path(data);
+		enter_directory(data, NULL);
 	} else {
 		invoke_handler(data, "open");
 	}
