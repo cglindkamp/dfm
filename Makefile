@@ -84,12 +84,18 @@ ifeq ($(COVERAGE),1)
 	gcov -n $(TESTEDOBJECTS)
 endif
 
+vtest: tests/tests
+	CK_FORK=no valgrind --leak-check=full tests/tests
+
 testoom: tests/tests
 	rm -f $(patsubst %.o,%.gcda,$(TESTEDOBJECTS))
 	tests/tests oom
 ifeq ($(COVERAGE),1)
 	gcov -n $(TESTEDOBJECTS)
 endif
+
+vtestoom: tests/tests
+	valgrind --leak-check=full tests/tests oom 2> valgrind-oom.log
 
 $(TESTOBJECTS): %.o: %.c
 	$(COMPILE.c) $(CHECK_CFLAGS) -c -o $@ $<
