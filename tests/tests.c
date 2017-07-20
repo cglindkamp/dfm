@@ -16,6 +16,7 @@ Suite *dict_suite(void);
 Suite *listmodel_suite(void);
 Suite *listview_suite(void);
 Suite *path_suite(void);
+Suite *filedata_suite(void);
 Suite *dirmodel_suite(void);
 Suite *xdg_suite(void);
 
@@ -31,6 +32,7 @@ SRunner *create_runner()
 	srunner_add_suite(suite_runner, listmodel_suite());
 	srunner_add_suite(suite_runner, listview_suite());
 	srunner_add_suite(suite_runner, path_suite());
+	srunner_add_suite(suite_runner, filedata_suite());
 	srunner_add_suite(suite_runner, dirmodel_suite());
 	srunner_add_suite(suite_runner, xdg_suite());
 

@@ -39,6 +39,7 @@ OBJECTS = \
 	src/clipboard.o \
 	src/dict.o \
 	src/dirmodel.o \
+	src/filedata.o \
 	src/list.o \
 	src/listmodel.o \
 	src/listview.o \
@@ -49,6 +50,7 @@ OBJECTS = \
 TESTEDOBJECTS = \
 	src/dict.o \
 	src/dirmodel.o \
+	src/filedata.o \
 	src/list.o \
 	src/listmodel.o \
 	src/listview.o \
@@ -58,6 +60,7 @@ TESTEDOBJECTS = \
 TESTOBJECTS = \
 	tests/dict.o \
 	tests/dirmodel.o \
+	tests/filedata.o \
 	tests/list.o \
 	tests/listmodel.o \
 	tests/listview.o \

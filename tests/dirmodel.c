@@ -17,8 +17,8 @@
 
 #define PATH_TEMPLATE "/tmp/dirmodel.XXXXXX"
 
-struct listmodel model;
-char path[] = PATH_TEMPLATE;
+static struct listmodel model;
+static char path[] = PATH_TEMPLATE;
 static int dir_fd;
 
 static void create_temp_directory()

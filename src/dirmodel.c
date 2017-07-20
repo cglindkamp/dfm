@@ -6,7 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/inotify.h>
-#include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <wchar.h>
@@ -14,6 +13,7 @@
 #include <ev.h>
 
 #include "dirmodel.h"
+#include "filedata.h"
 #include "listmodel_impl.h"
 #include "list.h"
 
@@ -33,22 +33,6 @@ struct data {
 	int inotify_watch;
 	DIR *dir;
 };
-
-struct filedata {
-	const char *filename;
-	bool is_link;
-	bool is_link_broken;
-	struct stat stat;
-	bool is_marked;
-};
-
-static void free_filedata(struct filedata *filedata)
-{
-	if(filedata == NULL)
-		return;
-	free((void *)filedata->filename);
-	free(filedata);
-}
 
 size_t dirmodel_count(struct listmodel *model)
 {
@@ -233,22 +217,6 @@ static int sort_filename(const void *a, const void *b)
 	return 1;
 }
 
-static bool read_file_data(int dirfd, struct filedata *filedata)
-{
-	if(fstatat(dirfd, filedata->filename, &filedata->stat, AT_SYMLINK_NOFOLLOW) != 0)
-		return false;
-	filedata->is_link = false;
-	if(S_ISLNK(filedata->stat.st_mode)) {
-		filedata->is_link = true;
-		if(fstatat(dirfd, filedata->filename, &filedata->stat, 0) != 0)
-			filedata->is_link_broken = true;
-		else
-			filedata->is_link_broken = false;
-	}
-	filedata->is_marked = false;
-	return true;
-}
-
 bool dirmodel_get_index(struct listmodel *model, const char *filename, size_t *index)
 {
 	struct data *data = model->data;
@@ -300,34 +268,23 @@ static void inotify_cb(EV_P_ ev_io *w, int revents)
 			found = dirmodel_get_index(model, event->name, &index);
 			if(found) {
 				filedataold = list_get_item(list, index);
-				free_filedata(filedataold);
+				filedata_delete(filedataold);
 				list_remove(list, index);
 				listmodel_notify_change(model, index, MODEL_REMOVE);
 			}
 		} else if(event->mask & (IN_CREATE | IN_MOVED_TO | IN_MODIFY)) {
-			filedata = malloc(sizeof(*filedata));
-			if(filedata == NULL)
+			if(filedata_new_from_file(&filedata, dirfd(data->dir), event->name) != 0)
 				continue;
 
-			filedata->filename = strdup(event->name);
-			if(filedata->filename == NULL) {
-				free(filedata);
-				continue;
-			}
-
-			if(!read_file_data(dirfd(data->dir), filedata)) {
-				free_filedata(filedata);
-				continue;
-			}
 			found = list_find_item_or_insertpoint(list, sort_filename, filedata, &index);
 			if(found) {
 				filedataold = list_get_item(list, index);
 				list_set_item(list, index, filedata);
-				free_filedata(filedataold);
+				filedata_delete(filedataold);
 				listmodel_notify_change(model, index, MODEL_CHANGE);
 			} else {
 				if(!list_insert(list, index, filedata)) {
-					free_filedata(filedata);
+					filedata_delete(filedata);
 					continue;
 				}
 				listmodel_notify_change(model, index, MODEL_ADD);
@@ -398,18 +355,14 @@ static bool internal_init(struct listmodel *model, const char *path)
 	while(entry) {
 		if(strcmp(entry->d_name, ".") != 0 &&
 		   strcmp(entry->d_name, "..") != 0) {
-			filedata = malloc(sizeof(*filedata));
-			if(filedata == NULL)
+			int ret = filedata_new_from_file(&filedata, dirfd(dir), entry->d_name);
+
+			if(ret == ENOMEM)
 				goto err_readdir;
 
-			filedata->filename = strdup(entry->d_name);
-			if(filedata->filename == NULL)
-				goto err_readdir;
-
-			if(!read_file_data(dirfd(dir), filedata)) {
-				free_filedata(filedata);
+			if(ret != 0)
 				continue;
-			}
+
 			if(!list_append(list, filedata))
 				goto err_readdir;
 		}
@@ -422,9 +375,9 @@ static bool internal_init(struct listmodel *model, const char *path)
 	return true;
 
 err_readdir:
-	free_filedata(filedata);
+	filedata_delete(filedata);
 err_newlist:
-	list_delete(list, (list_item_deallocator)free_filedata);
+	list_delete(list, (list_item_deallocator)filedata_delete);
 err_inotify_watch:
 	close(data->inotify_fd);
 err_inotify:
@@ -450,7 +403,7 @@ static void internal_destroy(struct listmodel *model)
 	close(data->inotify_fd);
 	closedir(data->dir);
 
-	list_delete(list, (list_item_deallocator)free_filedata);
+	list_delete(list, (list_item_deallocator)filedata_delete);
 	free(model->data);
 	model->data = NULL;
 }
