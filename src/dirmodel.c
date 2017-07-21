@@ -238,6 +238,46 @@ bool dirmodel_get_index(struct listmodel *model, const char *filename, size_t *i
 	return found;
 }
 
+static void dirmodel_file_deleted(struct listmodel *model, const char *filename)
+{
+	struct data *data = model->data;
+	list_t *list = data->list;
+	size_t index;
+
+	bool found = dirmodel_get_index(model, filename, &index);
+	if(found) {
+		struct filedata *filedata = list_get_item(list, index);
+		filedata_delete(filedata);
+		list_remove(list, index);
+		listmodel_notify_change(model, index, MODEL_REMOVE);
+	}
+}
+
+static void dirmodel_file_added_or_changed(struct listmodel *model, const char *filename)
+{
+	struct data *data = model->data;
+	list_t *list = data->list;
+	struct filedata *filedata;
+	size_t index;
+
+	if(filedata_new_from_file(&filedata, dirfd(data->dir), filename) != 0)
+		return;
+
+	bool found = list_find_item_or_insertpoint(list, sort_filename, filedata, &index);
+	if(found) {
+		struct filedata *filedataold = list_get_item(list, index);
+		list_set_item(list, index, filedata);
+		filedata_delete(filedataold);
+		listmodel_notify_change(model, index, MODEL_CHANGE);
+	} else {
+		if(!list_insert(list, index, filedata)) {
+			filedata_delete(filedata);
+			return;
+		}
+		listmodel_notify_change(model, index, MODEL_ADD);
+	}
+}
+
 static void inotify_cb(EV_P_ ev_io *w, int revents)
 {
 #ifdef EV_MULTIPLICITY
@@ -247,15 +287,11 @@ static void inotify_cb(EV_P_ ev_io *w, int revents)
 
 	struct listmodel *model = w->data;
 	struct data *data = model->data;
-	list_t *list = data->list;
 	char buf[4096]
 		__attribute__((aligned(__alignof(struct inotify_event))));
 	char *ptr;
 	const struct inotify_event *event;
 	ssize_t len;
-	struct filedata *filedata, *filedataold;
-	size_t index;
-	bool found;
 
 	len = read(data->inotify_fd, &buf, sizeof(buf));
 	if(len <= 0)
@@ -265,30 +301,9 @@ static void inotify_cb(EV_P_ ev_io *w, int revents)
 		event = (const struct inotify_event *)ptr;
 
 		if(event->mask & (IN_DELETE | IN_MOVED_FROM)) {
-			found = dirmodel_get_index(model, event->name, &index);
-			if(found) {
-				filedataold = list_get_item(list, index);
-				filedata_delete(filedataold);
-				list_remove(list, index);
-				listmodel_notify_change(model, index, MODEL_REMOVE);
-			}
+			dirmodel_file_deleted(model, event->name);
 		} else if(event->mask & (IN_CREATE | IN_MOVED_TO | IN_MODIFY)) {
-			if(filedata_new_from_file(&filedata, dirfd(data->dir), event->name) != 0)
-				continue;
-
-			found = list_find_item_or_insertpoint(list, sort_filename, filedata, &index);
-			if(found) {
-				filedataold = list_get_item(list, index);
-				list_set_item(list, index, filedata);
-				filedata_delete(filedataold);
-				listmodel_notify_change(model, index, MODEL_CHANGE);
-			} else {
-				if(!list_insert(list, index, filedata)) {
-					filedata_delete(filedata);
-					continue;
-				}
-				listmodel_notify_change(model, index, MODEL_ADD);
-			}
+			dirmodel_file_added_or_changed(model, event->name);
 		}
 	}
 }
