@@ -5,6 +5,7 @@
 #include <ncurses.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/inotify.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -32,6 +33,8 @@ struct loopdata {
 	WINDOW *status;
 	struct path cwd;
 	struct clipboard clipboard;
+	int inotify_fd;
+	int inotify_watch;
 };
 
 void init_ncurses()
@@ -295,18 +298,38 @@ void navigate_pagedown(struct loopdata *data, const char *unused)
 	listview_pagedown(&data->view);
 }
 
-static void enter_directory(struct loopdata *data, const char *oldpathname)
+static bool enter_directory(struct loopdata *data, const char *oldpathname)
 {
-	while(!dirmodel_change_directory(&data->model, path_tocstr(&data->cwd))) {
+	while(1) {
+		if(data->inotify_fd != -1) {
+			if(data->inotify_watch != -1)
+				inotify_rm_watch(data->inotify_fd, data->inotify_watch);
+
+			data->inotify_watch = inotify_add_watch(data->inotify_fd, path_tocstr(&data->cwd),
+				IN_CREATE |
+				IN_DELETE |
+				IN_MOVED_FROM |
+				IN_MOVED_TO |
+				IN_MODIFY |
+				IN_EXCL_UNLINK
+				);
+		}
+
+		if(dirmodel_change_directory(&data->model, path_tocstr(&data->cwd)))
+			break;
+
 		if(strcmp(path_tocstr(&data->cwd), "/") == 0) {
 			puts("Cannot even open \"/\", exiting");
 			ev_break(data->loop, EVBREAK_ONE);
+			return false;
 		}
 		path_remove_component(&data->cwd, &oldpathname);
 	}
 
 	select_stored_position(data, oldpathname);
 	display_current_path(data);
+
+	return true;
 }
 
 void navigate_left(struct loopdata *data, const char *unused)
@@ -414,11 +437,45 @@ static void stdin_cb(EV_P_ ev_io *w, int revents)
 	}
 }
 
+
+static void inotify_cb(EV_P_ ev_io *w, int revents)
+{
+#ifdef EV_MULTIPLICITY
+	(void)loop;
+#endif
+	(void)revents;
+
+	struct loopdata *data = w->data;
+	char buf[4096]
+		__attribute__((aligned(__alignof(struct inotify_event))));
+	char *ptr;
+	const struct inotify_event *event;
+	ssize_t len;
+
+	len = read(data->inotify_fd, &buf, sizeof(buf));
+	if(len <= 0)
+		return;
+
+	for(ptr = buf; ptr < buf + len; ptr += sizeof(struct inotify_event) + event->len) {
+		event = (const struct inotify_event *)ptr;
+
+		if(event->wd != data->inotify_watch)
+			continue;
+
+		if(event->mask & (IN_DELETE | IN_MOVED_FROM)) {
+			dirmodel_notify_file_deleted(&data->model, event->name);
+		} else if(event->mask & (IN_CREATE | IN_MOVED_TO | IN_MODIFY)) {
+			(void)dirmodel_notify_file_added_or_changed(&data->model, event->name);
+		}
+	}
+}
+
 int main(void)
 {
 	struct loopdata data;
 	data.loop = EV_DEFAULT;
 	ev_io stdin_watcher;
+	ev_io inotify_watcher;
 	ev_signal sigwinch_watcher;
 	int ret = 0;
 
@@ -436,22 +493,15 @@ int main(void)
 		goto err_path_cwd;
 	}
 
-	dirmodel_init(&data.model);
-	if(!dirmodel_change_directory(&data.model, path_tocstr(&data.cwd))) {
-		puts("Cannot open current working directory, exiting!");
-		ret = -1;
-		goto err_dirmodel;
+	data.inotify_fd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
+	data.inotify_watch = -1;
+	if(data.inotify_fd != -1) {
+		inotify_watcher.data = &data;
+		ev_io_init(&inotify_watcher, inotify_cb, data.inotify_fd, EV_READ);
+		ev_io_start(data.loop, &inotify_watcher);
 	}
 
 	init_ncurses();
-
-	if(!listview_init(&data.view, &data.model, 0, 0, COLS, LINES - 1))
-	{
-		endwin();
-		puts("Cannot create list view, exiting!");
-		ret = -1;
-		goto err_listview;
-	};
 
 	data.status = newwin(1, COLS, LINES - 1, 0);
 	if(data.status == NULL) {
@@ -474,8 +524,19 @@ int main(void)
 
 	clipboard_init(&data.clipboard);
 
-	display_current_path(&data);
+	dirmodel_init(&data.model);
+	if(!enter_directory(&data, NULL)) {
+		ret = -1;
+		goto err_dirmodel;
+	}
 
+	if(!listview_init(&data.view, &data.model, 0, 0, COLS, LINES - 1))
+	{
+		endwin();
+		puts("Cannot create list view, exiting!");
+		ret = -1;
+		goto err_listview;
+	};
 
 	ev_set_userdata(data.loop, &data);
 
@@ -489,16 +550,16 @@ int main(void)
 
 
 	endwin();
+	listview_destroy(&data.view);
+err_listview:
+	dirmodel_destroy(&data.model);
+err_dirmodel:
 	clipboard_destroy(&data.clipboard);
 	dict_delete(data.stored_positions, true);
 err_stored_positions:
 	delwin(data.status);
 err_status_line:
-	listview_destroy(&data.view);
-err_listview:
 	_nc_freeall();
-err_dirmodel:
-	dirmodel_destroy(&data.model);
 err_path_cwd:
 	path_destroy(&data.cwd);
 err_path:

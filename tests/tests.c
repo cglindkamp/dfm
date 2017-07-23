@@ -4,7 +4,6 @@
 #include <locale.h>
 #include <stdlib.h>
 #include <ncurses.h>
-#include <ev.h>
 
 #include "tests.h"
 #include "wrapper/alloc.h"
@@ -95,8 +94,6 @@ int main(int argc, char *argv[])
 	}
 
 	alloc_set_allocations_until_fail(-1);
-	_nc_freeall();
-	ev_loop_destroy(EV_DEFAULT);
 	fclose(dummyterm);
 	return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

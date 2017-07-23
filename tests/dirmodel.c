@@ -2,6 +2,7 @@
 #include <check.h>
 
 #include <dirent.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <ftw.h>
 #include <stdio.h>
@@ -9,8 +10,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-
-#include <ev.h>
 
 #include "../src/dirmodel.h"
 #include "tests.h"
@@ -247,11 +246,11 @@ START_TEST(test_dirmodel_addedfileevent)
 	assert_oom(listmodel_register_change_callback(&model, change_callback, NULL) == true);
 
 	assert_oom(dirmodel_change_directory(&model, path) == true);
-	struct ev_loop *loop = EV_DEFAULT;
 	create_file(dir_fd, "2", 0);
-	ev_run(loop, EVRUN_NOWAIT);
 
-	assert_oom(cb_count == 2);
+	assert_oom(dirmodel_notify_file_added_or_changed(&model, "2") != ENOMEM);
+
+	ck_assert_uint_eq(cb_count, 2);
 	ck_assert_uint_eq(cb_index, 2);
 	ck_assert_uint_eq(cb_change, MODEL_ADD);
 }
@@ -270,9 +269,7 @@ START_TEST(test_dirmodel_removedfileevent)
 	assert_oom(listmodel_register_change_callback(&model, change_callback, NULL) == true);
 
 	assert_oom(dirmodel_change_directory(&model, path) == true);
-	struct ev_loop *loop = EV_DEFAULT;
-	unlinkat(dir_fd, "3", 0);
-	ev_run(loop, EVRUN_NOWAIT);
+	dirmodel_notify_file_deleted(&model, "3");
 
 	ck_assert_uint_eq(cb_count, 2);
 	ck_assert_uint_eq(cb_index, 3);
@@ -293,11 +290,10 @@ START_TEST(test_dirmodel_changedfileevent)
 	assert_oom(listmodel_register_change_callback(&model, change_callback, NULL) == true);
 
 	assert_oom(dirmodel_change_directory(&model, path) == true);
-	struct ev_loop *loop = EV_DEFAULT;
-	create_file(dir_fd, "1", 1);
-	ev_run(loop, EVRUN_NOWAIT);
 
-	assert_oom(cb_count == 2);
+	assert_oom(dirmodel_notify_file_added_or_changed(&model, "1") != ENOMEM);
+
+	ck_assert_uint_eq(cb_count, 2);
 	ck_assert_uint_eq(cb_index, 1);
 	ck_assert_uint_eq(cb_change, MODEL_CHANGE);
 }
@@ -311,10 +307,9 @@ START_TEST(test_dirmodel_addedfileremovedbeforeeventhandled)
 	assert_oom(listmodel_register_change_callback(&model, change_callback, NULL) == true);
 
 	assert_oom(dirmodel_change_directory(&model, path) == true);
-	struct ev_loop *loop = EV_DEFAULT;
-	create_file(dir_fd, "foo", 0);
-	unlinkat(dir_fd, "foo", 0);
-	ev_run(loop, EVRUN_NOWAIT);
+
+	/* we simulate this situation by notifying dirmodel without creating the file */
+	assert_oom(dirmodel_notify_file_added_or_changed(&model, "foo") != ENOMEM);
 
 	ck_assert_uint_eq(cb_count, 1);
 	ck_assert_uint_eq(cb_change, MODEL_RELOAD);

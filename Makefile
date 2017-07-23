@@ -100,7 +100,7 @@ vtestoom: tests/tests
 $(TESTOBJECTS): %.o: %.c
 	$(COMPILE.c) $(CHECK_CFLAGS) -c -o $@ $<
 tests/tests: $(TESTEDOBJECTS) $(TESTOBJECTS)
-	$(LINK.c) -o $@ $^ $(CHECK_LIBS) $(NCURSES_LIBS) $(LIBEV_LIBS) -Wl,--wrap=getcwd -Wl,--wrap=malloc -Wl,--wrap=realloc -Wl,--wrap=strdup
+	$(LINK.c) -o $@ $^ $(CHECK_LIBS) $(NCURSES_LIBS) -Wl,--wrap=getcwd -Wl,--wrap=malloc -Wl,--wrap=realloc -Wl,--wrap=strdup
 
 install:
 	install -m 755 -D $(PROJECT) $(BINDIR)/$(PROJECT)

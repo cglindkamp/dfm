@@ -10,8 +10,6 @@
 #include <unistd.h>
 #include <wchar.h>
 
-#include <ev.h>
-
 #include "dirmodel.h"
 #include "filedata.h"
 #include "listmodel_impl.h"
@@ -28,9 +26,6 @@
 
 struct data {
 	struct list *list;
-	ev_io inotify_watcher;
-	int inotify_fd;
-	int inotify_watch;
 	DIR *dir;
 };
 
@@ -238,7 +233,7 @@ bool dirmodel_get_index(struct listmodel *model, const char *filename, size_t *i
 	return found;
 }
 
-static void dirmodel_file_deleted(struct listmodel *model, const char *filename)
+void dirmodel_notify_file_deleted(struct listmodel *model, const char *filename)
 {
 	struct data *data = model->data;
 	list_t *list = data->list;
@@ -253,15 +248,16 @@ static void dirmodel_file_deleted(struct listmodel *model, const char *filename)
 	}
 }
 
-static void dirmodel_file_added_or_changed(struct listmodel *model, const char *filename)
+int dirmodel_notify_file_added_or_changed(struct listmodel *model, const char *filename)
 {
 	struct data *data = model->data;
 	list_t *list = data->list;
 	struct filedata *filedata;
 	size_t index;
 
-	if(filedata_new_from_file(&filedata, dirfd(data->dir), filename) != 0)
-		return;
+	int ret = filedata_new_from_file(&filedata, dirfd(data->dir), filename);
+	if(ret != 0)
+		return ret;
 
 	bool found = list_find_item_or_insertpoint(list, sort_filename, filedata, &index);
 	if(found) {
@@ -272,40 +268,12 @@ static void dirmodel_file_added_or_changed(struct listmodel *model, const char *
 	} else {
 		if(!list_insert(list, index, filedata)) {
 			filedata_delete(filedata);
-			return;
+			return ENOMEM;
 		}
 		listmodel_notify_change(model, index, MODEL_ADD);
 	}
-}
 
-static void inotify_cb(EV_P_ ev_io *w, int revents)
-{
-#ifdef EV_MULTIPLICITY
-	(void)loop;
-#endif
-	(void)revents;
-
-	struct listmodel *model = w->data;
-	struct data *data = model->data;
-	char buf[4096]
-		__attribute__((aligned(__alignof(struct inotify_event))));
-	char *ptr;
-	const struct inotify_event *event;
-	ssize_t len;
-
-	len = read(data->inotify_fd, &buf, sizeof(buf));
-	if(len <= 0)
-		return;
-
-	for(ptr = buf; ptr < buf + len; ptr += sizeof(struct inotify_event) + event->len) {
-		event = (const struct inotify_event *)ptr;
-
-		if(event->mask & (IN_DELETE | IN_MOVED_FROM)) {
-			dirmodel_file_deleted(model, event->name);
-		} else if(event->mask & (IN_CREATE | IN_MOVED_TO | IN_MODIFY)) {
-			dirmodel_file_added_or_changed(model, event->name);
-		}
-	}
+	return 0;
 }
 
 const char *dirmodel_getfilename(struct listmodel *model, size_t index)
@@ -328,7 +296,6 @@ static bool internal_init(struct listmodel *model, const char *path)
 {
 	DIR *dir;
 	struct filedata *filedata;
-	struct ev_loop *loop = EV_DEFAULT;
 
 	model->data = malloc(sizeof(struct data));
 	if(model->data == NULL)
@@ -339,26 +306,6 @@ static bool internal_init(struct listmodel *model, const char *path)
 	dir = opendir(path);
 	if(dir == NULL)
 		goto err_opendir;
-
-	data->inotify_fd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
-	if(data->inotify_fd == -1)
-		goto err_inotify;
-
-	data->inotify_watch = inotify_add_watch(data->inotify_fd, path,
-		IN_CREATE |
-		IN_DELETE |
-		IN_MOVED_FROM |
-		IN_MOVED_TO |
-		IN_MODIFY |
-		IN_EXCL_UNLINK
-		);
-
-	if(data->inotify_watch == -1)
-		goto err_inotify_watch;
-
-	data->inotify_watcher.data = model;
-	ev_io_init(&data->inotify_watcher, inotify_cb, data->inotify_fd, EV_READ);
-	ev_io_start(loop, &data->inotify_watcher);
 
 	list_t *list = list_new(0);
 	if(list == NULL)
@@ -391,11 +338,8 @@ static bool internal_init(struct listmodel *model, const char *path)
 
 err_readdir:
 	filedata_delete(filedata);
-err_newlist:
 	list_delete(list, (list_item_deallocator)filedata_delete);
-err_inotify_watch:
-	close(data->inotify_fd);
-err_inotify:
+err_newlist:
 	closedir(dir);
 err_opendir:
 	free(model->data);
@@ -410,12 +354,8 @@ static void internal_destroy(struct listmodel *model)
 	if(data == NULL)
 		return;
 
-	struct ev_loop *loop = EV_DEFAULT;
 	list_t *list = data->list;
 
-	ev_io_stop(loop, &data->inotify_watcher);
-	inotify_rm_watch(data->inotify_fd, data->inotify_watch);
-	close(data->inotify_fd);
 	closedir(data->dir);
 
 	list_delete(list, (list_item_deallocator)filedata_delete);
