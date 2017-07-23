@@ -3,16 +3,17 @@
 #include <limits.h>
 #include <locale.h>
 #include <ncurses.h>
+#include <poll.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/inotify.h>
+#include <sys/signalfd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <wchar.h>
-
-#include <ev.h>
 
 #include "clipboard.h"
 #include "list.h"
@@ -26,15 +27,16 @@
 void _nc_freeall();
 
 struct loopdata {
-	struct ev_loop *loop;
 	struct listview view;
 	struct listmodel model;
 	list_t *stored_positions;
 	WINDOW *status;
 	struct path cwd;
 	struct clipboard clipboard;
+	int sigwinch_fd;
 	int inotify_fd;
 	int inotify_watch;
+	bool running;
 };
 
 void init_ncurses()
@@ -92,12 +94,11 @@ static void display_current_path(struct loopdata *data)
 	wrefresh(data->status);
 }
 
-static void sigwinch_cb(EV_P_ ev_signal *w, int revents)
+static void sigwinch_cb(struct loopdata *data)
 {
-	(void)w;
-	(void)revents;
+	struct signalfd_siginfo info;
 
-	struct loopdata *data = ev_userdata(EV_A);
+	read(data->sigwinch_fd, &info, sizeof(info));
 
 	endwin();
 	doupdate();
@@ -320,7 +321,7 @@ static bool enter_directory(struct loopdata *data, const char *oldpathname)
 
 		if(strcmp(path_tocstr(&data->cwd), "/") == 0) {
 			puts("Cannot even open \"/\", exiting");
-			ev_break(data->loop, EVBREAK_ONE);
+			data->running = false;
 			return false;
 		}
 		path_remove_component(&data->cwd, &oldpathname);
@@ -388,7 +389,7 @@ void yank(struct loopdata *data, const char *unused)
 void quit(struct loopdata *data, const char *unused)
 {
 	(void)unused;
-	ev_break(data->loop, EVBREAK_ONE);
+	data->running = false;
 }
 
 struct keyspec {
@@ -416,12 +417,8 @@ struct keymap {
 	{ { OK, L'q' }, quit, NULL },
 };
 
-static void stdin_cb(EV_P_ ev_io *w, int revents)
+static void stdin_cb(struct loopdata *data)
 {
-	(void)w;
-	(void)revents;
-
-	struct loopdata *data = ev_userdata(EV_A);
 	wint_t key;
 	int ret;
 
@@ -437,15 +434,8 @@ static void stdin_cb(EV_P_ ev_io *w, int revents)
 	}
 }
 
-
-static void inotify_cb(EV_P_ ev_io *w, int revents)
+static void inotify_cb(struct loopdata *data)
 {
-#ifdef EV_MULTIPLICITY
-	(void)loop;
-#endif
-	(void)revents;
-
-	struct loopdata *data = w->data;
 	char buf[4096]
 		__attribute__((aligned(__alignof(struct inotify_event))));
 	char *ptr;
@@ -470,13 +460,20 @@ static void inotify_cb(EV_P_ ev_io *w, int revents)
 	}
 }
 
+static int create_sigwinch_signalfd()
+{
+	sigset_t sigset;
+
+	sigemptyset(&sigset);
+	sigaddset(&sigset, SIGWINCH);
+	sigprocmask(SIG_BLOCK, &sigset, NULL);
+
+	return signalfd(-1, &sigset, SFD_CLOEXEC);
+}
+
 int main(void)
 {
 	struct loopdata data;
-	data.loop = EV_DEFAULT;
-	ev_io stdin_watcher;
-	ev_io inotify_watcher;
-	ev_signal sigwinch_watcher;
 	int ret = 0;
 
 	setlocale(LC_ALL, "");
@@ -495,11 +492,6 @@ int main(void)
 
 	data.inotify_fd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
 	data.inotify_watch = -1;
-	if(data.inotify_fd != -1) {
-		inotify_watcher.data = &data;
-		ev_io_init(&inotify_watcher, inotify_cb, data.inotify_fd, EV_READ);
-		ev_io_start(data.loop, &inotify_watcher);
-	}
 
 	init_ncurses();
 
@@ -538,18 +530,36 @@ int main(void)
 		goto err_listview;
 	};
 
-	ev_set_userdata(data.loop, &data);
+	data.sigwinch_fd = create_sigwinch_signalfd();
+	if(data.sigwinch_fd == -1) {
+		endwin();
+		puts("Cannot create signalfd, exiting!");
+		ret = -1;
+		goto err_signalfd;
+	};
 
-	ev_io_init(&stdin_watcher, stdin_cb, 0, EV_READ);
-	ev_io_start(data.loop, &stdin_watcher);
+	struct pollfd pollfds[3] = {
+		{ .events = POLLIN, .fd = 0, },
+		{ .events = POLLIN, .fd = data.sigwinch_fd, },
+		{ .events = POLLIN, .fd = data.inotify_fd, },
+	};
+	int nfds = data.inotify_fd == -1 ? 2 : 3;
 
-	ev_signal_init(&sigwinch_watcher, sigwinch_cb, SIGWINCH);
-	ev_signal_start(data.loop, &sigwinch_watcher);
-
-	ev_run(data.loop, 0);
-
+	data.running = true;
+	while(data.running) {
+		int ret = poll(pollfds, nfds, 0);
+		if(ret > 0) {
+			if(pollfds[0].revents & POLLIN)
+				stdin_cb(&data);
+			if(pollfds[1].revents & POLLIN)
+				sigwinch_cb(&data);
+			if(pollfds[2].revents & POLLIN)
+				inotify_cb(&data);
+		}
+	}
 
 	endwin();
+err_signalfd:
 	listview_destroy(&data.view);
 err_listview:
 	dirmodel_destroy(&data.model);
@@ -563,7 +573,5 @@ err_status_line:
 err_path_cwd:
 	path_destroy(&data.cwd);
 err_path:
-	ev_loop_destroy(EV_DEFAULT);
-
 	return ret;
 }

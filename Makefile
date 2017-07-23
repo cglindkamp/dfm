@@ -5,7 +5,6 @@ BINDIR = /usr/local/bin
 
 NCURSES_CFLAGS := $(shell pkg-config --cflags ncursesw)
 NCURSES_LIBS := $(shell pkg-config --libs ncursesw)
-LIBEV_LIBS := -lev
 CHECK_CFLAGS := $(shell pkg-config --cflags check)
 CHECK_LIBS := $(shell pkg-config --libs check)
 
@@ -15,7 +14,7 @@ all: $(PROJECT)
 COVERAGE = 0
 CPPFLAGS =-DNDEBUG -D_XOPEN_SOURCE=700 -D_XOPEN_SOURCE_EXTENDED -DPROJECT=\"$(PROJECT)\"
 CFLAGS = -std=c11 -MMD -pedantic -Wall -Wextra $(NCURSES_CFLAGS)
-LIBS = $(NCURSES_LIBS) $(LIBEV_LIBS)
+LIBS = $(NCURSES_LIBS)
 
 ifeq ($(COVERAGE),1)
 CFLAGS += --coverage
