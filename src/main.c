@@ -547,7 +547,7 @@ int main(void)
 
 	data.running = true;
 	while(data.running) {
-		int ret = poll(pollfds, nfds, 0);
+		int ret = poll(pollfds, nfds, -1);
 		if(ret > 0) {
 			if(pollfds[0].revents & POLLIN)
 				stdin_cb(&data);
