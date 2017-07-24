@@ -1,4 +1,4 @@
-PROJECT = files
+PROJECT = dfm
 
 SYSCONFDIR = /etc
 BINDIR = /usr/local/bin
