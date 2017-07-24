@@ -32,6 +32,7 @@ EXAMPLES = \
 	delete \
 	copy \
 	move \
+	shell \
 	xterminal \
 
 OBJECTS = \
