@@ -1,0 +1,19 @@
+language: c
+
+dist: trusty
+sudo: false
+
+compiler:
+  - gcc
+  - clang
+
+addons:
+  apt:
+    packages:
+      - libncursesw5-dev
+      - check
+
+script:
+  - make
+  - make test
+
