@@ -21,7 +21,7 @@ static int dir_fd;
 static void create_temp_directory()
 {
 	strcpy(path, PATH_TEMPLATE);
-	ck_assert_ptr_nonnull(mkdtemp(path));
+	ck_assert(mkdtemp(path) != NULL);
 }
 
 static int remove_file(const char *path, const struct stat *sbuf, int type, struct FTW *ftwb)
@@ -75,7 +75,7 @@ START_TEST(test_filedata_regularfile)
 	create_file(dir_fd, "foo", 1024);
 
 	assert_oom(filedata_new_from_file(&filedata, dir_fd, "foo") == 0);
-	ck_assert_ptr_nonnull(filedata);
+	ck_assert(filedata != NULL);
 	ck_assert(filedata->is_link == false);
 	ck_assert(filedata->stat.st_size == 1024);
 	ck_assert(S_ISREG(filedata->stat.st_mode));
@@ -93,7 +93,7 @@ START_TEST(test_filedata_link)
 	symlinkat("foo", dir_fd, "bar");
 
 	assert_oom(filedata_new_from_file(&filedata, dir_fd, "bar") == 0);
-	ck_assert_ptr_nonnull(filedata);
+	ck_assert(filedata != NULL);
 	ck_assert(filedata->is_link == true);
 	ck_assert(filedata->is_link_broken == false);
 	ck_assert(filedata->stat.st_size == 2048);
@@ -111,7 +111,7 @@ START_TEST(test_filedata_linkbroken)
 	symlinkat("foo", dir_fd, "bar");
 
 	assert_oom(filedata_new_from_file(&filedata, dir_fd, "bar") == 0);
-	ck_assert_ptr_nonnull(filedata);
+	ck_assert(filedata != NULL);
 	ck_assert(filedata->is_link == true);
 	ck_assert(filedata->is_link_broken == true);
 	ck_assert(filedata->stat.st_size == 3);

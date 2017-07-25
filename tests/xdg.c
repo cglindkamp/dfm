@@ -84,7 +84,7 @@ START_TEST(test_xdg_confighome_confighomeandhomeunset)
 
 	int ret = xdg_get_config_home(&path);
 	ck_assert_int_eq(ret, ENOENT);
-	ck_assert_ptr_null(path);
+	ck_assert(path == NULL);
 }
 END_TEST
 
@@ -97,7 +97,7 @@ START_TEST(test_xdg_confighome_confighomeandhomeinvalid)
 
 	int ret = xdg_get_config_home(&path);
 	ck_assert_int_eq(ret, ENOENT);
-	ck_assert_ptr_null(path);
+	ck_assert(path == NULL);
 }
 END_TEST
 

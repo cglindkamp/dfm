@@ -23,7 +23,7 @@ static int dir_fd;
 static void create_temp_directory()
 {
 	strcpy(path, PATH_TEMPLATE);
-	ck_assert_ptr_nonnull(mkdtemp(path));
+	ck_assert(mkdtemp(path) != NULL);
 }
 
 static int remove_file(const char *path, const struct stat *sbuf, int type, struct FTW *ftwb)
@@ -382,7 +382,7 @@ START_TEST(test_dirmodel_markfiles_getfilenames_nomarkedfiles)
 	assert_oom(dirmodel_change_directory(&model, path) == true);
 
 	list_t *list = dirmodel_getmarkedfilenames(&model);
-	ck_assert_ptr_null(list);
+	ck_assert(list == NULL);
 }
 END_TEST
 
