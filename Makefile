@@ -47,16 +47,7 @@ OBJECTS = \
 	src/xdg.o \
 	src/main.o \
 
-TESTEDOBJECTS = \
-	src/dict.o \
-	src/dirmodel.o \
-	src/filedata.o \
-	src/list.o \
-	src/listmodel.o \
-	src/listview.o \
-	src/path.o \
-	src/xdg.o \
-
+TESTEDOBJECTS = $(subst src/main.o,,$(OBJECTS))
 TESTOBJECTS = \
 	tests/dict.o \
 	tests/dirmodel.o \
