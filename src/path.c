@@ -77,6 +77,13 @@ static bool path_cstr_is_valid(const char *cstr)
 
 int path_set_from_string(struct path *path, const char *cstr)
 {
+	if(strcmp(cstr, "~") == 0) {
+		const char *home = getenv("HOME");
+		if(home == NULL || strcmp(home, "~") == 0)
+			return EINVAL;
+		return path_set_from_string(path, home);
+	}
+
 	if(!(path_cstr_is_valid(cstr)))
 		return EINVAL;
 
