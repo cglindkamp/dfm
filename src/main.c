@@ -333,6 +333,14 @@ static bool enter_directory(struct loopdata *data, const char *oldpathname)
 	return true;
 }
 
+static void change_directory(struct loopdata *data, const char *path)
+{
+	save_current_position(data);
+
+	if(path_set_from_string(&data->cwd, path) == 0)
+		enter_directory(data, NULL);
+}
+
 void navigate_left(struct loopdata *data, const char *unused)
 {
 	(void)unused;
@@ -409,6 +417,8 @@ struct keymap {
 	{ { KEY_CODE_YES, KEY_LEFT }, navigate_left, NULL },
 	{ { KEY_CODE_YES, KEY_RIGHT }, navigate_right, NULL },
 	{ { OK, L' ' }, mark, NULL },
+	{ { OK, L'1' }, change_directory, "~" },
+	{ { OK, L'2' }, change_directory, "/" },
 	{ { OK, L'D' }, invoke_handler, "delete" },
 	{ { OK, L'p' }, invoke_handler, "copy" },
 	{ { OK, L'P' }, invoke_handler, "move" },
