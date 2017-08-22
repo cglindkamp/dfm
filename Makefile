@@ -45,6 +45,7 @@ OBJECTS = \
 	src/listview.o \
 	src/path.o \
 	src/xdg.o \
+	src/util.o \
 	src/main.o \
 
 TESTEDOBJECTS = $(subst src/main.o,,$(OBJECTS))
