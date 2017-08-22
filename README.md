@@ -46,6 +46,8 @@ handler scripts to ~/.config/dfm/handlers and edit them to your liking.
 | Left     | Go to the parent directory                                                           |
 | Right    | Enter the selected directory or open the selected/marked file(s)                     |
 | Space    | Mark currently selected file                                                         |
+| 1        | Go to home (~) directory                                                             |
+| 2        | Go to root (/) directory                                                             |
 | D        | Delete currently marked files, or when no file is marked the currently selected file |
 | p        | Copy files in clipboard to the current directory                                     |
 | P        | Move files in clipboard to the current directory                                     |
