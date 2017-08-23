@@ -36,6 +36,7 @@ EXAMPLES = \
 	xterminal \
 
 OBJECTS = \
+	src/application.o \
 	src/clipboard.o \
 	src/dict.o \
 	src/dirmodel.o \
