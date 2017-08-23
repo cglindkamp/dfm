@@ -23,8 +23,9 @@ struct application {
 	bool running;
 };
 
+void application_run(struct application *app);
+
 bool application_init(struct application *app);
 void application_destroy(struct application *app);
-void application_run(struct application *app);
 
 #endif

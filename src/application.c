@@ -60,19 +60,40 @@ static void display_current_path(struct application *app)
 	wrefresh(app->status);
 }
 
-static void sigwinch_cb(struct application *app)
+static bool enter_directory(struct application *app, const char *oldpathname)
 {
-	struct signalfd_siginfo info;
+	while(1) {
+		if(app->inotify_fd != -1) {
+			if(app->inotify_watch != -1)
+				inotify_rm_watch(app->inotify_fd, app->inotify_watch);
 
-	read(app->sigwinch_fd, &info, sizeof(info));
+			app->inotify_watch = inotify_add_watch(app->inotify_fd, path_tocstr(&app->cwd),
+				IN_CREATE |
+				IN_DELETE |
+				IN_MOVED_FROM |
+				IN_MOVED_TO |
+				IN_MODIFY |
+				IN_EXCL_UNLINK
+				);
+		}
 
-	endwin();
-	doupdate();
-	mvwin(app->status, LINES - 1, 0);
-	wresize(app->status, 1, COLS);
-	wrefresh(app->status);
-	listview_resize(&app->view, COLS, LINES - 1);
+		if(dirmodel_change_directory(&app->model, path_tocstr(&app->cwd)))
+			break;
+
+		if(strcmp(path_tocstr(&app->cwd), "/") == 0) {
+			puts("Cannot even open \"/\", exiting");
+			app->running = false;
+			return false;
+		}
+		path_remove_component(&app->cwd, &oldpathname);
+	}
+
+	select_stored_position(app, oldpathname);
+	display_current_path(app);
+
+	return true;
 }
+
 
 static void invoke_handler(struct application *app, const char *handler_name)
 {
@@ -159,48 +180,6 @@ static void navigate_pagedown(struct application *app, const char *unused)
 	listview_pagedown(&app->view);
 }
 
-static bool enter_directory(struct application *app, const char *oldpathname)
-{
-	while(1) {
-		if(app->inotify_fd != -1) {
-			if(app->inotify_watch != -1)
-				inotify_rm_watch(app->inotify_fd, app->inotify_watch);
-
-			app->inotify_watch = inotify_add_watch(app->inotify_fd, path_tocstr(&app->cwd),
-				IN_CREATE |
-				IN_DELETE |
-				IN_MOVED_FROM |
-				IN_MOVED_TO |
-				IN_MODIFY |
-				IN_EXCL_UNLINK
-				);
-		}
-
-		if(dirmodel_change_directory(&app->model, path_tocstr(&app->cwd)))
-			break;
-
-		if(strcmp(path_tocstr(&app->cwd), "/") == 0) {
-			puts("Cannot even open \"/\", exiting");
-			app->running = false;
-			return false;
-		}
-		path_remove_component(&app->cwd, &oldpathname);
-	}
-
-	select_stored_position(app, oldpathname);
-	display_current_path(app);
-
-	return true;
-}
-
-static void change_directory(struct application *app, const char *path)
-{
-	save_current_position(app);
-
-	if(path_set_from_string(&app->cwd, path) == 0)
-		enter_directory(app, NULL);
-}
-
 static void navigate_left(struct application *app, const char *unused)
 {
 	(void)unused;
@@ -232,6 +211,14 @@ static void navigate_right(struct application *app, const char *unused)
 	}
 }
 
+static void change_directory(struct application *app, const char *path)
+{
+	save_current_position(app);
+
+	if(path_set_from_string(&app->cwd, path) == 0)
+		enter_directory(app, NULL);
+}
+
 static void mark(struct application *app, const char *unused)
 {
 	(void)unused;
@@ -259,6 +246,7 @@ static void quit(struct application *app, const char *unused)
 	(void)unused;
 	app->running = false;
 }
+
 
 struct keyspec {
 	int type;
@@ -304,6 +292,20 @@ static void stdin_cb(struct application *app)
 	}
 }
 
+static void sigwinch_cb(struct application *app)
+{
+	struct signalfd_siginfo info;
+
+	read(app->sigwinch_fd, &info, sizeof(info));
+
+	endwin();
+	doupdate();
+	mvwin(app->status, LINES - 1, 0);
+	wresize(app->status, 1, COLS);
+	wrefresh(app->status);
+	listview_resize(&app->view, COLS, LINES - 1);
+}
+
 static void inotify_cb(struct application *app)
 {
 	char buf[4096]
@@ -329,6 +331,30 @@ static void inotify_cb(struct application *app)
 		}
 	}
 }
+
+void application_run(struct application *app)
+{
+	struct pollfd pollfds[3] = {
+		{ .events = POLLIN, .fd = 0, },
+		{ .events = POLLIN, .fd = app->sigwinch_fd, },
+		{ .events = POLLIN, .fd = app->inotify_fd, },
+	};
+	int nfds = app->inotify_fd == -1 ? 2 : 3;
+
+	app->running = true;
+	while(app->running) {
+		int ret = poll(pollfds, nfds, -1);
+		if(ret > 0) {
+			if(pollfds[0].revents & POLLIN)
+				stdin_cb(app);
+			if(pollfds[1].revents & POLLIN)
+				sigwinch_cb(app);
+			if(pollfds[2].revents & POLLIN)
+				inotify_cb(app);
+		}
+	}
+}
+
 
 static int create_sigwinch_signalfd()
 {
@@ -395,27 +421,3 @@ void application_destroy(struct application *app)
 	dirmodel_destroy(&app->model);
 	clipboard_destroy(&app->clipboard);
 }
-
-void application_run(struct application *app)
-{
-	struct pollfd pollfds[3] = {
-		{ .events = POLLIN, .fd = 0, },
-		{ .events = POLLIN, .fd = app->sigwinch_fd, },
-		{ .events = POLLIN, .fd = app->inotify_fd, },
-	};
-	int nfds = app->inotify_fd == -1 ? 2 : 3;
-
-	app->running = true;
-	while(app->running) {
-		int ret = poll(pollfds, nfds, -1);
-		if(ret > 0) {
-			if(pollfds[0].revents & POLLIN)
-				stdin_cb(app);
-			if(pollfds[1].revents & POLLIN)
-				sigwinch_cb(app);
-			if(pollfds[2].revents & POLLIN)
-				inotify_cb(app);
-		}
-	}
-}
-
