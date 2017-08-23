@@ -181,6 +181,7 @@ bool listview_init(struct listview *view, struct listmodel *model, unsigned int 
 
 	if(!listmodel_register_change_callback(view->model, change_cb, view)) {
 		delwin(view->window);
+		view->window = NULL;
 		return false;
 	}
 
@@ -191,7 +192,9 @@ bool listview_init(struct listview *view, struct listmodel *model, unsigned int 
 
 void listview_destroy(struct listview *view)
 {
-	listmodel_unregister_change_callback(view->model, change_cb, view);
-	delwin(view->window);
+	if(view->window != NULL) {
+		listmodel_unregister_change_callback(view->model, change_cb, view);
+		delwin(view->window);
+	}
 }
 
