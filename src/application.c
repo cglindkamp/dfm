@@ -275,7 +275,7 @@ static struct keymap {
 	{ { OK, L'q' }, quit, NULL },
 };
 
-static void stdin_cb(struct application *app)
+static void handle_stdin(struct application *app)
 {
 	wint_t key;
 	int ret;
@@ -292,7 +292,7 @@ static void stdin_cb(struct application *app)
 	}
 }
 
-static void sigwinch_cb(struct application *app)
+static void handle_sigwinch(struct application *app)
 {
 	struct signalfd_siginfo info;
 
@@ -306,7 +306,7 @@ static void sigwinch_cb(struct application *app)
 	listview_resize(&app->view, COLS, LINES - 1);
 }
 
-static void inotify_cb(struct application *app)
+static void handle_inotify(struct application *app)
 {
 	char buf[4096]
 		__attribute__((aligned(__alignof(struct inotify_event))));
@@ -346,11 +346,11 @@ void application_run(struct application *app)
 		int ret = poll(pollfds, nfds, -1);
 		if(ret > 0) {
 			if(pollfds[0].revents & POLLIN)
-				stdin_cb(app);
+				handle_stdin(app);
 			if(pollfds[1].revents & POLLIN)
-				sigwinch_cb(app);
+				handle_sigwinch(app);
 			if(pollfds[2].revents & POLLIN)
-				inotify_cb(app);
+				handle_inotify(app);
 		}
 	}
 }
