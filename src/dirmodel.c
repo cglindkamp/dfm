@@ -32,6 +32,8 @@ struct data {
 size_t dirmodel_count(struct listmodel *model)
 {
 	struct data *data = model->data;
+	if(data == NULL)
+		return 0;
 	list_t *list = data->list;
 	return list_length(list);
 }
