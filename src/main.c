@@ -25,7 +25,7 @@
 
 void _nc_freeall();
 
-struct loopdata {
+struct application {
 	struct listview view;
 	struct listmodel model;
 	list_t *stored_positions;
@@ -51,23 +51,23 @@ void init_ncurses()
 	init_pair(3, COLOR_YELLOW, COLOR_BLUE);
 }
 
-static void save_current_position(struct loopdata *data)
+static void save_current_position(struct application *app)
 {
-	if(listmodel_count(&data->model) != 0) {
-		free(dict_get(data->stored_positions, path_tocstr(&data->cwd)));
+	if(listmodel_count(&app->model) != 0) {
+		free(dict_get(app->stored_positions, path_tocstr(&app->cwd)));
 
-		size_t index = listview_getindex(&data->view);
-		const char *filename = dirmodel_getfilename(&data->model, index);
+		size_t index = listview_getindex(&app->view);
+		const char *filename = dirmodel_getfilename(&app->model, index);
 
 		char *filename_copy = strdup(filename);
 		if(filename_copy == NULL)
 			return;
-		if(!dict_set(data->stored_positions, path_tocstr(&data->cwd), filename_copy))
+		if(!dict_set(app->stored_positions, path_tocstr(&app->cwd), filename_copy))
 			free(filename_copy);
 	}
 }
 
-static void select_stored_position(struct loopdata *data, const char *oldfilename)
+static void select_stored_position(struct application *app, const char *oldfilename)
 {
 	size_t index;
 	const char *filename;
@@ -75,39 +75,39 @@ static void select_stored_position(struct loopdata *data, const char *oldfilenam
 	if(oldfilename)
 		filename = oldfilename;
 	else
-		filename = dict_get(data->stored_positions, path_tocstr(&data->cwd));
+		filename = dict_get(app->stored_positions, path_tocstr(&app->cwd));
 
 	if(filename) {
-		dirmodel_get_index(&data->model, filename, &index);
-		if(index == listmodel_count(&data->model))
+		dirmodel_get_index(&app->model, filename, &index);
+		if(index == listmodel_count(&app->model))
 			index--;
-		listview_setindex(&data->view, index);
+		listview_setindex(&app->view, index);
 	}
 }
 
-static void display_current_path(struct loopdata *data)
+static void display_current_path(struct application *app)
 {
-	wmove(data->status, 0, 0);
-	wclear(data->status);
-	wprintw(data->status, "%s", path_tocstr(&data->cwd));
-	wrefresh(data->status);
+	wmove(app->status, 0, 0);
+	wclear(app->status);
+	wprintw(app->status, "%s", path_tocstr(&app->cwd));
+	wrefresh(app->status);
 }
 
-static void sigwinch_cb(struct loopdata *data)
+static void sigwinch_cb(struct application *app)
 {
 	struct signalfd_siginfo info;
 
-	read(data->sigwinch_fd, &info, sizeof(info));
+	read(app->sigwinch_fd, &info, sizeof(info));
 
 	endwin();
 	doupdate();
-	mvwin(data->status, LINES - 1, 0);
-	wresize(data->status, 1, COLS);
-	wrefresh(data->status);
-	listview_resize(&data->view, COLS, LINES - 1);
+	mvwin(app->status, LINES - 1, 0);
+	wresize(app->status, 1, COLS);
+	wrefresh(app->status);
+	listview_resize(&app->view, COLS, LINES - 1);
 }
 
-static void invoke_handler(struct loopdata *data, const char *handler_name)
+static void invoke_handler(struct application *app, const char *handler_name)
 {
 	struct path *handler_path = determine_usable_config_file(PROJECT, "handlers", handler_name, X_OK);
 	if(handler_path == NULL)
@@ -122,14 +122,14 @@ static void invoke_handler(struct loopdata *data, const char *handler_name)
 	if(dir_fd < 0)
 		goto err_dircreated;
 
-	if(listmodel_count(&data->model) > 0) {
-		size_t index = listview_getindex(&data->view);
-		const char *selected = dirmodel_getfilename(&data->model, index);
+	if(listmodel_count(&app->model) > 0) {
+		size_t index = listview_getindex(&app->view);
+		const char *selected = dirmodel_getfilename(&app->model, index);
 		if(!dump_string_to_file(dir_fd, "selected", selected))
 			goto err_dircreated;
 	}
 
-	const list_t *list = dirmodel_getmarkedfilenames(&data->model);
+	const list_t *list = dirmodel_getmarkedfilenames(&app->model);
 	if(list != NULL) {
 		bool ret = dump_filelist_to_file(dir_fd, "marked", list);
 		list_delete(list, free);
@@ -137,15 +137,15 @@ static void invoke_handler(struct loopdata *data, const char *handler_name)
 			goto err_dircreated;
 	}
 
-	if(!dump_string_to_file(dir_fd, "cwd", path_tocstr(&data->cwd)))
+	if(!dump_string_to_file(dir_fd, "cwd", path_tocstr(&app->cwd)))
 		goto err_dircreated;
 
-	const char *clipboard_path = clipboard_get_path(&data->clipboard);
+	const char *clipboard_path = clipboard_get_path(&app->clipboard);
 	if(clipboard_path)
 		if(!dump_string_to_file(dir_fd, "clipboard_path", clipboard_path))
 			goto err_dircreated;
 
-	list = clipboard_get_filelist(&data->clipboard);
+	list = clipboard_get_filelist(&app->clipboard);
 	if(list != NULL) {
 		bool ret = dump_filelist_to_file(dir_fd, "clipboard_list", list);
 		if(!ret)
@@ -157,7 +157,7 @@ static void invoke_handler(struct loopdata *data, const char *handler_name)
 		path,
 		NULL
 	};
-	if(spawn(path_tocstr(&data->cwd), path_tocstr(handler_path), args))
+	if(spawn(path_tocstr(&app->cwd), path_tocstr(handler_path), args))
 		goto succes;
 
 err_dircreated:
@@ -168,38 +168,38 @@ err_dir:
 	path_delete(handler_path);
 }
 
-void navigate_up(struct loopdata *data, const char *unused)
+void navigate_up(struct application *app, const char *unused)
 {
 	(void)unused;
-	listview_up(&data->view);
+	listview_up(&app->view);
 }
 
-void navigate_down(struct loopdata *data, const char *unused)
+void navigate_down(struct application *app, const char *unused)
 {
 	(void)unused;
-	listview_down(&data->view);
+	listview_down(&app->view);
 }
 
-void navigate_pageup(struct loopdata *data, const char *unused)
+void navigate_pageup(struct application *app, const char *unused)
 {
 	(void)unused;
-	listview_pageup(&data->view);
+	listview_pageup(&app->view);
 }
 
-void navigate_pagedown(struct loopdata *data, const char *unused)
+void navigate_pagedown(struct application *app, const char *unused)
 {
 	(void)unused;
-	listview_pagedown(&data->view);
+	listview_pagedown(&app->view);
 }
 
-static bool enter_directory(struct loopdata *data, const char *oldpathname)
+static bool enter_directory(struct application *app, const char *oldpathname)
 {
 	while(1) {
-		if(data->inotify_fd != -1) {
-			if(data->inotify_watch != -1)
-				inotify_rm_watch(data->inotify_fd, data->inotify_watch);
+		if(app->inotify_fd != -1) {
+			if(app->inotify_watch != -1)
+				inotify_rm_watch(app->inotify_fd, app->inotify_watch);
 
-			data->inotify_watch = inotify_add_watch(data->inotify_fd, path_tocstr(&data->cwd),
+			app->inotify_watch = inotify_add_watch(app->inotify_fd, path_tocstr(&app->cwd),
 				IN_CREATE |
 				IN_DELETE |
 				IN_MOVED_FROM |
@@ -209,88 +209,88 @@ static bool enter_directory(struct loopdata *data, const char *oldpathname)
 				);
 		}
 
-		if(dirmodel_change_directory(&data->model, path_tocstr(&data->cwd)))
+		if(dirmodel_change_directory(&app->model, path_tocstr(&app->cwd)))
 			break;
 
-		if(strcmp(path_tocstr(&data->cwd), "/") == 0) {
+		if(strcmp(path_tocstr(&app->cwd), "/") == 0) {
 			puts("Cannot even open \"/\", exiting");
-			data->running = false;
+			app->running = false;
 			return false;
 		}
-		path_remove_component(&data->cwd, &oldpathname);
+		path_remove_component(&app->cwd, &oldpathname);
 	}
 
-	select_stored_position(data, oldpathname);
-	display_current_path(data);
+	select_stored_position(app, oldpathname);
+	display_current_path(app);
 
 	return true;
 }
 
-static void change_directory(struct loopdata *data, const char *path)
+static void change_directory(struct application *app, const char *path)
 {
-	save_current_position(data);
+	save_current_position(app);
 
-	if(path_set_from_string(&data->cwd, path) == 0)
-		enter_directory(data, NULL);
+	if(path_set_from_string(&app->cwd, path) == 0)
+		enter_directory(app, NULL);
 }
 
-void navigate_left(struct loopdata *data, const char *unused)
+void navigate_left(struct application *app, const char *unused)
 {
 	(void)unused;
 	const char *oldpathname = NULL;
 
-	save_current_position(data);
+	save_current_position(app);
 
-	if(path_remove_component(&data->cwd, &oldpathname))
-		enter_directory(data, oldpathname);
+	if(path_remove_component(&app->cwd, &oldpathname))
+		enter_directory(app, oldpathname);
 }
 
-void navigate_right(struct loopdata *data, const char *unused)
+void navigate_right(struct application *app, const char *unused)
 {
 	(void)unused;
 
-	if(listmodel_count(&data->model) == 0)
+	if(listmodel_count(&app->model) == 0)
 		return;
 
-	save_current_position(data);
+	save_current_position(app);
 
-	size_t index = listview_getindex(&data->view);
-	if(dirmodel_isdir(&data->model, index)) {
-		const char *filename = dirmodel_getfilename(&data->model, index);
-		if(!path_add_component(&data->cwd, filename))
+	size_t index = listview_getindex(&app->view);
+	if(dirmodel_isdir(&app->model, index)) {
+		const char *filename = dirmodel_getfilename(&app->model, index);
+		if(!path_add_component(&app->cwd, filename))
 			return;
-		enter_directory(data, NULL);
+		enter_directory(app, NULL);
 	} else {
-		invoke_handler(data, "open");
+		invoke_handler(app, "open");
 	}
 }
 
-void mark(struct loopdata *data, const char *unused)
+void mark(struct application *app, const char *unused)
 {
 	(void)unused;
-	size_t index = listview_getindex(&data->view);
-	listmodel_setmark(&data->model, index, !listmodel_ismarked(&data->model, index));
-	listview_down(&data->view);
+	size_t index = listview_getindex(&app->view);
+	listmodel_setmark(&app->model, index, !listmodel_ismarked(&app->model, index));
+	listview_down(&app->view);
 }
 
-void yank(struct loopdata *data, const char *unused)
+void yank(struct application *app, const char *unused)
 {
 	(void)unused;
-	const list_t *list = dirmodel_getmarkedfilenames(&data->model);
+	const list_t *list = dirmodel_getmarkedfilenames(&app->model);
 	if(list) {
-		char *cwd_copy = strdup(path_tocstr(&data->cwd));
+		char *cwd_copy = strdup(path_tocstr(&app->cwd));
 		if(cwd_copy == NULL) {
 			list_delete(list, free);
-			clipboard_set_contents(&data->clipboard, NULL, NULL);
+			clipboard_set_contents(&app->clipboard, NULL, NULL);
 		} else
-			clipboard_set_contents(&data->clipboard, cwd_copy, list);
+			clipboard_set_contents(&app->clipboard, cwd_copy, list);
 	}
 }
 
-void quit(struct loopdata *data, const char *unused)
+void quit(struct application *app, const char *unused)
 {
 	(void)unused;
-	data->running = false;
+	app->running = false;
 }
 
 struct keyspec {
@@ -300,7 +300,7 @@ struct keyspec {
 
 struct keymap {
 	struct keyspec keyspec;
-	void (*cmd)(struct loopdata *, const char *);
+	void (*cmd)(struct application *, const char *);
 	const char *param;
 } keymap[] = {
 	{ { KEY_CODE_YES, KEY_UP }, navigate_up, NULL },
@@ -320,24 +320,24 @@ struct keymap {
 	{ { OK, L'q' }, quit, NULL },
 };
 
-static void stdin_cb(struct loopdata *data)
+static void stdin_cb(struct application *app)
 {
 	wint_t key;
 	int ret;
 
-	ret = wget_wch(data->status, &key);
+	ret = wget_wch(app->status, &key);
 	if(ret == ERR)
 		return;
 
 	for(size_t i = 0; i < sizeof(keymap)/sizeof(keymap[0]); i++) {
 		if(keymap[i].keyspec.type == ret && keymap[i].keyspec.key == key) {
-			keymap[i].cmd(data, keymap[i].param);
+			keymap[i].cmd(app, keymap[i].param);
 			break;
 		}
 	}
 }
 
-static void inotify_cb(struct loopdata *data)
+static void inotify_cb(struct application *app)
 {
 	char buf[4096]
 		__attribute__((aligned(__alignof(struct inotify_event))));
@@ -345,20 +345,20 @@ static void inotify_cb(struct loopdata *data)
 	const struct inotify_event *event;
 	ssize_t len;
 
-	len = read(data->inotify_fd, &buf, sizeof(buf));
+	len = read(app->inotify_fd, &buf, sizeof(buf));
 	if(len <= 0)
 		return;
 
 	for(ptr = buf; ptr < buf + len; ptr += sizeof(struct inotify_event) + event->len) {
 		event = (const struct inotify_event *)ptr;
 
-		if(event->wd != data->inotify_watch)
+		if(event->wd != app->inotify_watch)
 			continue;
 
 		if(event->mask & (IN_DELETE | IN_MOVED_FROM)) {
-			dirmodel_notify_file_deleted(&data->model, event->name);
+			dirmodel_notify_file_deleted(&app->model, event->name);
 		} else if(event->mask & (IN_CREATE | IN_MOVED_TO | IN_MODIFY)) {
-			(void)dirmodel_notify_file_added_or_changed(&data->model, event->name);
+			(void)dirmodel_notify_file_added_or_changed(&app->model, event->name);
 		}
 	}
 }
@@ -374,99 +374,99 @@ static int create_sigwinch_signalfd()
 	return signalfd(-1, &sigset, SFD_CLOEXEC);
 }
 
-bool application_init(struct loopdata *data)
+bool application_init(struct application *app)
 {
 	bool ret = true;
 
-	clipboard_init(&data->clipboard);
+	clipboard_init(&app->clipboard);
 
-	data->inotify_fd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
-	data->inotify_watch = -1;
+	app->inotify_fd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
+	app->inotify_watch = -1;
 
-	dirmodel_init(&data->model);
+	dirmodel_init(&app->model);
 
-	data->stored_positions = dict_new();
-	if(data->stored_positions == NULL)
+	app->stored_positions = dict_new();
+	if(app->stored_positions == NULL)
 		ret = false;
 
-	data->status = newwin(1, COLS, LINES - 1, 0);
-	if(data->status != NULL) {
-		keypad(data->status, TRUE);
-		nodelay(data->status, TRUE);
+	app->status = newwin(1, COLS, LINES - 1, 0);
+	if(app->status != NULL) {
+		keypad(app->status, TRUE);
+		nodelay(app->status, TRUE);
 	} else
 		ret = false;
 
-	if(!path_init(&data->cwd, PATH_MAX))
+	if(!path_init(&app->cwd, PATH_MAX))
 		ret = false;
 
-	if(!listview_init(&data->view, &data->model, 0, 0, COLS, LINES - 1))
+	if(!listview_init(&app->view, &app->model, 0, 0, COLS, LINES - 1))
 		ret = false;
 
 	if(ret == false)
 		return false;
 
-	if(!path_set_to_current_working_directory(&data->cwd))
+	if(!path_set_to_current_working_directory(&app->cwd))
 		return false;
 
-	if(!enter_directory(data, NULL))
+	if(!enter_directory(app, NULL))
 		return false;
 
-	data->sigwinch_fd = create_sigwinch_signalfd();
-	if(data->sigwinch_fd == -1)
+	app->sigwinch_fd = create_sigwinch_signalfd();
+	if(app->sigwinch_fd == -1)
 		return false;
 
 	return true;
 }
 
-void application_destroy(struct loopdata *data)
+void application_destroy(struct application *app)
 {
-	listview_destroy(&data->view);
-	path_destroy(&data->cwd);
-	if(data->status)
-		delwin(data->status);
-	dict_delete(data->stored_positions, true);
-	dirmodel_destroy(&data->model);
-	clipboard_destroy(&data->clipboard);
+	listview_destroy(&app->view);
+	path_destroy(&app->cwd);
+	if(app->status)
+		delwin(app->status);
+	dict_delete(app->stored_positions, true);
+	dirmodel_destroy(&app->model);
+	clipboard_destroy(&app->clipboard);
 }
 
-void application_run(struct loopdata *data)
+void application_run(struct application *app)
 {
 	struct pollfd pollfds[3] = {
 		{ .events = POLLIN, .fd = 0, },
-		{ .events = POLLIN, .fd = data->sigwinch_fd, },
-		{ .events = POLLIN, .fd = data->inotify_fd, },
+		{ .events = POLLIN, .fd = app->sigwinch_fd, },
+		{ .events = POLLIN, .fd = app->inotify_fd, },
 	};
-	int nfds = data->inotify_fd == -1 ? 2 : 3;
+	int nfds = app->inotify_fd == -1 ? 2 : 3;
 
-	data->running = true;
-	while(data->running) {
+	app->running = true;
+	while(app->running) {
 		int ret = poll(pollfds, nfds, -1);
 		if(ret > 0) {
 			if(pollfds[0].revents & POLLIN)
-				stdin_cb(data);
+				stdin_cb(app);
 			if(pollfds[1].revents & POLLIN)
-				sigwinch_cb(data);
+				sigwinch_cb(app);
 			if(pollfds[2].revents & POLLIN)
-				inotify_cb(data);
+				inotify_cb(app);
 		}
 	}
 }
 
 int main(void)
 {
-	struct loopdata data;
+	struct application app;
 	int ret = 0;
 
 	setlocale(LC_ALL, "");
 	init_ncurses();
 
-	if(application_init(&data)) {
-		application_run(&data);
+	if(application_init(&app)) {
+		application_run(&app);
 	} else {
 		endwin();
 		puts("Failed to initialize the application, exiting");
 	}
-	application_destroy(&data);
+	application_destroy(&app);
 
 	endwin();
 	_nc_freeall();
