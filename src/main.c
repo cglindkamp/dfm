@@ -374,107 +374,102 @@ static int create_sigwinch_signalfd()
 	return signalfd(-1, &sigset, SFD_CLOEXEC);
 }
 
+bool application_init(struct loopdata *data)
+{
+	bool ret = true;
+
+	clipboard_init(&data->clipboard);
+
+	data->inotify_fd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
+	data->inotify_watch = -1;
+
+	dirmodel_init(&data->model);
+
+	data->stored_positions = dict_new();
+	if(data->stored_positions == NULL)
+		ret = false;
+
+	data->status = newwin(1, COLS, LINES - 1, 0);
+	if(data->status != NULL) {
+		keypad(data->status, TRUE);
+		nodelay(data->status, TRUE);
+	} else
+		ret = false;
+
+	if(!path_init(&data->cwd, PATH_MAX))
+		ret = false;
+
+	if(!listview_init(&data->view, &data->model, 0, 0, COLS, LINES - 1))
+		ret = false;
+
+	if(ret == false)
+		return false;
+
+	if(!path_set_to_current_working_directory(&data->cwd))
+		return false;
+
+	if(!enter_directory(data, NULL))
+		return false;
+
+	data->sigwinch_fd = create_sigwinch_signalfd();
+	if(data->sigwinch_fd == -1)
+		return false;
+
+	return true;
+}
+
+void application_destroy(struct loopdata *data)
+{
+	listview_destroy(&data->view);
+	path_destroy(&data->cwd);
+	if(data->status)
+		delwin(data->status);
+	dict_delete(data->stored_positions, true);
+	dirmodel_destroy(&data->model);
+	clipboard_destroy(&data->clipboard);
+}
+
+void application_run(struct loopdata *data)
+{
+	struct pollfd pollfds[3] = {
+		{ .events = POLLIN, .fd = 0, },
+		{ .events = POLLIN, .fd = data->sigwinch_fd, },
+		{ .events = POLLIN, .fd = data->inotify_fd, },
+	};
+	int nfds = data->inotify_fd == -1 ? 2 : 3;
+
+	data->running = true;
+	while(data->running) {
+		int ret = poll(pollfds, nfds, -1);
+		if(ret > 0) {
+			if(pollfds[0].revents & POLLIN)
+				stdin_cb(data);
+			if(pollfds[1].revents & POLLIN)
+				sigwinch_cb(data);
+			if(pollfds[2].revents & POLLIN)
+				inotify_cb(data);
+		}
+	}
+}
+
 int main(void)
 {
 	struct loopdata data;
 	int ret = 0;
 
 	setlocale(LC_ALL, "");
-
-	if(!path_init(&data.cwd, PATH_MAX)) {
-		puts("Cannot get current working directory, exiting!");
-		ret = -1;
-		goto err_path;
-	}
-
-	if(!path_set_to_current_working_directory(&data.cwd)) {
-		puts("Cannot get current working directory, exiting!");
-		ret = -1;
-		goto err_path_cwd;
-	}
-
-	data.inotify_fd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
-	data.inotify_watch = -1;
-
 	init_ncurses();
 
-	data.status = newwin(1, COLS, LINES - 1, 0);
-	if(data.status == NULL) {
+	if(application_init(&data)) {
+		application_run(&data);
+	} else {
 		endwin();
-		puts("Cannot create status line, exiting!");
-		ret = -1;
-		goto err_status_line;
+		puts("Failed to initialize the application, exiting");
 	}
-
-	data.stored_positions = dict_new();
-	if(data.stored_positions == NULL) {
-		endwin();
-		puts("Cannot allocate stored positions, exiting!");
-		ret = -1;
-		goto err_stored_positions;
-	}
-
-	keypad(data.status, TRUE);
-	nodelay(data.status, TRUE);
-
-	clipboard_init(&data.clipboard);
-
-	dirmodel_init(&data.model);
-	if(!enter_directory(&data, NULL)) {
-		ret = -1;
-		goto err_dirmodel;
-	}
-
-	if(!listview_init(&data.view, &data.model, 0, 0, COLS, LINES - 1))
-	{
-		endwin();
-		puts("Cannot create list view, exiting!");
-		ret = -1;
-		goto err_listview;
-	};
-
-	data.sigwinch_fd = create_sigwinch_signalfd();
-	if(data.sigwinch_fd == -1) {
-		endwin();
-		puts("Cannot create signalfd, exiting!");
-		ret = -1;
-		goto err_signalfd;
-	};
-
-	struct pollfd pollfds[3] = {
-		{ .events = POLLIN, .fd = 0, },
-		{ .events = POLLIN, .fd = data.sigwinch_fd, },
-		{ .events = POLLIN, .fd = data.inotify_fd, },
-	};
-	int nfds = data.inotify_fd == -1 ? 2 : 3;
-
-	data.running = true;
-	while(data.running) {
-		int ret = poll(pollfds, nfds, -1);
-		if(ret > 0) {
-			if(pollfds[0].revents & POLLIN)
-				stdin_cb(&data);
-			if(pollfds[1].revents & POLLIN)
-				sigwinch_cb(&data);
-			if(pollfds[2].revents & POLLIN)
-				inotify_cb(&data);
-		}
-	}
+	application_destroy(&data);
 
 	endwin();
-err_signalfd:
-	listview_destroy(&data.view);
-err_listview:
-	dirmodel_destroy(&data.model);
-err_dirmodel:
-	clipboard_destroy(&data.clipboard);
-	dict_delete(data.stored_positions, true);
-err_stored_positions:
-	delwin(data.status);
-err_status_line:
 	_nc_freeall();
-err_path_cwd:
-	path_destroy(&data.cwd);
-err_path:
+
 	return ret;
 }
