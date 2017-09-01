@@ -169,14 +169,14 @@ static bool dirmodel_ismarked(struct listmodel *model, size_t index)
 	return filedata->is_marked;
 }
 
-list_t *dirmodel_getmarkedfilenames(struct listmodel *model)
+int dirmodel_getmarkedfilenames(struct listmodel *model, const list_t **markedlist_out)
 {
 	struct data *data = model->data;
 	list_t *list = data->list;
 	list_t *markedlist = list_new(0);
 
 	if(markedlist == NULL)
-		return NULL;
+		return ENOMEM;
 
 	for(size_t i = 0; i < list_length(list); i++)
 	{
@@ -185,20 +185,22 @@ list_t *dirmodel_getmarkedfilenames(struct listmodel *model)
 			char *filename = strdup(filedata->filename);
 			if(filename == NULL) {
 				list_delete(markedlist, free);
-				return NULL;
+				return ENOMEM;
 			}
 			if(!list_append(markedlist, filename)) {
 				free(filename);
 				list_delete(markedlist, free);
-				return NULL;
+				return ENOMEM;
 			}
 		}
 	}
 	if(list_length(markedlist) == 0) {
 		list_delete(markedlist, NULL);
-		return NULL;
+		return ENOENT;
 	}
-	return markedlist;
+
+	*markedlist_out = markedlist;
+	return 0;
 }
 
 static int sort_filename(const void *a, const void *b)

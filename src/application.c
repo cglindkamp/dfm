@@ -117,8 +117,9 @@ static void invoke_handler(struct application *app, const char *handler_name)
 			goto err_dircreated;
 	}
 
-	const list_t *list = dirmodel_getmarkedfilenames(&app->model);
-	if(list != NULL) {
+	const list_t *list;
+	int ret = dirmodel_getmarkedfilenames(&app->model, &list);
+	if(ret == 0) {
 		bool ret = dump_filelist_to_file(dir_fd, "marked", list);
 		list_delete(list, free);
 		if(!ret)
@@ -230,8 +231,10 @@ static void mark(struct application *app, const char *unused)
 static void yank(struct application *app, const char *unused)
 {
 	(void)unused;
-	const list_t *list = dirmodel_getmarkedfilenames(&app->model);
-	if(list) {
+	const list_t *list;
+
+	int ret = dirmodel_getmarkedfilenames(&app->model, &list);
+	if(ret == 0) {
 		char *cwd_copy = strdup(path_tocstr(&app->cwd));
 		if(cwd_copy == NULL) {
 			list_delete(list, free);

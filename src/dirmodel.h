@@ -5,7 +5,7 @@
 #include "listmodel.h"
 
 const char *dirmodel_getfilename(struct listmodel *model, size_t index);
-list_t *dirmodel_getmarkedfilenames(struct listmodel *model) __attribute__((warn_unused_result));
+int dirmodel_getmarkedfilenames(struct listmodel *model, const list_t **markedlist_out) __attribute__((warn_unused_result));
 void dirmodel_notify_file_deleted(struct listmodel *model, const char *filename);
 int dirmodel_notify_file_added_or_changed(struct listmodel *model, const char *filename);
 bool dirmodel_isdir(struct listmodel *model, size_t index);

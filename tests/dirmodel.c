@@ -366,8 +366,10 @@ START_TEST(test_dirmodel_markfiles_getfilenames)
 	listmodel_setmark(&model, 3, true);
 	listmodel_setmark(&model, 4, true);
 
-	list_t *list = dirmodel_getmarkedfilenames(&model);
-	assert_oom(list != NULL);
+	const list_t *list;
+	int ret = dirmodel_getmarkedfilenames(&model, &list);
+	assert_oom(ret != ENOMEM);
+	ck_assert(ret == 0);
 	ck_assert_uint_eq(list_length(list), 3);
 	ck_assert_str_eq(list_get_item(list, 0), "1");
 	ck_assert_str_eq(list_get_item(list, 1), "3");
@@ -381,8 +383,10 @@ START_TEST(test_dirmodel_markfiles_getfilenames_nomarkedfiles)
 {
 	assert_oom(dirmodel_change_directory(&model, path) == true);
 
-	list_t *list = dirmodel_getmarkedfilenames(&model);
-	ck_assert(list == NULL);
+	const list_t *list;
+	int ret = dirmodel_getmarkedfilenames(&model, &list);
+	assert_oom(ret != ENOMEM);
+	ck_assert(ret == ENOENT);
 }
 END_TEST
 
