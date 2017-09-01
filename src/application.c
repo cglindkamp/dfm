@@ -1,4 +1,5 @@
 /* See LICENSE file for copyright and license details. */
+#include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <ncurses.h>
@@ -124,6 +125,8 @@ static void invoke_handler(struct application *app, const char *handler_name)
 		list_delete(list, free);
 		if(!ret)
 			goto err_dircreated;
+	} else if(ret == ENOMEM) {
+		goto err_dircreated;
 	}
 
 	if(!dump_string_to_file(dir_fd, "cwd", path_tocstr(&app->cwd)))
