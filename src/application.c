@@ -234,17 +234,42 @@ static void mark(struct application *app, const char *unused)
 static void yank(struct application *app, const char *unused)
 {
 	(void)unused;
-	const list_t *list;
+	const list_t *list = NULL;
 
 	int ret = dirmodel_getmarkedfilenames(&app->model, &list);
+	char *cwd_copy = strdup(path_tocstr(&app->cwd));
+
+	if(ret == ENOMEM)
+		goto err;
+
 	if(ret == 0) {
-		char *cwd_copy = strdup(path_tocstr(&app->cwd));
-		if(cwd_copy == NULL) {
-			list_delete(list, free);
-			clipboard_set_contents(&app->clipboard, NULL, NULL);
-		} else
-			clipboard_set_contents(&app->clipboard, cwd_copy, list);
+		if(cwd_copy == NULL)
+			goto err;
+	} else if(ret == ENOENT) {
+		if(listmodel_count(&app->model) == 0)
+			goto err;
+
+		list_t *selectedlist = list_new(1);
+		if(selectedlist == NULL)
+			goto err;
+		list = selectedlist;
+
+		size_t index = listview_getindex(&app->view);
+		char *filename = strdup(dirmodel_getfilename(&app->model, index));
+		if(filename == NULL)
+			goto err;
+
+		if(!list_append(selectedlist, filename)) {
+			free(filename);
+			goto err;
+		}
 	}
+	clipboard_set_contents(&app->clipboard, cwd_copy, list);
+	return;
+err:
+	free(cwd_copy);
+	list_delete(list, free);
+	clipboard_set_contents(&app->clipboard, NULL, NULL);
 }
 
 static void quit(struct application *app, const char *unused)

@@ -52,6 +52,6 @@ handler scripts to ~/.config/dfm/handlers and edit them to your liking.
 | p        | Copy files in clipboard to the current directory                                     |
 | P        | Move files in clipboard to the current directory                                     |
 | s        | Open a shell in the current direcotory                                               |
-| y        | Copy currently marked files to clipboard                                             |
+| y        | Copy currently marked files or the currently selected file to clipboard              |
 | q        | Quit dfm                                                                             |
 
