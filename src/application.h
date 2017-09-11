@@ -17,6 +17,7 @@ struct application {
 	WINDOW *status;
 	struct path cwd;
 	struct clipboard clipboard;
+	struct keymap *keymap;
 	int sigwinch_fd;
 	int inotify_fd;
 	int inotify_watch;

@@ -17,6 +17,7 @@
 #include "application.h"
 #include "dirmodel.h"
 #include "dict.h"
+#include "keymap.h"
 #include "util.h"
 
 static void save_current_position(struct application *app)
@@ -278,33 +279,31 @@ static void quit(struct application *app, const char *unused)
 	app->running = false;
 }
 
-
-struct keyspec {
-	int type;
-	wint_t key;
+static struct {
+	const char *commandname;
+	command_ptr command;
+} commandmap[] = {
+	{ "navigate_up", navigate_up },
+	{ "navigate_down", navigate_down },
+	{ "navigate_pageup", navigate_pageup },
+	{ "navigate_pagedown", navigate_pagedown },
+	{ "navigate_left", navigate_left },
+	{ "navigate_right", navigate_right },
+	{ "mark", mark },
+	{ "change_directory", change_directory },
+	{ "invoke_handler", invoke_handler },
+	{ "yank", yank },
+	{ "quit", quit },
 };
 
-static struct keymap {
-	struct keyspec keyspec;
-	void (*cmd)(struct application *, const char *);
-	const char *param;
-} keymap[] = {
-	{ { KEY_CODE_YES, KEY_UP }, navigate_up, NULL },
-	{ { KEY_CODE_YES, KEY_DOWN }, navigate_down, NULL },
-	{ { KEY_CODE_YES, KEY_PPAGE }, navigate_pageup, NULL },
-	{ { KEY_CODE_YES, KEY_NPAGE }, navigate_pagedown, NULL },
-	{ { KEY_CODE_YES, KEY_LEFT }, navigate_left, NULL },
-	{ { KEY_CODE_YES, KEY_RIGHT }, navigate_right, NULL },
-	{ { OK, L' ' }, mark, NULL },
-	{ { OK, L'1' }, change_directory, "~" },
-	{ { OK, L'2' }, change_directory, "/" },
-	{ { OK, L'D' }, invoke_handler, "delete" },
-	{ { OK, L'p' }, invoke_handler, "copy" },
-	{ { OK, L'P' }, invoke_handler, "move" },
-	{ { OK, L's' }, invoke_handler, "shell" },
-	{ { OK, L'y' }, yank, NULL },
-	{ { OK, L'q' }, quit, NULL },
-};
+command_ptr application_command_map(const char *commandname)
+{
+	for(size_t i = 0; i < sizeof(commandmap)/sizeof(commandmap[0]); i++) {
+		if(strcmp(commandmap[i].commandname, commandname) == 0)
+			return commandmap[i].command;
+	}
+	return NULL;
+}
 
 static void handle_stdin(struct application *app)
 {
@@ -315,12 +314,7 @@ static void handle_stdin(struct application *app)
 	if(ret == ERR)
 		return;
 
-	for(size_t i = 0; i < sizeof(keymap)/sizeof(keymap[0]); i++) {
-		if(keymap[i].keyspec.type == ret && keymap[i].keyspec.key == key) {
-			keymap[i].cmd(app, keymap[i].param);
-			break;
-		}
-	}
+	keymap_handlekey(app->keymap, app, key, ret == KEY_CODE_YES ? true : false);
 }
 
 static void handle_sigwinch(struct application *app)
@@ -398,6 +392,22 @@ static int create_sigwinch_signalfd()
 	return signalfd(-1, &sigset, SFD_CLOEXEC);
 }
 
+static bool load_keymap(struct application *app)
+{
+	struct path *keymap_path = determine_usable_config_file(PROJECT, NULL, "keymap", R_OK);
+	if(keymap_path == NULL) {
+		app->keymap = NULL;
+		return false;
+	}
+
+	if(keymap_newfromfile(&app->keymap, path_tocstr(keymap_path), application_command_map) != 0) {
+		app->keymap = NULL;
+		return false;
+	}
+
+	return true;
+}
+
 bool application_init(struct application *app)
 {
 	bool ret = true;
@@ -426,6 +436,9 @@ bool application_init(struct application *app)
 	if(!listview_init(&app->view, &app->model, 0, 0, COLS, LINES - 1))
 		ret = false;
 
+	if(!load_keymap(app))
+		ret = false;
+
 	if(ret == false)
 		return false;
 
@@ -444,6 +457,7 @@ bool application_init(struct application *app)
 
 void application_destroy(struct application *app)
 {
+	keymap_delete(app->keymap);
 	listview_destroy(&app->view);
 	path_destroy(&app->cwd);
 	if(app->status)

@@ -1,0 +1,17 @@
+up        navigate_up
+down      navigate_down
+pageup    navigate_pageup
+pagedown  navigate_pagedown
+left      navigate_left
+right     navigate_right
+
+space     mark
+1         change_directory  ~
+2         change_directory  /
+D         invoke_handler    delete
+l         invoke_handler    symlink
+p         invoke_handler    copy
+P         invoke_handler    move
+s         invoke_handler    shell
+y         yank
+q         quit

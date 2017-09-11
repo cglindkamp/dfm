@@ -27,7 +27,7 @@ ifneq ($(COVERAGE),$(LAST_COVERAGE))
 	@echo "LAST_COVERAGE = $(COVERAGE)" > coverage.mk
 endif
 
-EXAMPLES = \
+HANDLERS = \
 	open \
 	delete \
 	copy \
@@ -40,6 +40,7 @@ OBJECTS = \
 	src/clipboard.o \
 	src/dict.o \
 	src/dirmodel.o \
+	src/keymap.o \
 	src/filedata.o \
 	src/list.o \
 	src/listmodel.o \
@@ -54,6 +55,7 @@ TESTOBJECTS = \
 	tests/dict.o \
 	tests/dirmodel.o \
 	tests/filedata.o \
+	tests/keymap.o \
 	tests/list.o \
 	tests/listmodel.o \
 	tests/listview.o \
@@ -97,13 +99,14 @@ tests/tests: $(TESTEDOBJECTS) $(TESTOBJECTS)
 
 install:
 	install -m 755 -D $(PROJECT) $(BINDIR)/$(PROJECT)
-	for FILE in $(EXAMPLES); do \
+	install -m 644 examples/keymap $(SYSCONFDIR)/xdg/$(PROJECT)/keymap
+	for FILE in $(HANDLERS); do \
 		install -m 755 -D examples/handlers/$$FILE $(SYSCONFDIR)/xdg/$(PROJECT)/handlers/$$FILE; \
 	done
 
 uninstall:
 	rm $(BINDIR)/$(PROJECT)
-	for FILE in $(EXAMPLES); do \
+	for FILE in $(HANDLERS); do \
 		rm $(SYSCONFDIR)/xdg/$(PROJECT)/handlers/$$FILE; \
 	done
 	rmdir $(SYSCONFDIR)/xdg/$(PROJECT)/handlers;
