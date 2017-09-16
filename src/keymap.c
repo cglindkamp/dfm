@@ -73,6 +73,10 @@ static int keymap_parse_line(struct keymap *keymap, char *line, command_map_ptr 
 	} else
 		return EINVAL;
 
+	/* The following code assumes that saveptr points to the character
+	 * after the previous token or to the null terminator of line when
+	 * there are no more characters. This is not guaranteed by POSIX but is
+	 * implemented this way in glibc, musl and dietlibc. */
 	size_t skip = strspn(saveptr, " \t");
 	token = saveptr + skip;
 	if(token[0] != '\0') {
