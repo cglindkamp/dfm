@@ -32,10 +32,12 @@ To start dfm, just enter
 
 	dfm
 
-The key bindings are currently hardcoded, but the behaviour of the open, copy,
-move, delete or shell bindings can be customized through the corresponding
-handler scripts. See examples/handlers. If you want to change them, copy the
-handler scripts to ~/.config/dfm/handlers and edit them to your liking.
+The following table shows the default key bindings. They can be configured
+globally in the file /etc/xdg/dfm/keymap or for each user in
+~/.config/dfm/keymap. Additionally, the behaviour of the open, copy, move,
+delete or shell bindings can be customized through the corresponding handler
+scripts. See examples/handlers. If you want to change them, copy the handler
+scripts to ~/.config/dfm/handlers and edit them to your liking.
 
 | Key      | Action                                                                               |
 | -------- | ------------------------------------------------------------------------------------ |
