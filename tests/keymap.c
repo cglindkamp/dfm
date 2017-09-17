@@ -9,32 +9,37 @@
 #include "../src/keymap.h"
 #include "tests.h"
 
-struct application *app;
-const char *param;
-int command;
+static struct application *app;
+static const char *param;
+static int command;
 
-void command1(struct application *a, const char *p)
+static void command1(struct application *a, const char *p)
 {
 	app = a;
 	command = 1;
 	param = p;
 }
 
-void command2(struct application *a, const char *p)
+static void command2(struct application *a, const char *p)
 {
 	app = a;
 	command = 2;
 	param = p;
 }
 
-command_ptr command_map(const char *commandname)
+static void command4(struct application *a, const char *p)
 {
-	if(strcmp(commandname, "command1") == 0)
-		return command1;
-	if(strcmp(commandname, "command2") == 0)
-		return command2;
-	return NULL;
+	app = a;
+	command = 4;
+	param = p;
 }
+
+static struct command_map command_map[] = {
+	{ "command1", command1, false },
+	{ "command2", command2, false },
+	{ "command4", command4, true },
+	{ NULL, NULL, false },
+};
 
 static struct {
 	const char *string;
@@ -43,6 +48,7 @@ static struct {
 	{ "a command1", { .keyspec = { .key = L'a', .iskeycode = false }, .command = command1, .param = NULL } },
 	{ "a \t  command1", { .keyspec = { .key = L'a', .iskeycode = false }, .command = command1, .param = NULL } },
 	{ "b command2 foo", { .keyspec = { .key = L'b', .iskeycode = false }, .command = command2, .param = "foo" } },
+	{ "b command4 foo", { .keyspec = { .key = L'b', .iskeycode = false }, .command = command4, .param = "foo" } },
 	{ "  b command2  foo bar", { .keyspec = { .key = L'b', .iskeycode = false }, .command = command2, .param = "foo bar" } },
 	{ u8"ü command1", { .keyspec = { .key = L'ü', .iskeycode = false }, .command = command1, .param = NULL } },
 	{ "space command2", { .keyspec = { .key = L' ', .iskeycode = false }, .command = command2, .param = NULL } },
@@ -76,6 +82,7 @@ const char *singlelinetesttable_invalid[] = {
 	"a",
 	"unknownkey command2",
 	"a command3",
+	"a command4",
 };
 
 START_TEST(test_keymap_singleline_invalid)
@@ -176,7 +183,7 @@ START_TEST(test_keymap_inaccessablefile)
 }
 END_TEST
 
-command_ptr application_command_map(const char *commandname);
+extern struct command_map application_command_map[];
 
 START_TEST(test_keymap_examplefile)
 {

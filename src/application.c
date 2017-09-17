@@ -279,31 +279,20 @@ static void quit(struct application *app, const char *unused)
 	app->running = false;
 }
 
-static struct {
-	const char *commandname;
-	command_ptr command;
-} commandmap[] = {
-	{ "navigate_up", navigate_up },
-	{ "navigate_down", navigate_down },
-	{ "navigate_pageup", navigate_pageup },
-	{ "navigate_pagedown", navigate_pagedown },
-	{ "navigate_left", navigate_left },
-	{ "navigate_right", navigate_right },
-	{ "mark", mark },
-	{ "change_directory", change_directory },
-	{ "invoke_handler", invoke_handler },
-	{ "yank", yank },
-	{ "quit", quit },
+struct command_map application_command_map[] = {
+	{ "navigate_up", navigate_up, false },
+	{ "navigate_down", navigate_down, false },
+	{ "navigate_pageup", navigate_pageup, false },
+	{ "navigate_pagedown", navigate_pagedown, false },
+	{ "navigate_left", navigate_left, false },
+	{ "navigate_right", navigate_right, false },
+	{ "mark", mark, false },
+	{ "change_directory", change_directory, true },
+	{ "invoke_handler", invoke_handler, true },
+	{ "yank", yank, false },
+	{ "quit", quit, false },
+	{ NULL, NULL, false },
 };
-
-command_ptr application_command_map(const char *commandname)
-{
-	for(size_t i = 0; i < sizeof(commandmap)/sizeof(commandmap[0]); i++) {
-		if(strcmp(commandmap[i].commandname, commandname) == 0)
-			return commandmap[i].command;
-	}
-	return NULL;
-}
 
 static void handle_stdin(struct application *app)
 {

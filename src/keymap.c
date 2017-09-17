@@ -54,8 +54,22 @@ static void keymap_string_to_keyspec(struct keyspec *keyspec, const char *keystr
 	keyspec->key = WEOF;
 }
 
-static int keymap_parse_line(struct keymap *keymap, char *line, command_map_ptr commandmap)
+void keymap_map_command(struct command_map *commandmap, const char *commandname, command_ptr *command_ptr, bool *param_mandatory)
 {
+	*command_ptr = NULL;
+
+	for(size_t i = 0; commandmap[i].command_name != NULL; i++) {
+		if(strcmp(commandmap[i].command_name, commandname) == 0) {
+			*command_ptr = commandmap[i].command;
+			*param_mandatory = commandmap[i].param_mandatory;
+			break;
+		}
+	}
+}
+
+static int keymap_parse_line(struct keymap *keymap, char *line, struct command_map *commandmap)
+{
+	bool param_mandatory;
 	char *saveptr;
 	char *token = strtok_r(line, " \t", &saveptr);
 	if(token) {
@@ -67,7 +81,7 @@ static int keymap_parse_line(struct keymap *keymap, char *line, command_map_ptr 
 
 	token = strtok_r(NULL, " \t", &saveptr);
 	if(token) {
-		keymap->command = commandmap(token);
+		keymap_map_command(commandmap, token, &keymap->command, &param_mandatory);
 		if(keymap->command == NULL)
 			return EINVAL;
 	} else
@@ -83,13 +97,16 @@ static int keymap_parse_line(struct keymap *keymap, char *line, command_map_ptr 
 		keymap->param = strdup(token);
 		if(keymap->param == NULL)
 			return ENOMEM;
-	} else
+	} else {
 		keymap->param = NULL;
+		if(param_mandatory)
+			return EINVAL;
+	}
 
 	return 0;
 }
 
-int keymap_newfromstring(struct keymap **keymap, char *keymapstring, command_map_ptr commandmap)
+int keymap_newfromstring(struct keymap **keymap, char *keymapstring, struct command_map *commandmap)
 {
 	size_t parsed_lines = 0;
 	char *saveptr;
@@ -130,7 +147,7 @@ int keymap_newfromstring(struct keymap **keymap, char *keymapstring, command_map
 	return 0;
 }
 
-int keymap_newfromfile(struct keymap **keymap, const char *filename, command_map_ptr command_map)
+int keymap_newfromfile(struct keymap **keymap, const char *filename, struct command_map *commandmap)
 {
 	struct stat st;
 	int ret = stat(filename, &st);
@@ -154,7 +171,7 @@ int keymap_newfromfile(struct keymap **keymap, const char *filename, command_map
 
 	if(ret > 0) {
 		contents[ret] = '\0';
-		ret = keymap_newfromstring(keymap, contents, command_map);
+		ret = keymap_newfromstring(keymap, contents, commandmap);
 	} else
 		ret = errno;
 
