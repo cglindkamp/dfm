@@ -65,11 +65,13 @@ static void display_current_path(struct application *app)
 static bool enter_directory(struct application *app, const char *oldpathname)
 {
 	while(1) {
+		const char *cwd = path_tocstr(&app->cwd);
+
 		if(app->inotify_fd != -1) {
 			if(app->inotify_watch != -1)
 				inotify_rm_watch(app->inotify_fd, app->inotify_watch);
 
-			app->inotify_watch = inotify_add_watch(app->inotify_fd, path_tocstr(&app->cwd),
+			app->inotify_watch = inotify_add_watch(app->inotify_fd, cwd,
 				IN_CREATE |
 				IN_DELETE |
 				IN_MOVED_FROM |
@@ -79,10 +81,10 @@ static bool enter_directory(struct application *app, const char *oldpathname)
 				);
 		}
 
-		if(dirmodel_change_directory(&app->model, path_tocstr(&app->cwd)))
+		if(chdir(cwd) == 0 && dirmodel_change_directory(&app->model, cwd))
 			break;
 
-		if(strcmp(path_tocstr(&app->cwd), "/") == 0) {
+		if(strcmp(cwd, "/") == 0) {
 			puts("Cannot even open \"/\", exiting");
 			app->running = false;
 			return false;
@@ -150,7 +152,7 @@ static void invoke_handler(struct application *app, const char *handler_name)
 		path,
 		NULL
 	};
-	if(spawn(path_tocstr(&app->cwd), path_tocstr(handler_path), args))
+	if(spawn(path_tocstr(handler_path), args))
 		goto succes;
 
 err_dircreated:

@@ -88,7 +88,7 @@ static bool run_in_foreground()
 	return false;
 }
 
-bool spawn(const char *cwd, const char *program, char * const argv[])
+bool spawn(const char *program, char * const argv[])
 {
 	bool foreground = run_in_foreground();
 
@@ -113,7 +113,6 @@ bool spawn(const char *cwd, const char *program, char * const argv[])
 		dup2(fd, 1);
 		dup2(fd, 2);
 	}
-	chdir(cwd);
 	execvp(program, argv);
 	exit(EXIT_FAILURE);
 }
