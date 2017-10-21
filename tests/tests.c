@@ -103,5 +103,6 @@ int main(int argc, char *argv[])
 
 	alloc_set_allocations_until_fail(-1);
 	fclose(dummyterm);
+	_nc_freeall();
 	return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
