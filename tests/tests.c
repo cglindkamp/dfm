@@ -24,6 +24,10 @@ Suite *keymap_suite(void);
 bool mode_oom = false;
 int oom_pipe[2];
 
+void reset_malloc() {
+	alloc_set_allocations_until_fail(-1);
+}
+
 SRunner *create_runner()
 {
 	SRunner *suite_runner;
@@ -48,6 +52,8 @@ int main(int argc, char *argv[])
 	FILE *dummyterm;
 
 	setlocale(LC_ALL, "en_US.UTF-8");
+
+	atexit(reset_malloc);
 
 	dummyterm = fopen("/dev/null", "rw");
 	newterm(NULL, dummyterm, dummyterm);

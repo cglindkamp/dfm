@@ -14,7 +14,6 @@ extern int oom_pipe[2];
 	if(mode_oom) { \
 		if(!(condition)) { \
 			write(oom_pipe[1], &(char){' '}, 1); \
-			alloc_set_allocations_until_fail(-1); \
 			__VA_ARGS__; \
 			return; \
 		} \
