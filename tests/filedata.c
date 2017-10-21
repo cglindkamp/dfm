@@ -3,14 +3,13 @@
 
 #include <errno.h>
 #include <fcntl.h>
-#include <ftw.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
 #include "../src/filedata.h"
+#include "../src/util.h"
 #include "tests.h"
 
 #define PATH_TEMPLATE "/tmp/filedata.XXXXXX"
@@ -22,21 +21,6 @@ static void create_temp_directory()
 {
 	strcpy(path, PATH_TEMPLATE);
 	ck_assert(mkdtemp(path) != NULL);
-}
-
-static int remove_file(const char *path, const struct stat *sbuf, int type, struct FTW *ftwb)
-{
-	(void)sbuf;
-	(void)type;
-	(void)ftwb;
-
-	remove(path);
-	return 0;
-}
-
-static void remove_temp_directory(char *path)
-{
-	nftw(path, remove_file, 10, FTW_DEPTH|FTW_MOUNT|FTW_PHYS);
 }
 
 static void create_file(int dir_fd, const char *filename, off_t size)
@@ -57,7 +41,7 @@ static void setup(void)
 
 static void teardown(void)
 {
-	remove_temp_directory(path);
+	remove_directory_recursively(path);
 }
 
 START_TEST(test_filedata_filenonexistent)

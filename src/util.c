@@ -1,5 +1,6 @@
 /* See LICENSE file for copyright and license details. */
 #include <fcntl.h>
+#include <ftw.h>
 #include <ncurses.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,6 +12,21 @@
 #include "path.h"
 #include "util.h"
 #include "xdg.h"
+
+static int remove_file(const char *path, const struct stat *sbuf, int type, struct FTW *ftwb)
+{
+	(void)sbuf;
+	(void)type;
+	(void)ftwb;
+
+	remove(path);
+	return 0;
+}
+
+void remove_directory_recursively(const char *path)
+{
+	nftw(path, remove_file, 10, FTW_DEPTH|FTW_MOUNT|FTW_PHYS);
+}
 
 struct path *determine_usable_config_file(const char *project, const char *subdir, const char *config, int flags)
 {
