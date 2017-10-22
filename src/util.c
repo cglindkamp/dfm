@@ -89,7 +89,7 @@ bool dump_filelist_to_file(int dir_fd, const char *filename, const list_t *list)
 	return ret < 0 ? false : true;
 }
 
-static bool run_in_foreground()
+bool run_in_foreground()
 {
 	const char *display = getenv("DISPLAY");
 
@@ -103,33 +103,3 @@ static bool run_in_foreground()
 
 	return false;
 }
-
-bool spawn(const char *program, char * const argv[])
-{
-	bool foreground = run_in_foreground();
-
-	if(foreground)
-		endwin();
-
-	int pid = fork();
-
-	if(pid < 0)
-		return false;
-	if(pid > 0) {
-		if(foreground) {
-			waitpid(pid, NULL, 0);
-			doupdate();
-		}
-		return true;
-	}
-
-	if(!foreground) {
-		int fd = open("/dev/null", O_RDWR);
-		dup2(fd, 0);
-		dup2(fd, 1);
-		dup2(fd, 2);
-	}
-	execvp(program, argv);
-	exit(EXIT_FAILURE);
-}
-

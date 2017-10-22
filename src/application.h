@@ -9,6 +9,7 @@
 #include "listmodel.h"
 #include "listview.h"
 #include "path.h"
+#include "processmanager.h"
 
 struct application {
 	struct listview view;
@@ -18,7 +19,8 @@ struct application {
 	struct path cwd;
 	struct clipboard clipboard;
 	struct keymap *keymap;
-	int sigwinch_fd;
+	struct processmanager pm;
+	int signal_fd;
 	int inotify_fd;
 	int inotify_watch;
 	bool running;

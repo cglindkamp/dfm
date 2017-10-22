@@ -46,6 +46,7 @@ OBJECTS = \
 	src/listmodel.o \
 	src/listview.o \
 	src/path.o \
+	src/processmanager.o \
 	src/xdg.o \
 	src/util.o \
 	src/main.o \
@@ -60,6 +61,7 @@ TESTOBJECTS = \
 	tests/listmodel.o \
 	tests/listview.o \
 	tests/path.o \
+	tests/processmanager.o \
 	tests/xdg.o \
 	tests/tests.o \
 	tests/wrapper/getcwd.o \

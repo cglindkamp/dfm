@@ -152,12 +152,24 @@ static void invoke_handler(struct application *app, const char *handler_name)
 		path,
 		NULL
 	};
-	if(spawn(path_tocstr(handler_path), args))
-		goto succes;
+	pid_t pid;
+	int status;
+	bool foreground = run_in_foreground();
+
+	if(foreground) {
+		endwin();
+		if(processmanager_spawn(&app->pm, path_tocstr(handler_path), args, path, foreground, &pid) == 0) {
+			processmanager_waitpid(&app->pm, pid, &status);
+			doupdate();
+			goto success;
+		} else
+			doupdate();
+	} else if(processmanager_spawn(&app->pm, path_tocstr(handler_path), args, path, foreground, &pid))
+		goto success;
 
 err_dircreated:
 	remove(path);
-succes:
+success:
 	close(dir_fd);
 err_dir:
 	path_delete(handler_path);
@@ -308,18 +320,28 @@ static void handle_stdin(struct application *app)
 	keymap_handlekey(app->keymap, app, key, ret == KEY_CODE_YES ? true : false);
 }
 
-static void handle_sigwinch(struct application *app)
+static void handle_signal(struct application *app)
 {
 	struct signalfd_siginfo info;
+	int status;
 
-	read(app->sigwinch_fd, &info, sizeof(info));
+	read(app->signal_fd, &info, sizeof(info));
 
-	endwin();
-	doupdate();
-	mvwin(app->status, LINES - 1, 0);
-	wresize(app->status, 1, COLS);
-	wrefresh(app->status);
-	listview_resize(&app->view, COLS, LINES - 1);
+	switch(info.ssi_signo) {
+	case SIGWINCH:
+		endwin();
+		doupdate();
+		mvwin(app->status, LINES - 1, 0);
+		wresize(app->status, 1, COLS);
+		wrefresh(app->status);
+		listview_resize(&app->view, COLS, LINES - 1);
+	case SIGCHLD:
+		if(info.ssi_code == CLD_EXITED ||
+		   info.ssi_code == CLD_KILLED ||
+		   info.ssi_code == CLD_DUMPED) {
+			processmanager_waitpid(&app->pm, info.ssi_pid, &status);
+		}
+	}
 }
 
 static void handle_inotify(struct application *app)
@@ -352,7 +374,7 @@ void application_run(struct application *app)
 {
 	struct pollfd pollfds[3] = {
 		{ .events = POLLIN, .fd = 0, },
-		{ .events = POLLIN, .fd = app->sigwinch_fd, },
+		{ .events = POLLIN, .fd = app->signal_fd, },
 		{ .events = POLLIN, .fd = app->inotify_fd, },
 	};
 	int nfds = app->inotify_fd == -1 ? 2 : 3;
@@ -364,7 +386,7 @@ void application_run(struct application *app)
 			if(pollfds[0].revents & POLLIN)
 				handle_stdin(app);
 			if(pollfds[1].revents & POLLIN)
-				handle_sigwinch(app);
+				handle_signal(app);
 			if(pollfds[2].revents & POLLIN)
 				handle_inotify(app);
 		}
@@ -372,12 +394,13 @@ void application_run(struct application *app)
 }
 
 
-static int create_sigwinch_signalfd()
+static int create_signalfd()
 {
 	sigset_t sigset;
 
 	sigemptyset(&sigset);
 	sigaddset(&sigset, SIGWINCH);
+	sigaddset(&sigset, SIGCHLD);
 	sigprocmask(SIG_BLOCK, &sigset, NULL);
 
 	return signalfd(-1, &sigset, SFD_CLOEXEC);
@@ -403,6 +426,7 @@ bool application_init(struct application *app)
 {
 	bool ret = true;
 
+	processmanager_init(&app->pm);
 	clipboard_init(&app->clipboard);
 
 	app->inotify_fd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
@@ -439,8 +463,8 @@ bool application_init(struct application *app)
 	if(!enter_directory(app, NULL))
 		return false;
 
-	app->sigwinch_fd = create_sigwinch_signalfd();
-	if(app->sigwinch_fd == -1)
+	app->signal_fd = create_signalfd();
+	if(app->signal_fd == -1)
 		return false;
 
 	return true;
@@ -456,4 +480,5 @@ void application_destroy(struct application *app)
 	dict_delete(app->stored_positions, true);
 	dirmodel_destroy(&app->model);
 	clipboard_destroy(&app->clipboard);
+	processmanager_destroy(&app->pm);
 }
