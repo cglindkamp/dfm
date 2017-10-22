@@ -173,13 +173,15 @@ START_TEST(test_keymap_inaccessablefile)
 {
 	struct keymap *keymap;
 
-	char path[] = "/tmp/dirmodel.XXXXXX";
+	char path[] = "/tmp/keymap.XXXXXX";
 	mkstemp(path);
 	chmod(path, 0);
 	int ret = keymap_newfromfile(&keymap, path, command_map);
 
-	assert_oom(ret != ENOMEM);
+	assert_oom_cleanup(ret != ENOMEM, remove(path));
 	ck_assert_int_eq(ret, EACCES);
+
+	remove(path);
 }
 END_TEST
 
