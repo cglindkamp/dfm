@@ -230,6 +230,21 @@ static void navigate_right(struct application *app, const char *unused)
 	}
 }
 
+static void navigate_first(struct application *app, const char *unused)
+{
+	(void)unused;
+	listview_setindex(&app->view, 0);
+}
+
+static void navigate_last(struct application *app, const char *unused)
+{
+	(void)unused;
+	size_t count = listmodel_count(&app->model);
+
+	if(count > 0)
+		listview_setindex(&app->view, count - 1);
+}
+
 static void change_directory(struct application *app, const char *path)
 {
 	save_current_position(app);
@@ -300,6 +315,8 @@ struct command_map application_command_map[] = {
 	{ "navigate_pagedown", navigate_pagedown, false },
 	{ "navigate_left", navigate_left, false },
 	{ "navigate_right", navigate_right, false },
+	{ "navigate_first", navigate_first, false },
+	{ "navigate_last", navigate_last, false },
 	{ "mark", mark, false },
 	{ "change_directory", change_directory, true },
 	{ "invoke_handler", invoke_handler, true },

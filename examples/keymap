@@ -4,6 +4,8 @@ pageup    navigate_pageup
 pagedown  navigate_pagedown
 left      navigate_left
 right     navigate_right
+home      navigate_first
+end       navigate_last
 
 space     mark
 1         change_directory  ~

@@ -32,6 +32,8 @@ static struct {
 	{ .string = "right", .keyspec = { .iskeycode = true, .key = KEY_RIGHT } },
 	{ .string = "pageup", .keyspec = { .iskeycode = true, .key = KEY_PPAGE } },
 	{ .string = "pagedown", .keyspec = { .iskeycode = true, .key = KEY_NPAGE } },
+	{ .string = "home", .keyspec = { .iskeycode = true, .key = KEY_HOME } },
+	{ .string = "end", .keyspec = { .iskeycode = true, .key = KEY_END } },
 };
 
 static void keymap_string_to_keyspec(struct keyspec *keyspec, const char *keystring)
