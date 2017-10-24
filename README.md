@@ -47,7 +47,10 @@ scripts to ~/.config/dfm/handlers and edit them to your liking.
 | PageDown | Move to the bottom of the screen or one page down                                    |
 | Left     | Go to the parent directory                                                           |
 | Right    | Enter the selected directory or open the selected/marked file(s)                     |
+| Home     | Go to the first file                                                                 |
+| End      | Go to the last file                                                                  |
 | Space    | Mark currently selected file                                                         |
+| *        | Invert mark status of every file                                                     |
 | 1        | Go to home (~) directory                                                             |
 | 2        | Go to root (/) directory                                                             |
 | D        | Delete currently marked files, or when no file is marked the currently selected file |

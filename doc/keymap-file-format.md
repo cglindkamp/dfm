@@ -12,6 +12,8 @@ following key strings are currently supported:
 - down
 - left
 - right
+- home
+- end
 - pageup
 - pagedown
 
@@ -25,7 +27,10 @@ The table below shows all supported commands:
 | navigate_pagedown | none                |
 | navigate_left     | none                |
 | navigate_right    | none                |
+| navigate_first    | none                |
+| navigate_last     | none                |
 | mark              | none                |
+| invert_marks      | none                |
 | change_directory  | target directory    |
 | invoke_handler    | handler script name |
 | yank              | none                |
