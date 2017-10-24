@@ -261,6 +261,17 @@ static void mark(struct application *app, const char *unused)
 	listview_down(&app->view);
 }
 
+static void invert_marks(struct application *app, const char *unused)
+{
+	(void)unused;
+	size_t count = listmodel_count(&app->model);
+
+	if(count > 0) {
+		for(size_t i = 0; i < count; i++)
+			listmodel_setmark(&app->model, i, !listmodel_ismarked(&app->model, i));
+	}
+}
+
 static void yank(struct application *app, const char *unused)
 {
 	(void)unused;
@@ -318,6 +329,7 @@ struct command_map application_command_map[] = {
 	{ "navigate_first", navigate_first, false },
 	{ "navigate_last", navigate_last, false },
 	{ "mark", mark, false },
+	{ "invert_marks", invert_marks, false },
 	{ "change_directory", change_directory, true },
 	{ "invoke_handler", invoke_handler, true },
 	{ "yank", yank, false },

@@ -8,6 +8,7 @@ home      navigate_first
 end       navigate_last
 
 space     mark
+*         invert_marks
 1         change_directory  ~
 2         change_directory  /
 D         invoke_handler    delete
