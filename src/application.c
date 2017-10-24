@@ -164,11 +164,11 @@ static void invoke_handler(struct application *app, const char *handler_name)
 			goto success;
 		} else
 			doupdate();
-	} else if(processmanager_spawn(&app->pm, path_tocstr(handler_path), args, path, foreground, &pid))
+	} else if(processmanager_spawn(&app->pm, path_tocstr(handler_path), args, path, foreground, &pid) == 0)
 		goto success;
 
 err_dircreated:
-	remove(path);
+	remove_directory_recursively(path);
 success:
 	close(dir_fd);
 err_dir:
