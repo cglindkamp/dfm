@@ -69,43 +69,59 @@ void keymap_map_command(struct command_map *commandmap, const char *commandname,
 	}
 }
 
-static int keymap_parse_line(struct keymap *keymap, char *line, struct command_map *commandmap)
+static int parse_command(const char *command, command_ptr *commandptr, const char **param, struct command_map *commandmap)
 {
 	bool param_mandatory;
-	char *saveptr;
-	char *token = strtok_r(line, " \t", &saveptr);
-	if(token) {
+	bool characters_after_command = false;
+
+	char buffer[strlen(command) + 1];
+	strcpy(buffer, command);
+
+	char *token = buffer + strspn(command, " \t");
+	size_t length = strcspn(token, " \t");
+
+	if(length > 0) {
+		if(token[length] != '\0')
+			characters_after_command = true;
+		token[length] = '\0';
+		keymap_map_command(commandmap, token, commandptr, &param_mandatory);
+		if(*commandptr == NULL)
+			return EINVAL;
+	} else
+		return EINVAL;
+
+	if(characters_after_command) {
+		token = token + length + 1 + strspn(token + length + 1, " \t");
+		if(token[0] != '\0') {
+			*param = strdup(token);
+			if(*param == NULL)
+				return ENOMEM;
+			else
+				return 0;
+		}
+	}
+
+	*param = NULL;
+	if(param_mandatory)
+		return EINVAL;
+	return 0;
+}
+
+static int keymap_parse_line(struct keymap *keymap, char *line, struct command_map *commandmap)
+{
+	char *token = line + strspn(line, " \t");
+	size_t length = strcspn(token, " \t");
+	if(length > 0) {
+		if(token[length] == '\0')
+			return EINVAL;
+		token[length] = '\0';
 		keymap_string_to_keyspec(&keymap->keyspec, token);
 		if(keymap->keyspec.key == WEOF)
 			return EINVAL;
 	} else
 		return 0;
 
-	token = strtok_r(NULL, " \t", &saveptr);
-	if(token) {
-		keymap_map_command(commandmap, token, &keymap->command, &param_mandatory);
-		if(keymap->command == NULL)
-			return EINVAL;
-	} else
-		return EINVAL;
-
-	/* The following code assumes that saveptr points to the character
-	 * after the previous token or to the null terminator of line when
-	 * there are no more characters. This is not guaranteed by POSIX but is
-	 * implemented this way in glibc, musl and dietlibc. */
-	size_t skip = strspn(saveptr, " \t");
-	token = saveptr + skip;
-	if(token[0] != '\0') {
-		keymap->param = strdup(token);
-		if(keymap->param == NULL)
-			return ENOMEM;
-	} else {
-		keymap->param = NULL;
-		if(param_mandatory)
-			return EINVAL;
-	}
-
-	return 0;
+	return parse_command(token + length + 1, &keymap->command, &keymap->param, commandmap);
 }
 
 int keymap_newfromstring(struct keymap **keymap, char *keymapstring, struct command_map *commandmap)
