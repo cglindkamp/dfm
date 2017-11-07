@@ -23,11 +23,10 @@ struct keyspec {
 
 struct keymap {
 	struct keyspec keyspec;
-	command_ptr command;
-	const char *param;
+	const char *command;
 };
 
-void keymap_handlekey(struct keymap *keymap, struct application *application, wint_t key, bool iskeycode);
+int keymap_handlekey(struct keymap *keymap, struct application *application, wint_t key, bool iskeycode, struct command_map *commandmap);
 int keymap_newfromstring(struct keymap **keymap, char *keymapstring, struct command_map *commandmap);
 int keymap_newfromfile(struct keymap **keymap, const char *filename, struct command_map *commandmap);
 void keymap_delete(struct keymap *keymap);

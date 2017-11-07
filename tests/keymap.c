@@ -45,14 +45,14 @@ static struct {
 	const char *string;
 	struct keymap keymap;
 } singlelinetesttable[] = {
-	{ "a command1", { .keyspec = { .key = L'a', .iskeycode = false }, .command = command1, .param = NULL } },
-	{ "a \t  command1", { .keyspec = { .key = L'a', .iskeycode = false }, .command = command1, .param = NULL } },
-	{ "b command2 foo", { .keyspec = { .key = L'b', .iskeycode = false }, .command = command2, .param = "foo" } },
-	{ "b command4 foo", { .keyspec = { .key = L'b', .iskeycode = false }, .command = command4, .param = "foo" } },
-	{ "  b command2  foo bar", { .keyspec = { .key = L'b', .iskeycode = false }, .command = command2, .param = "foo bar" } },
-	{ u8"ü command1", { .keyspec = { .key = L'ü', .iskeycode = false }, .command = command1, .param = NULL } },
-	{ "space command2", { .keyspec = { .key = L' ', .iskeycode = false }, .command = command2, .param = NULL } },
-	{ "up command2", { .keyspec = { .key = KEY_UP, .iskeycode = true }, .command = command2, .param = NULL } },
+	{ "a command1", { .keyspec = { .key = L'a', .iskeycode = false }, .command = "command1" } },
+	{ "a \t  command1", { .keyspec = { .key = L'a', .iskeycode = false }, .command = "command1" } },
+	{ "b command2 foo", { .keyspec = { .key = L'b', .iskeycode = false }, .command = "command2 foo" } },
+	{ "b command4 foo", { .keyspec = { .key = L'b', .iskeycode = false }, .command = "command4 foo" } },
+	{ "  b command2  foo bar", { .keyspec = { .key = L'b', .iskeycode = false }, .command = "command2  foo bar" } },
+	{ u8"ü command1", { .keyspec = { .key = L'ü', .iskeycode = false }, .command = "command1" } },
+	{ "space command2", { .keyspec = { .key = L' ', .iskeycode = false }, .command = "command2" } },
+	{ "up command2", { .keyspec = { .key = KEY_UP, .iskeycode = true }, .command = "command2" } },
 };
 
 START_TEST(test_keymap_singleline)
@@ -67,11 +67,7 @@ START_TEST(test_keymap_singleline)
 	ck_assert(keymap != NULL);
 	ck_assert(keymap[0].keyspec.iskeycode == singlelinetesttable[_i].keymap.keyspec.iskeycode);
 	ck_assert(keymap[0].keyspec.key == singlelinetesttable[_i].keymap.keyspec.key);
-	ck_assert(keymap[0].command == singlelinetesttable[_i].keymap.command);
-	if(singlelinetesttable[_i].keymap.param == NULL)
-		ck_assert_ptr_eq(keymap[0].param, singlelinetesttable[_i].keymap.param);
-	else
-		ck_assert_str_eq(keymap[0].param, singlelinetesttable[_i].keymap.param);
+	ck_assert_str_eq(keymap[0].command, singlelinetesttable[_i].keymap.command);
 
 	keymap_delete(keymap);
 }
@@ -110,13 +106,11 @@ START_TEST(test_keymap_multiline)
 
 	ck_assert(keymap[0].keyspec.iskeycode == false);
 	ck_assert(keymap[0].keyspec.key == L'a');
-	ck_assert(keymap[0].command == command1);
-	ck_assert_ptr_eq(keymap[0].param, NULL);
+	ck_assert_str_eq(keymap[0].command, "command1");
 
 	ck_assert(keymap[1].keyspec.iskeycode == true);
 	ck_assert(keymap[1].keyspec.key == KEY_UP);
-	ck_assert(keymap[1].command == command2);
-	ck_assert_str_eq(keymap[1].param, "bar");
+	ck_assert_str_eq(keymap[1].command, "command2 bar");
 
 	keymap_delete(keymap);
 }
@@ -135,7 +129,7 @@ START_TEST(test_keymap_handlekeys)
 	app = NULL;
 	param = "foo";
 	command = 0;
-	keymap_handlekey(keymap, (struct application *)0xfe, L'a', false);
+	assert_oom(keymap_handlekey(keymap, (struct application *)0xfe, L'a', false, command_map) != ENOMEM);
 	ck_assert_ptr_eq(app, (struct application *)0xfe);
 	ck_assert_int_eq(command, 1);
 	ck_assert_ptr_eq(param, NULL);
@@ -143,7 +137,7 @@ START_TEST(test_keymap_handlekeys)
 	app = NULL;
 	param = "foo";
 	command = 0;
-	keymap_handlekey(keymap, (struct application *)0xff, KEY_UP, true);
+	assert_oom(keymap_handlekey(keymap, (struct application *)0xff, KEY_UP, true, command_map) != ENOMEM);
 	ck_assert_ptr_eq(app, (struct application *)0xff);
 	ck_assert_int_eq(command, 2);
 	ck_assert_str_eq(param, "bar");

@@ -346,7 +346,7 @@ static void handle_stdin(struct application *app)
 	if(ret == ERR)
 		return;
 
-	keymap_handlekey(app->keymap, app, key, ret == KEY_CODE_YES ? true : false);
+	keymap_handlekey(app->keymap, app, key, ret == KEY_CODE_YES ? true : false, application_command_map);
 }
 
 static void handle_signal(struct application *app)

@@ -9,16 +9,26 @@
 
 #include "keymap.h"
 
-void keymap_handlekey(struct keymap *keymap, struct application *application, wint_t key, bool iskeycode)
+static int parse_command(const char *command, command_ptr *commandptr, const char **param, struct command_map *commandmap);
+
+int keymap_handlekey(struct keymap *keymap, struct application *application, wint_t key, bool iskeycode, struct command_map *commandmap)
 {
 	struct keymap *curitem;
 
 	for(curitem = keymap; curitem->command != NULL; curitem++) {
 		if(curitem->keyspec.key == key && curitem->keyspec.iskeycode == iskeycode) {
-			curitem->command(application, curitem->param);
+			command_ptr command;
+			const char *param;
+			int ret = parse_command(curitem->command, &command, &param, commandmap);
+			if(ret == 0) {
+				command(application, param);
+				free(param);
+			} else
+				return ret;
 			break;
 		}
 	}
+	return 0;
 }
 
 static struct {
@@ -77,7 +87,7 @@ static int parse_command(const char *command, command_ptr *commandptr, const cha
 	char buffer[strlen(command) + 1];
 	strcpy(buffer, command);
 
-	char *token = buffer + strspn(command, " \t");
+	char *token = buffer;
 	size_t length = strcspn(token, " \t");
 
 	if(length > 0) {
@@ -107,6 +117,16 @@ static int parse_command(const char *command, command_ptr *commandptr, const cha
 	return 0;
 }
 
+static int verify_command(const char *command, struct command_map *commandmap) {
+	command_ptr commandptr;
+	const char *param;
+
+	int ret = parse_command(command, &commandptr, &param, commandmap);
+	if(ret == 0)
+		free((char*)param);
+	return ret;
+}
+
 static int keymap_parse_line(struct keymap *keymap, char *line, struct command_map *commandmap)
 {
 	char *token = line + strspn(line, " \t");
@@ -121,7 +141,18 @@ static int keymap_parse_line(struct keymap *keymap, char *line, struct command_m
 	} else
 		return 0;
 
-	return parse_command(token + length + 1, &keymap->command, &keymap->param, commandmap);
+	char *command = token + length + 1;
+	command = command + strspn(command, " \t");
+
+	int ret = verify_command(command, commandmap);
+	if(ret == 0) {
+		keymap->command = strdup(command);
+		if(keymap->command == NULL)
+			return ENOMEM;
+	} else
+		return ret;
+
+	return 0;
 }
 
 int keymap_newfromstring(struct keymap **keymap, char *keymapstring, struct command_map *commandmap)
@@ -150,7 +181,7 @@ int keymap_newfromstring(struct keymap **keymap, char *keymapstring, struct comm
 
 			struct keymap *newkeymap = realloc(*keymap, sizeof(struct keymap) * (parsed_lines + 1));
 			if(newkeymap == NULL) {
-				free((char*)(*keymap)[parsed_lines - 1].param);
+				free((char*)(*keymap)[parsed_lines - 1].command);
 				(*keymap)[parsed_lines - 1].command = NULL;
 				keymap_delete(*keymap);
 				return ENOMEM;
@@ -203,7 +234,7 @@ void keymap_delete(struct keymap *keymap)
 		return;
 
 	for(struct keymap *curitem = keymap; curitem->command != NULL; curitem++)
-		free((char*)curitem->param);
+		free((char*)curitem->command);
 
 	free(keymap);
 }
