@@ -9,7 +9,7 @@
 
 #include "keymap.h"
 
-static int parse_command(const char *command, command_ptr *commandptr, const char **param, struct command_map *commandmap);
+static int parse_command(char *command, command_ptr *commandptr, char **param, struct command_map *commandmap);
 
 int keymap_handlekey(struct keymap *keymap, struct application *application, wint_t key, bool iskeycode, struct command_map *commandmap)
 {
@@ -18,12 +18,15 @@ int keymap_handlekey(struct keymap *keymap, struct application *application, win
 	for(curitem = keymap; curitem->command != NULL; curitem++) {
 		if(curitem->keyspec.key == key && curitem->keyspec.iskeycode == iskeycode) {
 			command_ptr command;
-			const char *param;
-			int ret = parse_command(curitem->command, &command, &param, commandmap);
-			if(ret == 0) {
+			char *param;
+
+			char buffer[strlen(curitem->command) + 1];
+			strcpy(buffer, curitem->command);
+
+			int ret = parse_command(buffer, &command, &param, commandmap);
+			if(ret == 0)
 				command(application, param);
-				free(param);
-			} else
+			else
 				return ret;
 			break;
 		}
@@ -79,15 +82,12 @@ void keymap_map_command(struct command_map *commandmap, const char *commandname,
 	}
 }
 
-static int parse_command(const char *command, command_ptr *commandptr, const char **param, struct command_map *commandmap)
+static int parse_command(char *command, command_ptr *commandptr, char **param, struct command_map *commandmap)
 {
 	bool param_mandatory;
 	bool characters_after_command = false;
 
-	char buffer[strlen(command) + 1];
-	strcpy(buffer, command);
-
-	char *token = buffer;
+	char *token = command;
 	size_t length = strcspn(token, " \t");
 
 	if(length > 0) {
@@ -103,11 +103,8 @@ static int parse_command(const char *command, command_ptr *commandptr, const cha
 	if(characters_after_command) {
 		token = token + length + 1 + strspn(token + length + 1, " \t");
 		if(token[0] != '\0') {
-			*param = strdup(token);
-			if(*param == NULL)
-				return ENOMEM;
-			else
-				return 0;
+			*param = token;
+			return 0;
 		}
 	}
 
@@ -119,12 +116,12 @@ static int parse_command(const char *command, command_ptr *commandptr, const cha
 
 static int verify_command(const char *command, struct command_map *commandmap) {
 	command_ptr commandptr;
-	const char *param;
+	char *param;
 
-	int ret = parse_command(command, &commandptr, &param, commandmap);
-	if(ret == 0)
-		free((char*)param);
-	return ret;
+	char buffer[strlen(command) + 1];
+	strcpy(buffer, command);
+
+	return parse_command(buffer, &commandptr, &param, commandmap);
 }
 
 static int keymap_parse_line(struct keymap *keymap, char *line, struct command_map *commandmap)

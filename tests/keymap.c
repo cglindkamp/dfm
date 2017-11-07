@@ -10,28 +10,31 @@
 #include "tests.h"
 
 static struct application *app;
-static const char *param;
+static char param[10];
 static int command;
 
 static void command1(struct application *a, const char *p)
 {
 	app = a;
 	command = 1;
-	param = p;
+	if(p)
+		strcpy(param, p);
 }
 
 static void command2(struct application *a, const char *p)
 {
 	app = a;
 	command = 2;
-	param = p;
+	if(p)
+		strcpy(param, p);
 }
 
 static void command4(struct application *a, const char *p)
 {
 	app = a;
 	command = 4;
-	param = p;
+	if(p)
+		strcpy(param, p);
 }
 
 static struct command_map command_map[] = {
@@ -127,15 +130,15 @@ START_TEST(test_keymap_handlekeys)
 	ck_assert(keymap != NULL);
 
 	app = NULL;
-	param = "foo";
+	param[0] = '\0';
 	command = 0;
 	assert_oom(keymap_handlekey(keymap, (struct application *)0xfe, L'a', false, command_map) != ENOMEM);
 	ck_assert_ptr_eq(app, (struct application *)0xfe);
 	ck_assert_int_eq(command, 1);
-	ck_assert_ptr_eq(param, NULL);
+	ck_assert_str_eq(param, "");
 
 	app = NULL;
-	param = "foo";
+	param[0] = '\0';
 	command = 0;
 	assert_oom(keymap_handlekey(keymap, (struct application *)0xff, KEY_UP, true, command_map) != ENOMEM);
 	ck_assert_ptr_eq(app, (struct application *)0xff);
