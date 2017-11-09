@@ -11,24 +11,28 @@
 
 static int parse_command(char *command, command_ptr *commandptr, char **param, struct command_map *commandmap);
 
+static int execute_command(char *command, struct application *application, struct command_map *commandmap) {
+	command_ptr commandptr;
+	char *param;
+
+	int ret = parse_command(command, &commandptr, &param, commandmap);
+	if(ret == 0)
+		commandptr(application, param);
+	else
+		return ret;
+	return 0;
+}
+
 int keymap_handlekey(struct keymap *keymap, struct application *application, wint_t key, bool iskeycode, struct command_map *commandmap)
 {
 	struct keymap *curitem;
 
 	for(curitem = keymap; curitem->command != NULL; curitem++) {
 		if(curitem->keyspec.key == key && curitem->keyspec.iskeycode == iskeycode) {
-			command_ptr command;
-			char *param;
-
 			char buffer[strlen(curitem->command) + 1];
 			strcpy(buffer, curitem->command);
 
-			int ret = parse_command(buffer, &command, &param, commandmap);
-			if(ret == 0)
-				command(application, param);
-			else
-				return ret;
-			break;
+			return execute_command(buffer, application, commandmap);
 		}
 	}
 	return 0;
