@@ -38,6 +38,7 @@ HANDLERS = \
 OBJECTS = \
 	src/application.o \
 	src/clipboard.o \
+	src/command.o \
 	src/dict.o \
 	src/dirmodel.o \
 	src/keymap.o \

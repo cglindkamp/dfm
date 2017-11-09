@@ -2,19 +2,12 @@
 #ifndef KEYMAP_H
 #define KEYMAP_H
 
+#include "command.h"
+
 #include <stdbool.h>
 #include <wchar.h>
 
 struct application;
-
-typedef void (*command_ptr)(struct application *, const char *);
-typedef command_ptr (*command_map_ptr)(const char *);
-
-struct command_map {
-	const char *command_name;
-	command_ptr command;
-	bool param_mandatory;
-};
 
 struct keyspec {
 	bool iskeycode;
