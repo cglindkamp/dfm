@@ -482,9 +482,11 @@ static bool load_keymap(struct application *app)
 
 	if(keymap_newfromfile(&app->keymap, path_tocstr(keymap_path), application_command_map) != 0) {
 		app->keymap = NULL;
+		path_delete(keymap_path);
 		return false;
 	}
 
+	path_delete(keymap_path);
 	return true;
 }
 
