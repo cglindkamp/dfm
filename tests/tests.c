@@ -20,6 +20,7 @@ Suite *dirmodel_suite(void);
 Suite *xdg_suite(void);
 Suite *keymap_suite(void);
 Suite *processmanager_suite(void);
+Suite *commandline_suite(void);
 
 #define MAX_OOM_ITERATIONS 100
 bool mode_oom = false;
@@ -42,6 +43,7 @@ SRunner *create_runner()
 	srunner_add_suite(suite_runner, xdg_suite());
 	srunner_add_suite(suite_runner, keymap_suite());
 	srunner_add_suite(suite_runner, processmanager_suite());
+	srunner_add_suite(suite_runner, commandline_suite());
 
 	return suite_runner;
 }

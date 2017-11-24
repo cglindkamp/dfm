@@ -5,17 +5,24 @@
 #include <stdbool.h>
 
 #include "clipboard.h"
+#include "commandline.h"
 #include "list.h"
 #include "listmodel.h"
 #include "listview.h"
 #include "path.h"
 #include "processmanager.h"
 
+enum mode {
+	MODE_NORMAL,
+	MODE_COMMAND,
+};
+
 struct application {
 	struct listview view;
 	struct listmodel model;
 	list_t *stored_positions;
 	WINDOW *status;
+	struct commandline commandline;
 	struct path cwd;
 	struct clipboard clipboard;
 	struct keymap *keymap;
@@ -23,6 +30,7 @@ struct application {
 	int signal_fd;
 	int inotify_fd;
 	int inotify_watch;
+	enum mode mode;
 	bool running;
 };
 

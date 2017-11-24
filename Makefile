@@ -39,6 +39,7 @@ OBJECTS = \
 	src/application.o \
 	src/clipboard.o \
 	src/command.o \
+	src/commandline.o \
 	src/dict.o \
 	src/dirmodel.o \
 	src/keymap.o \
@@ -54,6 +55,7 @@ OBJECTS = \
 
 TESTEDOBJECTS = $(subst src/main.o,,$(OBJECTS))
 TESTOBJECTS = \
+	tests/commandline.o \
 	tests/dict.o \
 	tests/dirmodel.o \
 	tests/filedata.o \

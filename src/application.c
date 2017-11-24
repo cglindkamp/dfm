@@ -346,7 +346,38 @@ static void handle_stdin(struct application *app)
 	if(ret == ERR)
 		return;
 
-	keymap_handlekey(app->keymap, app, key, ret == KEY_CODE_YES ? true : false, application_command_map);
+	if(ret != KEY_CODE_YES) {
+		switch(key) {
+		case L':':
+			app->mode = MODE_COMMAND;
+			curs_set(1);
+			commandline_start(&app->commandline, L':');
+			return;
+			break;
+		case 27:
+			app->mode = MODE_NORMAL;
+			curs_set(0);
+			display_current_path(app);
+			return;
+			break;
+		}
+	}
+	if(app->mode == MODE_COMMAND) {
+		if(ret != KEY_CODE_YES && key == L'\n') {
+			app->mode = MODE_NORMAL;
+			curs_set(0);
+			display_current_path(app);
+
+			const wchar_t *wcommand = commandline_getcommand(&app->commandline);
+			char command[wcstombs(NULL, wcommand, 0) + 1];
+			wcstombs(command, wcommand, sizeof(command));
+			command_execute(command, app, application_command_map);
+		} else if(ret != KEY_CODE_YES && key == L'\t') {
+		} else
+			commandline_handlekey(&app->commandline, key, ret == KEY_CODE_YES ? true : false);
+
+	} else
+		keymap_handlekey(app->keymap, app, key, ret == KEY_CODE_YES ? true : false, application_command_map);
 }
 
 static void handle_signal(struct application *app)
@@ -362,14 +393,18 @@ static void handle_signal(struct application *app)
 		doupdate();
 		mvwin(app->status, LINES - 1, 0);
 		wresize(app->status, 1, COLS);
-		wrefresh(app->status);
 		listview_resize(&app->view, COLS, LINES - 1);
+		commandline_resize(&app->commandline, 0, LINES - 1, COLS);
+		if(app->mode == MODE_NORMAL)
+			display_current_path(app);
+		break;
 	case SIGCHLD:
 		if(info.ssi_code == CLD_EXITED ||
 		   info.ssi_code == CLD_KILLED ||
 		   info.ssi_code == CLD_DUMPED) {
 			processmanager_waitpid(&app->pm, info.ssi_pid, &status);
 		}
+		break;
 	}
 }
 
@@ -397,6 +432,8 @@ static void handle_inotify(struct application *app)
 			(void)dirmodel_notify_file_added_or_changed(&app->model, event->name);
 		}
 	}
+	if(app->mode == MODE_COMMAND)
+		commandline_updatecursor(&app->commandline);
 }
 
 void application_run(struct application *app)
@@ -455,6 +492,9 @@ bool application_init(struct application *app)
 {
 	bool ret = true;
 
+	app->mode = MODE_NORMAL;
+	curs_set(0);
+
 	processmanager_init(&app->pm);
 	clipboard_init(&app->clipboard);
 
@@ -472,6 +512,9 @@ bool application_init(struct application *app)
 		keypad(app->status, TRUE);
 		nodelay(app->status, TRUE);
 	} else
+		ret = false;
+
+	if(!commandline_init(&app->commandline, 0, LINES - 1, COLS))
 		ret = false;
 
 	if(!path_init(&app->cwd, PATH_MAX))
@@ -504,6 +547,7 @@ void application_destroy(struct application *app)
 	keymap_delete(app->keymap);
 	listview_destroy(&app->view);
 	path_destroy(&app->cwd);
+	commandline_destroy(&app->commandline);
 	if(app->status)
 		delwin(app->status);
 	dict_delete(app->stored_positions, true);

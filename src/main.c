@@ -11,7 +11,6 @@ void init_ncurses()
 	initscr();
 	noecho();
 	raw();
-	curs_set(0);
 
 	start_color();
 	init_pair(1, COLOR_WHITE, COLOR_BLUE);
