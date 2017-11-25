@@ -12,72 +12,84 @@ static struct {
 	size_t keypresscount;
 	const wchar_t *result;
 	const wchar_t *output;
+	size_t cursorpos;
 } testdata[] = {
 	{
 		.keypresses = NULL,
 		.keypresscount = 0,
 		.result = L"",
 		.output = L":         ",
+		.cursorpos = 1,
 	},
 	{
 		.keypresses = (struct keyspec[]) { { 0, L'h' }, { 0, L'e'}, { 0, L'l'}, { 0, L'l'}, { 0, L'o'} },
 		.keypresscount = 5,
 		.result = L"hello",
 		.output = L":hello    ",
+		.cursorpos = 6,
 	},
 	{
 		.keypresses = (struct keyspec[]) { { 0, L'h' }, { 0, L'e'}, { 1, KEY_BACKSPACE}, { 1, KEY_BACKSPACE} },
 		.keypresscount = 4,
 		.result = L"",
 		.output = L":         ",
+		.cursorpos = 1,
 	},
 	{
 		.keypresses = (struct keyspec[]) { { 0, L'h' }, { 0, L'e'}, { 0, L'l'}, { 0, L'l'}, { 0, L'o'}, { 0, L' ' }, { 0, L'w'}, { 0, L'o'}, { 0, L'r'}, { 0, L'l'}, { 0, L'd'} },
 		.keypresscount = 11,
 		.result = L"hello world",
 		.output = L":lo world ",
+		.cursorpos = 9,
 	},
 	{
 		.keypresses = (struct keyspec[]) { { 0, L'h' }, { 0, L'e'}, { 0, L'l'}, { 0, L'l'}, { 0, L'o'}, { 0, L' ' }, { 0, L'w'}, { 0, L'o'}, { 0, L'r'}, { 0, L'l'}, { 0, L'd'}, { 1, KEY_BACKSPACE} },
 		.keypresscount = 12,
 		.result = L"hello worl",
 		.output = L":llo worl ",
+		.cursorpos = 9,
 	},
 	{
 		.keypresses = (struct keyspec[]) { { 0, L'h' }, { 0, L'e'}, { 0, L'l'}, { 0, L'l'}, { 0, L'o'}, { 0, L' ' }, { 0, L'w'}, { 0, L'o'}, { 0, L'r'}, { 0, L'l'}, { 0, L'd'}, { 1, KEY_LEFT}, {1, KEY_BACKSPACE} },
 		.keypresscount = 13,
 		.result = L"hello word",
 		.output = L":ello word",
+		.cursorpos = 9,
 	},
 	{
 		.keypresses = (struct keyspec[]) { { 0, L'h' }, { 0, L'e'}, { 0, L'l'}, { 0, L'l'}, { 0, L'o'}, { 0, L' ' }, { 0, L'w'}, { 0, L'o'}, { 0, L'r'}, { 0, L'l'}, { 0, L'd'}, { 1, KEY_LEFT}, {0, L'a'} },
 		.keypresscount = 13,
 		.result = L"hello worlad",
 		.output = L":lo worlad",
+		.cursorpos = 9,
 	},
 	{
 		.keypresses = (struct keyspec[]) { { 0, L'h' }, { 0, L'e'}, { 0, L'l'}, { 0, L'l'}, { 0, L'o'}, { 0, L' ' }, { 0, L'w'}, { 0, L'o'}, { 0, L'r'}, { 0, L'l'}, { 0, L'd'}, { 1, KEY_LEFT}, {1, KEY_LEFT}, {1, KEY_RIGHT}, {0, L'a'} },
 		.keypresscount = 15,
 		.result = L"hello worlad",
 		.output = L":lo worlad",
+		.cursorpos = 9,
 	},
 	{
 		.keypresses = (struct keyspec[]) { { 0, L'h' }, { 0, L'e'}, { 0, L'l'}, { 0, L'l'}, { 0, L'o'}, { 0, L' ' }, { 0, L'w'}, { 0, L'o'}, { 0, L'r'}, { 0, L'l'}, { 0, L'd'}, { 1, KEY_HOME}, {0, L'a'} },
 		.keypresscount = 13,
 		.result = L"ahello world",
 		.output = L":ahello wo",
+		.cursorpos = 2,
 	},
 	{
 		.keypresses = (struct keyspec[]) { { 0, L'h' }, { 0, L'e'}, { 0, L'l'}, { 0, L'l'}, { 0, L'o'}, { 0, L' ' }, { 0, L'w'}, { 0, L'o'}, { 0, L'r'}, { 0, L'l'}, { 0, L'd'}, { 1, KEY_HOME}, { 1, KEY_END}, {0, L'a'} },
 		.keypresscount = 14,
 		.result = L"hello worlda",
 		.output = L":o worlda ",
+		.cursorpos = 9,
 	},
 	{
 		.keypresses = (struct keyspec[]) { { 0, L'h' }, { 0, L'e'}, { 0, L'l'}, { 0, L'l'}, { 0, L'o'}, { 0, L' ' }, { 0, L'w'}, { 0, L'o'}, { 0, L'r'}, { 0, L'l'}, { 0, L'd'}, { 1, KEY_HOME}, {1, KEY_DC} },
 		.keypresscount = 13,
 		.result = L"ello world",
 		.output = L":ello worl",
+		.cursorpos = 1,
 	},
 };
 
@@ -95,8 +107,12 @@ START_TEST(test_commandline_input)
 	ck_assert(wcscmp(result, testdata[_i].result) == 0);
 
 	wchar_t buffer[10];
+	int x, y;
+	getyx(cmdline.window, y, x);
 	mvwinnwstr(cmdline.window, 0, 0, buffer, 10);
 	ck_assert(wcscmp(buffer, testdata[_i].output) == 0);
+	ck_assert_int_eq(x, testdata[_i].cursorpos);
+	ck_assert_int_eq(y, 0);
 
 	commandline_destroy(&cmdline);
 }
