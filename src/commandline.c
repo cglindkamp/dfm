@@ -19,30 +19,57 @@ static int commandline_makeroom(struct commandline *commandline)
 
 void commandline_updatecursor(struct commandline *commandline)
 {
-	wmove(commandline->window, 0, commandline->cursor_pos - commandline->first + 1);
+	int cursorpos = wcswidth(commandline->buffer + commandline->first, commandline->cursor_pos - commandline->first);
+	wmove(commandline->window, 0, cursorpos + 1);
 	wrefresh(commandline->window);
 }
 
 static void commandline_updateview(struct commandline *commandline)
 {
 	size_t length = wcslen(commandline->buffer);
-	size_t promptlength = 1;
-	size_t windowwidth = getmaxx(commandline->window);
+	int promptlength = 1;
+	int windowwidth = getmaxx(commandline->window);
 
-	if(length < windowwidth - promptlength)
+	if(wcswidth(commandline->buffer, -1) < windowwidth - promptlength)
 		commandline->first = 0;
 	else if(commandline->cursor_pos < commandline->first)
 		commandline->first = commandline->cursor_pos;
-	else if(commandline->cursor_pos >= commandline->first + windowwidth - promptlength)
-		commandline->first = commandline->cursor_pos - windowwidth + promptlength + 1;
-	else if(wcslen(commandline->buffer + commandline->first) < windowwidth - promptlength) {
-		commandline->first = length - (windowwidth - promptlength);
-		if(commandline->cursor_pos == length)
+	else if(wcswidth(commandline->buffer + commandline->first, commandline->cursor_pos - commandline->first) >= windowwidth - promptlength) {
+		while(wcwidth(*(commandline->buffer + commandline->first)) < 1 ||
+		      wcswidth(commandline->buffer + commandline->first, commandline->cursor_pos - commandline->first) >= windowwidth - promptlength) {
 			commandline->first++;
+		}
+	} else {
+		int currentwidth = wcswidth(commandline->buffer + commandline->first, commandline->cursor_pos - commandline->first + 1);
+		int targetwidth = windowwidth - promptlength - (commandline->cursor_pos == length ? 1 : 0);
+		int first = commandline->first;
+		int firstwidth = 0;
+
+		while(first > 0 && currentwidth + firstwidth < targetwidth) {
+			currentwidth += firstwidth;
+
+			do {
+				first--;
+				firstwidth = wcwidth(commandline->buffer[first]);
+			} while(first > 0 && firstwidth < 1);
+
+			if(currentwidth + firstwidth <= targetwidth)
+				commandline->first = first;
+		}
 	}
+
+	size_t distance = 0;
+	int width = 0;
+	int currentwidth = 0;
+	while(commandline->first + distance < length && width + currentwidth <= windowwidth - promptlength) {
+		width += currentwidth;
+		currentwidth = wcwidth(*(commandline->buffer + commandline->first + distance));
+		distance++;
+	}
+
 	werase(commandline->window);
 	mvwaddwstr(commandline->window, 0, 0, commandline->prompt);
-	waddnwstr(commandline->window, commandline->buffer + commandline->first, windowwidth - promptlength);
+	waddnwstr(commandline->window, commandline->buffer + commandline->first, distance);
 	wrefresh(commandline->window);
 	commandline_updatecursor(commandline);
 }
@@ -75,22 +102,42 @@ int commandline_handlekey(struct commandline *commandline, wint_t key, bool iske
 		switch(key) {
 		case KEY_BACKSPACE:
 			if(commandline->cursor_pos > 0) {
-				wmemmove(commandline->buffer + cursorpos - 1, commandline->buffer + cursorpos, length - cursorpos);
-				commandline->buffer[length - 1] = L'\0';
-				commandline->cursor_pos--;
+				size_t distance = 0;
+				int width;
+				do {
+					width = wcwidth(commandline->buffer[commandline->cursor_pos - 1]);
+					distance++;
+					commandline->cursor_pos--;
+				} while(commandline->cursor_pos > 0 && width < 1);
+
+				wmemmove(commandline->buffer + commandline->cursor_pos, commandline->buffer + cursorpos, length - commandline->cursor_pos);
+				commandline->buffer[length - distance] = L'\0';
 			}
 			break;
 		case KEY_DC:
-			if(commandline->cursor_pos < length)
-				wmemmove(commandline->buffer + cursorpos, commandline->buffer + cursorpos + 1, length - cursorpos);
+			if(commandline->cursor_pos < length) {
+				size_t distance = 0;
+				do {
+					distance++;
+				} while(commandline->cursor_pos + distance < length && wcwidth(commandline->buffer[commandline->cursor_pos + distance]) < 1);
+				wmemmove(commandline->buffer + cursorpos, commandline->buffer + cursorpos + distance, length - cursorpos - distance + 1);
+			}
 			break;
 		case KEY_LEFT:
-			if(commandline->cursor_pos > 0)
-				commandline->cursor_pos--;
+			if(commandline->cursor_pos > 0) {
+				int width;
+				do {
+					width = wcwidth(commandline->buffer[commandline->cursor_pos - 1]);
+					commandline->cursor_pos--;
+				} while(commandline->cursor_pos > 0 && width < 1);
+			}
 			break;
 		case KEY_RIGHT:
-			if(commandline->cursor_pos < length)
-				commandline->cursor_pos++;
+			if(commandline->cursor_pos < length) {
+				do {
+					commandline->cursor_pos++;
+				} while(commandline->cursor_pos < length && wcwidth(commandline->buffer[commandline->cursor_pos]) < 1);
+			}
 			break;
 		case KEY_HOME:
 			commandline->cursor_pos = 0;
@@ -100,6 +147,9 @@ int commandline_handlekey(struct commandline *commandline, wint_t key, bool iske
 			break;
 		}
 	} else {
+		if(commandline->cursor_pos == 0 && wcwidth(key) == 0)
+			return EINVAL;
+
 		if(length == commandline->allocated_size - 1)
 			if(commandline_makeroom(commandline) != 0)
 				return ENOMEM;
