@@ -147,6 +147,9 @@ int commandline_handlekey(struct commandline *commandline, wint_t key, bool iske
 			break;
 		}
 	} else {
+		if(key == 0 || wcwidth(key) < 0)
+			return EINVAL;
+
 		if(commandline->cursor_pos == 0 && wcwidth(key) == 0)
 			return EINVAL;
 

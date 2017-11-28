@@ -217,6 +217,21 @@ START_TEST(test_commandline_input)
 }
 END_TEST
 
+static wchar_t invaliddata[] = { 0, 1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 127 };
+
+START_TEST(test_commandline_invalidinput)
+{
+	struct commandline cmdline;
+
+	commandline_init(&cmdline, 0, 0, 10);
+	assert_oom(commandline_start(&cmdline, L':') != ENOMEM);
+
+	ck_assert(commandline_handlekey(&cmdline, invaliddata[_i], false) == EINVAL);
+
+	commandline_destroy(&cmdline);
+}
+END_TEST
+
 Suite *commandline_suite(void)
 {
 	Suite *suite;
@@ -226,6 +241,7 @@ Suite *commandline_suite(void)
 
 	tcase = tcase_create("Core");
 	tcase_add_loop_test(tcase, test_commandline_input, 0, sizeof(testdata)/sizeof(testdata[0]));
+	tcase_add_loop_test(tcase, test_commandline_invalidinput, 0, sizeof(invaliddata)/sizeof(invaliddata[0]));
 	suite_add_tcase(suite, tcase);
 
 	return suite;
