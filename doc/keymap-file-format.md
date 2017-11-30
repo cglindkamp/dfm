@@ -37,6 +37,7 @@ The table below shows all supported commands:
 | yank              | none                |
 | quit              | none                |
 | mkdir             | directory to create |
+| cmdline           | command             |
 
 The optional parameter starts with first non-whitespace character after the
 command and goes to the end of the line. So all further whitespace characters

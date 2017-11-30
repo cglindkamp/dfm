@@ -325,6 +325,24 @@ static void command_mkdir(struct application *app, const char *dirname)
 	mkdir(dirname, 0777);
 }
 
+static void command_cmdline(struct application *app, const char *command)
+{
+	app->mode = MODE_COMMAND;
+	curs_set(1);
+	commandline_start(&app->commandline, L':');
+
+	if(command != NULL) {
+		size_t length = mbstowcs(NULL, command, 0);
+		if(length != (size_t)-1) {
+			wchar_t buffer[length + 1];
+			mbstowcs(buffer, command, length);
+
+			for(size_t i = 0; i < length; i++)
+				commandline_handlekey(&app->commandline, buffer[i], false);
+		}
+	}
+}
+
 struct command_map application_command_map[] = {
 	{ "navigate_up", navigate_up, false },
 	{ "navigate_down", navigate_down, false },
@@ -341,6 +359,7 @@ struct command_map application_command_map[] = {
 	{ "yank", yank, false },
 	{ "quit", quit, false },
 	{ "mkdir", command_mkdir, true },
+	{ "cmdline", command_cmdline, false },
 	{ NULL, NULL, false },
 };
 
