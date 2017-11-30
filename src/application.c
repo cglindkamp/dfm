@@ -372,21 +372,11 @@ static void handle_stdin(struct application *app)
 	if(ret == ERR)
 		return;
 
-	if(ret != KEY_CODE_YES) {
-		switch(key) {
-		case L':':
-			app->mode = MODE_COMMAND;
-			curs_set(1);
-			commandline_start(&app->commandline, L':');
-			return;
-			break;
-		case 27:
-			app->mode = MODE_NORMAL;
-			curs_set(0);
-			display_current_path(app);
-			return;
-			break;
-		}
+	if(ret != KEY_CODE_YES && key == 27) {
+		app->mode = MODE_NORMAL;
+		curs_set(0);
+		display_current_path(app);
+		return;
 	}
 	if(app->mode == MODE_COMMAND) {
 		if(ret != KEY_CODE_YES && key == L'\n') {

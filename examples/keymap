@@ -18,3 +18,5 @@ P         invoke_handler    move
 s         invoke_handler    shell
 y         yank
 q         quit
+
+:         cmdline
