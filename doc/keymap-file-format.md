@@ -16,6 +16,7 @@ following key strings are currently supported:
 - end
 - pageup
 - pagedown
+- f1 - f10
 
 The table below shows all supported commands:
 

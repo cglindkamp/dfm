@@ -37,6 +37,16 @@ static struct {
 	{ .string = "pagedown", .keyspec = { .iskeycode = true, .key = KEY_NPAGE } },
 	{ .string = "home", .keyspec = { .iskeycode = true, .key = KEY_HOME } },
 	{ .string = "end", .keyspec = { .iskeycode = true, .key = KEY_END } },
+	{ .string = "f1", .keyspec = { .iskeycode = true, .key = KEY_F(1) } },
+	{ .string = "f2", .keyspec = { .iskeycode = true, .key = KEY_F(2) } },
+	{ .string = "f3", .keyspec = { .iskeycode = true, .key = KEY_F(3) } },
+	{ .string = "f4", .keyspec = { .iskeycode = true, .key = KEY_F(4) } },
+	{ .string = "f5", .keyspec = { .iskeycode = true, .key = KEY_F(5) } },
+	{ .string = "f6", .keyspec = { .iskeycode = true, .key = KEY_F(6) } },
+	{ .string = "f7", .keyspec = { .iskeycode = true, .key = KEY_F(7) } },
+	{ .string = "f8", .keyspec = { .iskeycode = true, .key = KEY_F(8) } },
+	{ .string = "f9", .keyspec = { .iskeycode = true, .key = KEY_F(9) } },
+	{ .string = "f10", .keyspec = { .iskeycode = true, .key = KEY_F(10) } },
 };
 
 static void keymap_string_to_keyspec(struct keyspec *keyspec, const char *keystring)
