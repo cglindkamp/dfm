@@ -20,3 +20,4 @@ y         yank
 q         quit
 
 :         cmdline
+f7        cmdline           mkdir 
