@@ -36,6 +36,7 @@ The table below shows all supported commands:
 | invoke_handler    | handler script name |
 | yank              | none                |
 | quit              | none                |
+| mkdir             | directory to create |
 
 The optional parameter starts with first non-whitespace character after the
 command and goes to the end of the line. So all further whitespace characters

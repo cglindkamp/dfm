@@ -319,6 +319,12 @@ static void quit(struct application *app, const char *unused)
 	app->running = false;
 }
 
+static void command_mkdir(struct application *app, const char *dirname)
+{
+	(void)app;
+	mkdir(dirname, 0777);
+}
+
 struct command_map application_command_map[] = {
 	{ "navigate_up", navigate_up, false },
 	{ "navigate_down", navigate_down, false },
@@ -334,6 +340,7 @@ struct command_map application_command_map[] = {
 	{ "invoke_handler", invoke_handler, true },
 	{ "yank", yank, false },
 	{ "quit", quit, false },
+	{ "mkdir", command_mkdir, true },
 	{ NULL, NULL, false },
 };
 
