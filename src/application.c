@@ -99,7 +99,7 @@ static bool enter_directory(struct application *app, const char *oldpathname)
 }
 
 
-static void invoke_handler(struct application *app, const char *handler_name)
+static void command_invoke_handler(struct application *app, const char *handler_name)
 {
 	struct path *handler_path = determine_usable_config_file(PROJECT, "handlers", handler_name, X_OK);
 	if(handler_path == NULL)
@@ -175,31 +175,31 @@ err_dir:
 	path_delete(handler_path);
 }
 
-static void navigate_up(struct application *app, const char *unused)
+static void command_navigate_up(struct application *app, const char *unused)
 {
 	(void)unused;
 	listview_up(&app->view);
 }
 
-static void navigate_down(struct application *app, const char *unused)
+static void command_navigate_down(struct application *app, const char *unused)
 {
 	(void)unused;
 	listview_down(&app->view);
 }
 
-static void navigate_pageup(struct application *app, const char *unused)
+static void command_navigate_pageup(struct application *app, const char *unused)
 {
 	(void)unused;
 	listview_pageup(&app->view);
 }
 
-static void navigate_pagedown(struct application *app, const char *unused)
+static void command_navigate_pagedown(struct application *app, const char *unused)
 {
 	(void)unused;
 	listview_pagedown(&app->view);
 }
 
-static void navigate_left(struct application *app, const char *unused)
+static void command_navigate_left(struct application *app, const char *unused)
 {
 	(void)unused;
 	const char *oldpathname = NULL;
@@ -210,7 +210,7 @@ static void navigate_left(struct application *app, const char *unused)
 		enter_directory(app, oldpathname);
 }
 
-static void navigate_right(struct application *app, const char *unused)
+static void command_navigate_right(struct application *app, const char *unused)
 {
 	(void)unused;
 
@@ -226,17 +226,17 @@ static void navigate_right(struct application *app, const char *unused)
 			return;
 		enter_directory(app, NULL);
 	} else {
-		invoke_handler(app, "open");
+		command_invoke_handler(app, "open");
 	}
 }
 
-static void navigate_first(struct application *app, const char *unused)
+static void command_navigate_first(struct application *app, const char *unused)
 {
 	(void)unused;
 	listview_setindex(&app->view, 0);
 }
 
-static void navigate_last(struct application *app, const char *unused)
+static void command_navigate_last(struct application *app, const char *unused)
 {
 	(void)unused;
 	size_t count = listmodel_count(&app->model);
@@ -245,7 +245,7 @@ static void navigate_last(struct application *app, const char *unused)
 		listview_setindex(&app->view, count - 1);
 }
 
-static void change_directory(struct application *app, const char *path)
+static void command_change_directory(struct application *app, const char *path)
 {
 	save_current_position(app);
 
@@ -253,7 +253,7 @@ static void change_directory(struct application *app, const char *path)
 		enter_directory(app, NULL);
 }
 
-static void mark(struct application *app, const char *unused)
+static void command_mark(struct application *app, const char *unused)
 {
 	(void)unused;
 	size_t index = listview_getindex(&app->view);
@@ -261,7 +261,7 @@ static void mark(struct application *app, const char *unused)
 	listview_down(&app->view);
 }
 
-static void invert_marks(struct application *app, const char *unused)
+static void command_invert_marks(struct application *app, const char *unused)
 {
 	(void)unused;
 	size_t count = listmodel_count(&app->model);
@@ -272,7 +272,7 @@ static void invert_marks(struct application *app, const char *unused)
 	}
 }
 
-static void yank(struct application *app, const char *unused)
+static void command_yank(struct application *app, const char *unused)
 {
 	(void)unused;
 	const list_t *list = NULL;
@@ -313,7 +313,7 @@ err:
 	clipboard_set_contents(&app->clipboard, NULL, NULL);
 }
 
-static void quit(struct application *app, const char *unused)
+static void command_quit(struct application *app, const char *unused)
 {
 	(void)unused;
 	app->running = false;
@@ -344,20 +344,20 @@ static void command_cmdline(struct application *app, const char *command)
 }
 
 struct command_map application_command_map[] = {
-	{ "navigate_up", navigate_up, false },
-	{ "navigate_down", navigate_down, false },
-	{ "navigate_pageup", navigate_pageup, false },
-	{ "navigate_pagedown", navigate_pagedown, false },
-	{ "navigate_left", navigate_left, false },
-	{ "navigate_right", navigate_right, false },
-	{ "navigate_first", navigate_first, false },
-	{ "navigate_last", navigate_last, false },
-	{ "mark", mark, false },
-	{ "invert_marks", invert_marks, false },
-	{ "change_directory", change_directory, true },
-	{ "invoke_handler", invoke_handler, true },
-	{ "yank", yank, false },
-	{ "quit", quit, false },
+	{ "navigate_up", command_navigate_up, false },
+	{ "navigate_down", command_navigate_down, false },
+	{ "navigate_pageup", command_navigate_pageup, false },
+	{ "navigate_pagedown", command_navigate_pagedown, false },
+	{ "navigate_left", command_navigate_left, false },
+	{ "navigate_right", command_navigate_right, false },
+	{ "navigate_first", command_navigate_first, false },
+	{ "navigate_last", command_navigate_last, false },
+	{ "mark", command_mark, false },
+	{ "invert_marks", command_invert_marks, false },
+	{ "change_directory", command_change_directory, true },
+	{ "invoke_handler", command_invoke_handler, true },
+	{ "yank", command_yank, false },
+	{ "quit", command_quit, false },
 	{ "mkdir", command_mkdir, true },
 	{ "cmdline", command_cmdline, false },
 	{ NULL, NULL, false },
