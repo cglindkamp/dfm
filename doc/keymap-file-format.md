@@ -32,7 +32,7 @@ The table below shows all supported commands:
 | navigate_last     | none                |
 | mark              | none                |
 | invert_marks      | none                |
-| change_directory  | target directory    |
+| cd                | target directory    |
 | invoke_handler    | handler script name |
 | yank              | none                |
 | quit              | none                |

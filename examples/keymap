@@ -9,8 +9,8 @@ end       navigate_last
 
 space     mark
 *         invert_marks
-1         change_directory  ~
-2         change_directory  /
+1         cd                ~
+2         cd                /
 D         invoke_handler    delete
 l         invoke_handler    symlink
 p         invoke_handler    copy

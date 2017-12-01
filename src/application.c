@@ -354,7 +354,7 @@ struct command_map application_command_map[] = {
 	{ "navigate_last", command_navigate_last, false },
 	{ "mark", command_mark, false },
 	{ "invert_marks", command_invert_marks, false },
-	{ "change_directory", command_change_directory, true },
+	{ "cd", command_change_directory, true },
 	{ "invoke_handler", command_invoke_handler, true },
 	{ "yank", command_yank, false },
 	{ "quit", command_quit, false },
