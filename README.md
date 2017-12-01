@@ -59,4 +59,6 @@ scripts to ~/.config/dfm/handlers and edit them to your liking.
 | s        | Open a shell in the current direcotory                                               |
 | y        | Copy currently marked files or the currently selected file to clipboard              |
 | q        | Quit dfm                                                                             |
+| :        | Open the command line                                                                |
+| F7       | Create a new directory                                                               |
 
