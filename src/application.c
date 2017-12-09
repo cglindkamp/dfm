@@ -401,7 +401,8 @@ static void handle_signal(struct application *app)
 	struct signalfd_siginfo info;
 	int status;
 
-	read(app->signal_fd, &info, sizeof(info));
+	if(read(app->signal_fd, &info, sizeof(info)) != sizeof(info))
+		return;
 
 	switch(info.ssi_signo) {
 	case SIGWINCH:
