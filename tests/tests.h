@@ -13,7 +13,7 @@ extern int oom_pipe[2];
 #define assert_oom_cleanup(condition, ...) \
 	if(mode_oom) { \
 		if(!(condition)) { \
-			write(oom_pipe[1], &(char){' '}, 1); \
+			ck_assert_int_eq(write(oom_pipe[1], &(char){' '}, 1), 1); \
 			__VA_ARGS__; \
 			return; \
 		} \

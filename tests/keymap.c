@@ -171,7 +171,7 @@ START_TEST(test_keymap_inaccessablefile)
 	struct keymap *keymap;
 
 	char path[] = "/tmp/keymap.XXXXXX";
-	mkstemp(path);
+	ck_assert_int_ne(mkstemp(path), -1);
 	chmod(path, 0);
 	int ret = keymap_newfromfile(&keymap, path, command_map);
 

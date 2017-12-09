@@ -30,7 +30,7 @@ static void create_file(int dir_fd, const char *filename, off_t size)
 	int fd = openat(dir_fd, filename, O_CREAT|O_WRONLY, 0777);
 	if(size > 0) {
 		lseek(fd, size - 1, SEEK_SET);
-		write(fd, "\0", 1);
+		ck_assert_int_eq(write(fd, "\0", 1), 1);
 	}
 	close(fd);
 }
@@ -102,7 +102,7 @@ END_TEST
 
 START_TEST(test_dirmodel_populateddirectory_singlelinktodirectory)
 {
-	symlinkat(".", dir_fd, "foo");
+	ck_assert_int_eq(symlinkat(".", dir_fd, "foo"), 0);
 
 	wchar_t buf[21];
 	assert_oom(dirmodel_change_directory(&model, path) == true);
@@ -116,7 +116,7 @@ END_TEST
 START_TEST(test_dirmodel_populateddirectory_linktofile)
 {
 	create_file(dir_fd, "foofile", 0);
-	symlinkat("foofile", dir_fd, "foo");
+	ck_assert_int_eq(symlinkat("foofile", dir_fd, "foo"), 0);
 
 	wchar_t buf[21];
 	assert_oom(dirmodel_change_directory(&model, path) == true);
@@ -129,7 +129,7 @@ END_TEST
 
 START_TEST(test_dirmodel_populateddirectory_brokenlink)
 {
-	symlinkat("foofile", dir_fd, "foo");
+	ck_assert_int_eq(symlinkat("foofile", dir_fd, "foo"), 0);
 
 	wchar_t buf[21];
 	assert_oom(dirmodel_change_directory(&model, path) == true);
@@ -146,9 +146,9 @@ START_TEST(test_dirmodel_populateddirectory_order)
 	mkdirat(dir_fd, "food", 0x700);
 	create_file(dir_fd, "barf", 0);
 	create_file(dir_fd, "foof", 0);
-	symlinkat("bard", dir_fd, "barl");
-	symlinkat("foof", dir_fd, "fool");
-	symlinkat("baz", dir_fd, "bazlbroken");
+	ck_assert_int_eq(symlinkat("bard", dir_fd, "barl"), 0);
+	ck_assert_int_eq(symlinkat("foof", dir_fd, "fool"), 0);
+	ck_assert_int_eq(symlinkat("baz", dir_fd, "bazlbroken"), 0);
 
 	assert_oom(dirmodel_change_directory(&model, path) == true);
 	ck_assert_uint_eq(listmodel_count(&model), 7);

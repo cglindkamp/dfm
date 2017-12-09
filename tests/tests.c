@@ -63,10 +63,14 @@ int main(int argc, char *argv[])
 	newterm(NULL, dummyterm, dummyterm);
 
 	if(argc == 2 && strcmp(argv[1], "oom") == 0) {
+		if(pipe2(oom_pipe, O_NONBLOCK)) {
+			number_failed = 1;
+			perror("Failed to create pipe");
+			goto out;
+		}
+
 		mode_oom = true;
 		puts("OOM test pass: ");
-
-		pipe2(oom_pipe, O_NONBLOCK);
 
 		for(int i = 0; i < MAX_OOM_ITERATIONS; i++) {
 			char buf;
@@ -105,6 +109,7 @@ int main(int argc, char *argv[])
 		srunner_free(suite_runner);
 	}
 
+out:
 	alloc_set_allocations_until_fail(-1);
 	fclose(dummyterm);
 	_nc_freeall();

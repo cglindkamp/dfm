@@ -28,7 +28,7 @@ static void create_file(int dir_fd, const char *filename, off_t size)
 	int fd = openat(dir_fd, filename, O_CREAT|O_WRONLY, 0777);
 	if(size > 0) {
 		lseek(fd, size - 1, SEEK_SET);
-		write(fd, "\0", 1);
+		ck_assert_int_eq(write(fd, "\0", 1), 1);
 	}
 	close(fd);
 }
@@ -74,7 +74,7 @@ START_TEST(test_filedata_link)
 	struct filedata *filedata;
 
 	create_file(dir_fd, "foo", 2048);
-	symlinkat("foo", dir_fd, "bar");
+	ck_assert_int_eq(symlinkat("foo", dir_fd, "bar"), 0);
 
 	assert_oom(filedata_new_from_file(&filedata, dir_fd, "bar") == 0);
 	ck_assert(filedata != NULL);
@@ -92,7 +92,7 @@ START_TEST(test_filedata_linkbroken)
 {
 	struct filedata *filedata;
 
-	symlinkat("foo", dir_fd, "bar");
+	ck_assert_int_eq(symlinkat("foo", dir_fd, "bar"), 0);
 
 	assert_oom(filedata_new_from_file(&filedata, dir_fd, "bar") == 0);
 	ck_assert(filedata != NULL);
