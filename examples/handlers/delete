@@ -3,7 +3,8 @@
 source `dirname $0`/xterminal "$@"
 
 if [ -e "$1"/marked ]; then
-	exec xargs -0 -a "$1"/marked rm -rvfI
+	exec xargs -t -0 -a "$1"/marked rm -rvfI
 else
+	echo rm -rvfI "`cat $1/selected`"
 	exec rm -rvfI "`cat $1/selected`"
 fi
