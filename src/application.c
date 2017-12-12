@@ -256,6 +256,9 @@ static void command_change_directory(struct application *app, const char *path)
 static void command_mark(struct application *app, const char *unused)
 {
 	(void)unused;
+	if(listmodel_count(&app->model) == 0)
+		return;
+
 	size_t index = listview_getindex(&app->view);
 	listmodel_setmark(&app->model, index, !listmodel_ismarked(&app->model, index));
 	listview_down(&app->view);
