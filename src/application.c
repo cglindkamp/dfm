@@ -351,6 +351,20 @@ static void command_cmdline(struct application *app, const char *command)
 	}
 }
 
+static void command_rename(struct application *app, const char *newfilename)
+{
+	if(listmodel_count(&app->model) == 0)
+		return;
+
+	size_t index = listview_getindex(&app->view);
+	const char *filename = dirmodel_getfilename(&app->model, index);
+
+	if(rename(filename, newfilename) == 0) {
+		dirmodel_notify_file_added_or_changed(&app->model, newfilename);
+		select_filename(app, newfilename);
+	}
+}
+
 struct command_map application_command_map[] = {
 	{ "navigate_up", command_navigate_up, false },
 	{ "navigate_down", command_navigate_down, false },
@@ -368,6 +382,7 @@ struct command_map application_command_map[] = {
 	{ "quit", command_quit, false },
 	{ "mkdir", command_mkdir, true },
 	{ "cmdline", command_cmdline, false },
+	{ "rename", command_rename, true },
 	{ NULL, NULL, false },
 };
 
