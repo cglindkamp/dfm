@@ -36,9 +36,18 @@ static void save_current_position(struct application *app)
 	}
 }
 
-static void select_stored_position(struct application *app, const char *oldfilename)
+static void select_filename(struct application *app, const char *filename)
 {
 	size_t index;
+
+	dirmodel_get_index(&app->model, filename, &index);
+	if(index == listmodel_count(&app->model))
+		index--;
+	listview_setindex(&app->view, index);
+}
+
+static void select_stored_position(struct application *app, const char *oldfilename)
+{
 	const char *filename;
 
 	if(oldfilename)
@@ -46,12 +55,8 @@ static void select_stored_position(struct application *app, const char *oldfilen
 	else
 		filename = dict_get(app->stored_positions, path_tocstr(&app->cwd));
 
-	if(filename) {
-		dirmodel_get_index(&app->model, filename, &index);
-		if(index == listmodel_count(&app->model))
-			index--;
-		listview_setindex(&app->view, index);
-	}
+	if(filename)
+		select_filename(app, filename);
 }
 
 static void display_current_path(struct application *app)
