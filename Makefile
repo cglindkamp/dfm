@@ -55,6 +55,7 @@ OBJECTS = \
 
 TESTEDOBJECTS = $(subst src/main.o,,$(OBJECTS))
 TESTOBJECTS = \
+	tests/clipboard.o \
 	tests/commandline.o \
 	tests/dict.o \
 	tests/dirmodel.o \

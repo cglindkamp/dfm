@@ -10,8 +10,7 @@ struct clipboard {
 };
 
 void clipboard_set_contents(struct clipboard *clipboard, const char *path, const list_t *filelist);
-const char *clipboard_get_path(struct clipboard *clipboard);
-const list_t *clipboard_get_filelist(struct clipboard *clipboard);
+bool clipboard_dump_contents_to_directory(struct clipboard *clipboard, int dir_fd);
 void clipboard_init(struct clipboard *clipboard);
 void clipboard_destroy(struct clipboard *clipboard);
 

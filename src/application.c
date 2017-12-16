@@ -140,17 +140,8 @@ static void command_invoke_handler(struct application *app, const char *handler_
 	if(!dump_string_to_file(dir_fd, "cwd", path_tocstr(&app->cwd)))
 		goto err_dircreated;
 
-	const char *clipboard_path = clipboard_get_path(&app->clipboard);
-	if(clipboard_path)
-		if(!dump_string_to_file(dir_fd, "clipboard_path", clipboard_path))
-			goto err_dircreated;
-
-	list = clipboard_get_filelist(&app->clipboard);
-	if(list != NULL) {
-		bool ret = dump_filelist_to_file(dir_fd, "clipboard_list", list);
-		if(!ret)
-			goto err_dircreated;
-	}
+	if(!clipboard_dump_contents_to_directory(&app->clipboard, dir_fd))
+		goto err_dircreated;
 
 	char * const args[] = {
 		"open",
