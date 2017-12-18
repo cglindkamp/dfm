@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include "../src/clipboard.h"
@@ -65,7 +66,7 @@ START_TEST(test_clipboard_empty)
 	ck_assert(mkdtemp(path) != NULL);
 	int dir_fd = open(path, O_RDONLY);
 
-	clipboard_init(&clipboard);
+	clipboard_init(&clipboard, NULL);
 
 	ck_assert(clipboard_dump_contents_to_directory(&clipboard, dir_fd) == true);
 	ck_assert(is_directory_empty(dir_fd) == true);
@@ -90,13 +91,168 @@ START_TEST(test_clipboard_nonempty)
 	ck_assert(mkdtemp(path) != NULL);
 	int dir_fd = open(path, O_RDONLY);
 
-	clipboard_init(&clipboard);
+	clipboard_init(&clipboard, NULL);
 
 	clipboard_set_contents(&clipboard, cpath, clist);
 	ck_assert(clipboard_dump_contents_to_directory(&clipboard, dir_fd) == true);
 
 	ck_assert(does_file_contain(dir_fd, "clipboard_path", "foo", 3) == true);
 	ck_assert(does_file_contain(dir_fd, "clipboard_list", "1\0""2\0", 4) == true);
+
+	close(dir_fd);
+	remove_directory_recursively(path);
+	clipboard_destroy(&clipboard);
+}
+END_TEST
+
+START_TEST(test_clipboard_empty_after_nonempty)
+{
+	char *cpath = __real_strdup("foo");
+	list_t *clist = list_new(0);
+
+	assert_oom(clist != NULL);
+	assert_oom(list_append(clist, __real_strdup("1")));
+	assert_oom(list_append(clist, __real_strdup("2")));
+
+	struct clipboard clipboard;
+	static char path[] = PATH_TEMPLATE;
+	ck_assert(mkdtemp(path) != NULL);
+	int dir_fd = open(path, O_RDONLY);
+
+	clipboard_init(&clipboard, NULL);
+
+	clipboard_set_contents(&clipboard, cpath, clist);
+	clipboard_set_contents(&clipboard, NULL, NULL);
+	ck_assert(clipboard_dump_contents_to_directory(&clipboard, dir_fd) == true);
+	ck_assert(is_directory_empty(dir_fd) == true);
+
+	close(dir_fd);
+	remove_directory_recursively(path);
+	clipboard_destroy(&clipboard);
+}
+END_TEST
+
+START_TEST(test_clipboard_shared_empty)
+{
+	static char clipboard_path[] = PATH_TEMPLATE;
+	ck_assert(mkdtemp(clipboard_path) != NULL);
+
+	static char path[] = PATH_TEMPLATE;
+	ck_assert(mkdtemp(path) != NULL);
+	int dir_fd = open(path, O_RDONLY);
+
+	struct clipboard clipboard;
+
+	clipboard_init(&clipboard, clipboard_path);
+
+	ck_assert(clipboard_dump_contents_to_directory(&clipboard, dir_fd) == true);
+	ck_assert(is_directory_empty(dir_fd) == true);
+
+	close(dir_fd);
+	remove_directory_recursively(path);
+	remove_directory_recursively(clipboard_path);
+	clipboard_destroy(&clipboard);
+}
+END_TEST
+
+START_TEST(test_clipboard_shared_nonempty)
+{
+	char *cpath = __real_strdup("bar");
+	list_t *clist = list_new(0);
+
+	assert_oom(clist != NULL);
+	assert_oom(list_append(clist, __real_strdup("2")));
+	assert_oom(list_append(clist, __real_strdup("3")));
+
+	static char clipboard_path[] = PATH_TEMPLATE;
+	ck_assert(mkdtemp(clipboard_path) != NULL);
+
+	static char path[] = PATH_TEMPLATE;
+	ck_assert(mkdtemp(path) != NULL);
+	int dir_fd = open(path, O_RDONLY);
+
+
+	struct clipboard clipboard;
+	pid_t pid;
+	if((pid = fork()) == 0) {
+		clipboard_init(&clipboard, clipboard_path);
+
+		ck_assert(clipboard_set_contents(&clipboard, cpath, clist) == true);
+
+		clipboard_destroy(&clipboard);
+		exit(0);
+	} else {
+		free(cpath);
+		list_delete(clist, free);
+
+		int status;
+		waitpid(pid, &status, 0);
+		clipboard_init(&clipboard, clipboard_path);
+
+		ck_assert(clipboard_dump_contents_to_directory(&clipboard, dir_fd) == true);
+
+		ck_assert(does_file_contain(dir_fd, "clipboard_path", "bar", 3) == true);
+		ck_assert(does_file_contain(dir_fd, "clipboard_list", "2\0""3\0", 4) == true);
+	}
+	close(dir_fd);
+	remove_directory_recursively(path);
+	remove_directory_recursively(clipboard_path);
+	clipboard_destroy(&clipboard);
+}
+END_TEST
+
+START_TEST(test_clipboard_shared_empty_after_nonempty)
+{
+	char *cpath = __real_strdup("foo");
+	list_t *clist = list_new(0);
+
+	assert_oom(clist != NULL);
+	assert_oom(list_append(clist, __real_strdup("1")));
+	assert_oom(list_append(clist, __real_strdup("2")));
+
+	static char clipboard_path[] = PATH_TEMPLATE;
+	ck_assert(mkdtemp(clipboard_path) != NULL);
+
+	static char path[] = PATH_TEMPLATE;
+	ck_assert(mkdtemp(path) != NULL);
+	int dir_fd = open(path, O_RDONLY);
+
+	struct clipboard clipboard;
+
+	clipboard_init(&clipboard, clipboard_path);
+
+	ck_assert(clipboard_set_contents(&clipboard, cpath, clist) == true);
+	ck_assert(clipboard_set_contents(&clipboard, NULL, NULL) == true);
+	ck_assert(clipboard_dump_contents_to_directory(&clipboard, dir_fd) == true);
+	ck_assert(is_directory_empty(dir_fd) == true);
+
+	close(dir_fd);
+	remove_directory_recursively(path);
+	remove_directory_recursively(clipboard_path);
+	clipboard_destroy(&clipboard);
+}
+END_TEST
+
+START_TEST(test_clipboard_shared_directory_nonexistant)
+{
+	char *cpath = __real_strdup("foo");
+	list_t *clist = list_new(0);
+
+	assert_oom(clist != NULL);
+	assert_oom(list_append(clist, __real_strdup("1")));
+	assert_oom(list_append(clist, __real_strdup("2")));
+
+	static char path[] = PATH_TEMPLATE;
+	ck_assert(mkdtemp(path) != NULL);
+	int dir_fd = open(path, O_RDONLY);
+
+	struct clipboard clipboard;
+
+	clipboard_init(&clipboard, "/tmp/dfm.clipboard.test/deadbeef/foo");
+
+	ck_assert(clipboard_set_contents(&clipboard, cpath, clist) == false);
+	ck_assert(clipboard_dump_contents_to_directory(&clipboard, dir_fd) == false);
+	ck_assert(is_directory_empty(dir_fd) == true);
 
 	close(dir_fd);
 	remove_directory_recursively(path);
@@ -114,6 +270,11 @@ Suite *clipboard_suite(void)
 	tcase = tcase_create("Core");
 	tcase_add_test(tcase, test_clipboard_empty);
 	tcase_add_test(tcase, test_clipboard_nonempty);
+	tcase_add_test(tcase, test_clipboard_empty_after_nonempty);
+	tcase_add_test(tcase, test_clipboard_shared_empty);
+	tcase_add_test(tcase, test_clipboard_shared_nonempty);
+	tcase_add_test(tcase, test_clipboard_shared_empty_after_nonempty);
+	tcase_add_test(tcase, test_clipboard_shared_directory_nonexistant);
 	suite_add_tcase(suite, tcase);
 
 	return suite;

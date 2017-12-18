@@ -529,7 +529,13 @@ bool application_init(struct application *app)
 	curs_set(0);
 
 	processmanager_init(&app->pm);
-	clipboard_init(&app->clipboard);
+
+	const char *shared_clipboard_path = getenv("DFM_CLIPBOARD_DIR");
+	if(shared_clipboard_path) {
+		if(access(shared_clipboard_path, R_OK | W_OK | X_OK) != 0)
+			shared_clipboard_path = NULL;
+	}
+	clipboard_init(&app->clipboard, shared_clipboard_path);
 
 	app->inotify_fd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC);
 	app->inotify_watch = -1;
