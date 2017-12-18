@@ -35,6 +35,7 @@ bool clipboard_set_contents(struct clipboard *clipboard, const char *path, const
 
 		free((void *)path);
 		list_delete(filelist, free);
+		close(clipboard_dir_fd);
 
 		return ret;
 	} else {
@@ -53,19 +54,18 @@ bool clipboard_dump_contents_to_directory(struct clipboard *clipboard, int dir_f
 		if(clipboard_dir_fd == -1)
 			return false;
 
-		if(faccessat(clipboard_dir_fd, CLIPBOARD_PATH, F_OK, 0) != 0 && 
-		   faccessat(clipboard_dir_fd, CLIPBOARD_LIST, F_OK, 0) != 0)
+		if((faccessat(clipboard_dir_fd, CLIPBOARD_PATH, F_OK, 0) != 0 &&
+		    faccessat(clipboard_dir_fd, CLIPBOARD_LIST, F_OK, 0) != 0) ||
+		   (linkat(clipboard_dir_fd, CLIPBOARD_PATH, dir_fd, CLIPBOARD_PATH, 0) == 0 &&
+		    linkat(clipboard_dir_fd, CLIPBOARD_LIST, dir_fd, CLIPBOARD_LIST, 0) == 0)) {
+			close(clipboard_dir_fd);
 			return true;
-
-		if(linkat(clipboard_dir_fd, CLIPBOARD_PATH, dir_fd, CLIPBOARD_PATH, 0) != 0)
-			return false;
-		if(linkat(clipboard_dir_fd, CLIPBOARD_LIST, dir_fd, CLIPBOARD_LIST, 0) != 0)
-			return false;
+		}
+		close(clipboard_dir_fd);
+		return false;
 	} else {
 		return dump_contents_to_directory(dir_fd, clipboard->path, clipboard->filelist);
 	}
-
-	return true;
 }
 
 void clipboard_init(struct clipboard *clipboard, const char *shared_clipboard_path)
