@@ -26,8 +26,11 @@ bool clipboard_set_contents(struct clipboard *clipboard, const char *path, const
 {
 	if(clipboard->shared_clipboard_path) {
 		int clipboard_dir_fd = open(clipboard->shared_clipboard_path, O_RDONLY);
-		if(clipboard_dir_fd == -1)
+		if(clipboard_dir_fd == -1) {
+			free((void *)path);
+			list_delete(filelist, free);
 			return false;
+		}
 
 		unlinkat(clipboard_dir_fd, CLIPBOARD_PATH, 0);
 		unlinkat(clipboard_dir_fd, CLIPBOARD_LIST, 0);
