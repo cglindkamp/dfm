@@ -79,7 +79,7 @@ bool dump_filelist_to_file(int dir_fd, const char *filename, const list_t *list)
 
 	for(size_t i = 0; i < list_length(list); i++) {
 		const char *file = list_get_item(list, i);
-		if((ret = write(fd, file, strlen(file)) < 0))
+		if((ret = write(fd, file, strlen(file))) < 0)
 			break;
 		if((ret = write(fd, "\0", 1)) < 0)
 			break;
