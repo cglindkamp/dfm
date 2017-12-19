@@ -96,7 +96,7 @@ bool run_in_foreground()
 	if(display == NULL || strlen(display) == 0)
 		return true;
 
-	const char *foreground = getenv("FILES_FOREGROUND");
+	const char *foreground = getenv("DFM_FOREGROUND");
 
 	if(foreground != NULL && strcmp(foreground, "yes") == 0)
 		return true;

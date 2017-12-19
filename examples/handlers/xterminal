@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if [ ! "x$FILES_FOREGROUND" = "xyes" ] && [ ! "x$DISPLAY" = "x" ] && [ "$RUNNING_IN_XTERM" != t ] ; then
+if [ ! "x$DFM_FOREGROUND" = "xyes" ] && [ ! "x$DISPLAY" = "x" ] && [ "$RUNNING_IN_XTERM" != t ] ; then
 	RUNNING_IN_XTERM=t exec xterm -title `basename $0` -e "$0 $*" < /dev/null > /dev/null 2> /dev/null
 	#RUNNING_IN_XTERM=t exec urxvt -e "$0" "$*" < /dev/null > /dev/null 2> /dev/null
 	exit 0
