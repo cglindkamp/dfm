@@ -32,6 +32,8 @@ struct application {
 	int inotify_watch;
 	enum mode mode;
 	bool running;
+	const char *lastsearch_regex;
+	int lastsearch_direction;
 };
 
 void application_run(struct application *app);

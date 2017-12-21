@@ -356,6 +356,38 @@ static void command_rename(struct application *app, const char *newfilename)
 	}
 }
 
+static void command_search_next(struct application *app, const char *unused)
+{
+	(void)unused;
+	if(!app->lastsearch_regex)
+		return;
+
+	size_t index = listview_getindex(&app->view);
+
+	index = dirmodel_regex_getnext(&app->model, app->lastsearch_regex, index, app->lastsearch_direction);
+
+	listview_setindex(&app->view, index);
+}
+
+static void search(struct application *app, const char *regex, int direction)
+{
+	free((void*)app->lastsearch_regex);
+	app->lastsearch_regex = strdup(regex);
+	app->lastsearch_direction = direction;
+
+	command_search_next(app, NULL);
+}
+
+static void command_search(struct application *app, const char *regex)
+{
+	search(app, regex, 1);
+}
+
+static void command_search_reverse(struct application *app, const char *regex)
+{
+	search(app, regex, -1);
+}
+
 struct command_map application_command_map[] = {
 	{ "navigate_up", command_navigate_up, false },
 	{ "navigate_down", command_navigate_down, false },
@@ -374,6 +406,9 @@ struct command_map application_command_map[] = {
 	{ "mkdir", command_mkdir, true },
 	{ "cmdline", command_cmdline, false },
 	{ "rename", command_rename, true },
+	{ "search", command_search, true },
+	{ "search_next", command_search_next, false },
+	{ "search_reverse", command_search_reverse, true },
 	{ NULL, NULL, false },
 };
 
@@ -526,6 +561,7 @@ bool application_init(struct application *app)
 	bool ret = true;
 
 	app->mode = MODE_NORMAL;
+	app->lastsearch_regex = NULL;
 	curs_set(0);
 
 	processmanager_init(&app->pm);
@@ -583,6 +619,7 @@ bool application_init(struct application *app)
 
 void application_destroy(struct application *app)
 {
+	free((void*)app->lastsearch_regex);
 	keymap_delete(app->keymap);
 	listview_destroy(&app->view);
 	path_destroy(&app->cwd);
