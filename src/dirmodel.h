@@ -10,6 +10,7 @@ void dirmodel_notify_file_deleted(struct listmodel *model, const char *filename)
 int dirmodel_notify_file_added_or_changed(struct listmodel *model, const char *filename);
 bool dirmodel_isdir(struct listmodel *model, size_t index);
 bool dirmodel_get_index(struct listmodel *model, const char *filename, size_t *index);
+size_t dirmodel_regex_getnext(struct listmodel *model, const char *regex, size_t start_index, int direction);
 bool dirmodel_change_directory(struct listmodel *model, const char *path) __attribute__((warn_unused_result));
 void dirmodel_init(struct listmodel *model);
 void dirmodel_destroy(struct listmodel *model);

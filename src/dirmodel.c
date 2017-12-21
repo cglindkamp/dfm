@@ -1,6 +1,7 @@
 /* See LICENSE file for copyright and license details. */
 #include <dirent.h>
 #include <fcntl.h>
+#include <regex.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -235,6 +236,39 @@ bool dirmodel_get_index(struct listmodel *model, const char *filename, size_t *i
 		found = list_find_item_or_insertpoint(list, sort_filename, &filedata, index);
 	}
 	return found;
+}
+
+size_t dirmodel_regex_getnext(struct listmodel *model, const char *regex, size_t start_index, int direction)
+{
+	struct data *data = model->data;
+	list_t *list = data->list;
+	regex_t cregex;
+	size_t result = start_index;
+
+	int ret = regcomp(&cregex, regex, REG_EXTENDED | REG_ICASE | REG_NOSUB);
+	if(ret != 0)
+		return start_index;
+
+	if(direction > 0 && start_index < SIZE_MAX) {
+		for(size_t i = start_index + 1; i < list_length(list); i++) {
+			struct filedata *filedata = list_get_item(list, i);
+			if(regexec(&cregex, filedata->filename, 0, NULL, 0) == 0) {
+				result = i;
+				break;
+			}
+		}
+	} else if(direction < 0 && start_index > 0) {
+		for(size_t i = start_index - 1; i > 0; i--) {
+			struct filedata *filedata = list_get_item(list, i);
+			if(regexec(&cregex, filedata->filename, 0, NULL, 0) == 0) {
+				result = i;
+				break;
+			}
+		}
+	}
+
+	regfree(&cregex);
+	return result;
 }
 
 void dirmodel_notify_file_deleted(struct listmodel *model, const char *filename)

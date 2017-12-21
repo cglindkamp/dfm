@@ -374,6 +374,55 @@ START_TEST(test_dirmodel_markfiles_getfilenames_nomarkedfiles)
 }
 END_TEST
 
+static void setup_regex(void)
+{
+	setup();
+	create_file(dir_fd, "bar", 0);
+	create_file(dir_fd, "barfoo", 0);
+	create_file(dir_fd, "barfop", 0);
+	create_file(dir_fd, "bazfop", 0);
+	create_file(dir_fd, "foo", 0);
+}
+
+START_TEST(test_dirmodel_regexsearch_notfoundforward)
+{
+	assert_oom(dirmodel_change_directory(&model, path) == true);
+
+	ck_assert(dirmodel_regex_getnext(&model, "frob", 0, 1) == 0);
+	ck_assert(dirmodel_regex_getnext(&model, "frob", 2, 1) == 2);
+	ck_assert(dirmodel_regex_getnext(&model, "frob", SIZE_MAX, 1) == SIZE_MAX);
+}
+END_TEST
+
+START_TEST(test_dirmodel_regexsearch_notfoundbackward)
+{
+	assert_oom(dirmodel_change_directory(&model, path) == true);
+	ck_assert(dirmodel_regex_getnext(&model, "frob", 0, -1) == 0);
+	ck_assert(dirmodel_regex_getnext(&model, "frob", 3, -1) == 3);
+}
+END_TEST
+
+START_TEST(test_dirmodel_regexsearch_foundforward)
+{
+	assert_oom(dirmodel_change_directory(&model, path) == true);
+
+	ck_assert(dirmodel_regex_getnext(&model, "foo", 2, -1) == 1);
+	ck_assert(dirmodel_regex_getnext(&model, "bar", 4, -1) == 2);
+	ck_assert(dirmodel_regex_getnext(&model, "ba.", 4, -1) == 3);
+	ck_assert(dirmodel_regex_getnext(&model, "foo", 0, -1) == 0);
+}
+END_TEST
+
+START_TEST(test_dirmodel_regexsearch_foundbackward)
+{
+	assert_oom(dirmodel_change_directory(&model, path) == true);
+
+	ck_assert(dirmodel_regex_getnext(&model, "foo", 0, 1) == 1);
+	ck_assert(dirmodel_regex_getnext(&model, "foo", 2, 1) == 4);
+	ck_assert(dirmodel_regex_getnext(&model, "fo.", 2, 1) == 3);
+}
+END_TEST
+
 Suite *dirmodel_suite(void)
 {
 	Suite *suite;
@@ -405,6 +454,14 @@ Suite *dirmodel_suite(void)
 	tcase_add_test(tcase, test_dirmodel_markfiles_changeevent);
 	tcase_add_test(tcase, test_dirmodel_markfiles_getfilenames);
 	tcase_add_test(tcase, test_dirmodel_markfiles_getfilenames_nomarkedfiles);
+	suite_add_tcase(suite, tcase);
+
+	tcase = tcase_create("Regex");
+	tcase_add_checked_fixture(tcase, setup_regex, teardown);
+	tcase_add_test(tcase, test_dirmodel_regexsearch_notfoundforward);
+	tcase_add_test(tcase, test_dirmodel_regexsearch_notfoundbackward);
+	tcase_add_test(tcase, test_dirmodel_regexsearch_foundforward);
+	tcase_add_test(tcase, test_dirmodel_regexsearch_foundbackward);
 	suite_add_tcase(suite, tcase);
 
 	return suite;
