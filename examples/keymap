@@ -22,3 +22,7 @@ q         quit
 :         cmdline
 f6        cmdline           rename 
 f7        cmdline           mkdir 
+
+/         cmdline           search 
+?         cmdline           search_reverse 
+n         search_next
