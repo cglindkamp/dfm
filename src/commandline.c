@@ -81,7 +81,6 @@ int commandline_start(struct commandline *commandline, wchar_t prompt)
 	commandline->first = 0;
 	commandline->history_position = 0;
 
-	commandline->allocated_size = 1;
 	if(commandline->buffer == NULL)
 		commandline->buffer = malloc(commandline->allocated_size * sizeof(wchar_t));
 	if(commandline->buffer == NULL)
@@ -241,6 +240,7 @@ int commandline_history_add(struct commandline *commandline, wchar_t *command)
 
 bool commandline_init(struct commandline *commandline, unsigned int x, unsigned int y, unsigned int width)
 {
+	commandline->allocated_size = 1;
 	commandline->buffer = NULL;
 	commandline->backup_buffer = NULL;
 	commandline->prompt[1] = L'\0';
