@@ -79,6 +79,7 @@ int commandline_start(struct commandline *commandline, wchar_t prompt)
 	commandline->prompt[0] = prompt;
 	commandline->cursor_pos = 0;
 	commandline->first = 0;
+	commandline->history_position = 0;
 
 	commandline->allocated_size = 1;
 	if(commandline->buffer == NULL)
@@ -93,6 +94,25 @@ int commandline_start(struct commandline *commandline, wchar_t prompt)
 	return 0;
 }
 
+static int commandline_copy_history_buffer(struct commandline *commandline)
+{
+	if(commandline->history_position == 0)
+		return 0;
+
+	wchar_t *history_buffer = commandline->buffer;
+	commandline->buffer = commandline->backup_buffer;
+	commandline->backup_buffer = NULL;
+
+	while(commandline->allocated_size < wcslen(history_buffer) + 1) {
+		if(commandline_makeroom(commandline) != 0)
+			return ENOMEM;
+	}
+
+	wcscpy(commandline->buffer, history_buffer);
+	commandline->history_position = 0;
+	return 0;
+}
+
 int commandline_handlekey(struct commandline *commandline, wint_t key, bool iskeycode)
 {
 	size_t length = wcslen(commandline->buffer);
@@ -101,6 +121,8 @@ int commandline_handlekey(struct commandline *commandline, wint_t key, bool iske
 	if(iskeycode) {
 		switch(key) {
 		case KEY_BACKSPACE:
+			if(commandline_copy_history_buffer(commandline) != 0)
+				return ENOMEM;
 			if(commandline->cursor_pos > 0) {
 				size_t distance = 0;
 				int width;
@@ -115,6 +137,8 @@ int commandline_handlekey(struct commandline *commandline, wint_t key, bool iske
 			}
 			break;
 		case KEY_DC:
+			if(commandline_copy_history_buffer(commandline) != 0)
+				return ENOMEM;
 			if(commandline->cursor_pos < length) {
 				size_t distance = 0;
 				do {
@@ -145,6 +169,26 @@ int commandline_handlekey(struct commandline *commandline, wint_t key, bool iske
 		case KEY_END:
 			commandline->cursor_pos = length;
 			break;
+		case KEY_UP:
+			if(commandline->history_position < list_length(commandline->history)) {
+				if(commandline->history_position == 0)
+					commandline->backup_buffer = commandline->buffer;
+				commandline->history_position++;
+				commandline->buffer = list_get_item(commandline->history, list_length(commandline->history) - commandline->history_position);
+			}
+			commandline->cursor_pos = wcslen(commandline->buffer);
+			break;
+		case KEY_DOWN:
+			if(commandline->history_position > 0) {
+				commandline->history_position--;
+				if(commandline->history_position == 0) {
+					commandline->buffer = commandline->backup_buffer;
+					commandline->backup_buffer = NULL;
+				} else
+					commandline->buffer = list_get_item(commandline->history, list_length(commandline->history) - commandline->history_position);
+			}
+			commandline->cursor_pos = wcslen(commandline->buffer);
+			break;
 		}
 	} else {
 		if(key == 0 || wcwidth(key) < 0)
@@ -152,6 +196,9 @@ int commandline_handlekey(struct commandline *commandline, wint_t key, bool iske
 
 		if(commandline->cursor_pos == 0 && wcwidth(key) == 0)
 			return EINVAL;
+
+		if(commandline_copy_history_buffer(commandline) != 0)
+			return ENOMEM;
 
 		if(length == commandline->allocated_size - 1)
 			if(commandline_makeroom(commandline) != 0)
@@ -180,13 +227,32 @@ void commandline_resize(struct commandline *commandline, unsigned int x, unsigne
 		commandline_updateview(commandline);
 }
 
+int commandline_history_add(struct commandline *commandline, wchar_t *command)
+{
+	if(command == NULL)
+		return EINVAL;
+	if(list_append(commandline->history, command))
+		return 0;
+	else {
+		free(command);
+		return ENOMEM;
+	}
+}
+
 bool commandline_init(struct commandline *commandline, unsigned int x, unsigned int y, unsigned int width)
 {
 	commandline->buffer = NULL;
+	commandline->backup_buffer = NULL;
 	commandline->prompt[1] = L'\0';
 	commandline->window = newwin(1, width, y, x);
 	if(commandline->window == NULL)
 		return false;
+	commandline->history = list_new(0);
+	if(commandline->history == NULL) {
+		delwin(commandline->window);
+		commandline->window = NULL;
+		return false;
+	}
 	return true;
 }
 
@@ -194,5 +260,9 @@ void commandline_destroy(struct commandline *commandline)
 {
 	if(commandline->window != NULL)
 		delwin(commandline->window);
-	free(commandline->buffer);
+	if(commandline->backup_buffer)
+		free(commandline->backup_buffer);
+	else
+		free(commandline->buffer);
+	list_delete(commandline->history, free);
 }

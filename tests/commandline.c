@@ -195,8 +195,8 @@ START_TEST(test_commandline_input)
 {
 	struct commandline cmdline;
 
-	commandline_init(&cmdline, 0, 0, 10);
-	assert_oom(commandline_start(&cmdline, L':') != ENOMEM);
+	assert_oom(commandline_init(&cmdline, 0, 0, 10) == true);;
+	assert_oom_cleanup(commandline_start(&cmdline, L':') != ENOMEM, commandline_destroy(&cmdline));
 
 	for(size_t i = 0; i < testdata[_i].keypresscount; i++)
 		assert_oom_cleanup(commandline_handlekey(&cmdline, testdata[_i].keypresses[i].key, testdata[_i].keypresses[i].iskeycode) != ENOMEM, commandline_destroy(&cmdline));
@@ -223,10 +223,81 @@ START_TEST(test_commandline_invalidinput)
 {
 	struct commandline cmdline;
 
-	commandline_init(&cmdline, 0, 0, 10);
-	assert_oom(commandline_start(&cmdline, L':') != ENOMEM);
+	assert_oom(commandline_init(&cmdline, 0, 0, 10) == true);;
+	assert_oom_cleanup(commandline_start(&cmdline, L':') != ENOMEM, commandline_destroy(&cmdline));
 
 	ck_assert(commandline_handlekey(&cmdline, invaliddata[_i], false) == EINVAL);
+
+	commandline_destroy(&cmdline);
+}
+END_TEST
+
+START_TEST(test_commandline_history_nullpointer)
+{
+	struct commandline cmdline;
+
+	assert_oom(commandline_init(&cmdline, 0, 0, 10) == true);;
+
+	ck_assert_int_eq(commandline_history_add(&cmdline, NULL),  EINVAL);
+
+	commandline_destroy(&cmdline);
+}
+END_TEST
+
+START_TEST(test_commandline_history_noedit)
+{
+	struct commandline cmdline;
+
+	assert_oom(commandline_init(&cmdline, 0, 0, 10) == true);;
+
+	assert_oom_cleanup(commandline_history_add(&cmdline, wcsdup(L"foo")) != ENOMEM, commandline_destroy(&cmdline));
+	assert_oom_cleanup(commandline_history_add(&cmdline, wcsdup(L"bar")) != ENOMEM, commandline_destroy(&cmdline));
+	assert_oom_cleanup(commandline_start(&cmdline, L':') != ENOMEM, commandline_destroy(&cmdline));
+
+	int x, y;
+	ck_assert_int_eq(commandline_handlekey(&cmdline, KEY_UP, true), 0);
+	ck_assert(wcscmp(commandline_getcommand(&cmdline), L"bar") == 0);
+	getyx(cmdline.window, y, x);
+	ck_assert_int_eq(y, 0);
+	ck_assert_int_eq(x, 4);
+	ck_assert_int_eq(commandline_handlekey(&cmdline, KEY_UP, true), 0);
+	ck_assert(wcscmp(commandline_getcommand(&cmdline), L"foo") == 0);
+	ck_assert_int_eq(commandline_handlekey(&cmdline, KEY_DOWN, true), 0);
+	ck_assert(wcscmp(commandline_getcommand(&cmdline), L"bar") == 0);
+	ck_assert_int_eq(commandline_handlekey(&cmdline, KEY_DOWN, true), 0);
+	ck_assert(wcscmp(commandline_getcommand(&cmdline), L"") == 0);
+	getyx(cmdline.window, y, x);
+	ck_assert_int_eq(y, 0);
+	ck_assert_int_eq(x, 1);
+
+	commandline_destroy(&cmdline);
+}
+END_TEST
+
+START_TEST(test_commandline_history_edit)
+{
+	struct commandline cmdline;
+
+	assert_oom(commandline_init(&cmdline, 0, 0, 10) == true);;
+
+	assert_oom_cleanup(commandline_history_add(&cmdline, wcsdup(L"foo")) != ENOMEM, commandline_destroy(&cmdline));
+	assert_oom_cleanup(commandline_history_add(&cmdline, wcsdup(L"bar")) != ENOMEM, commandline_destroy(&cmdline));
+	assert_oom_cleanup(commandline_start(&cmdline, L':') != ENOMEM, commandline_destroy(&cmdline));
+
+	ck_assert_int_eq(commandline_handlekey(&cmdline, KEY_UP, true), 0);
+	ck_assert_int_eq(commandline_handlekey(&cmdline, KEY_UP, true), 0);
+	assert_oom_cleanup(commandline_handlekey(&cmdline, L'o', false) != ENOMEM, commandline_destroy(&cmdline));
+	ck_assert(wcscmp(commandline_getcommand(&cmdline), L"fooo") == 0);
+
+	wchar_t buffer[11];
+	mvwinnwstr(cmdline.window, 0, 0, buffer, 10);
+	ck_assert(wcscmp(buffer, L":fooo     ") == 0);
+
+	assert_oom_cleanup(commandline_start(&cmdline, L':') != ENOMEM, commandline_destroy(&cmdline));
+	ck_assert_int_eq(commandline_handlekey(&cmdline, KEY_UP, true), 0);
+	ck_assert(wcscmp(commandline_getcommand(&cmdline), L"bar") == 0);
+	ck_assert_int_eq(commandline_handlekey(&cmdline, KEY_UP, true), 0);
+	ck_assert(wcscmp(commandline_getcommand(&cmdline), L"foo") == 0);
 
 	commandline_destroy(&cmdline);
 }
@@ -242,6 +313,9 @@ Suite *commandline_suite(void)
 	tcase = tcase_create("Core");
 	tcase_add_loop_test(tcase, test_commandline_input, 0, sizeof(testdata)/sizeof(testdata[0]));
 	tcase_add_loop_test(tcase, test_commandline_invalidinput, 0, sizeof(invaliddata)/sizeof(invaliddata[0]));
+	tcase_add_test(tcase, test_commandline_history_nullpointer);
+	tcase_add_test(tcase, test_commandline_history_noedit);
+	tcase_add_test(tcase, test_commandline_history_edit);
 	suite_add_tcase(suite, tcase);
 
 	return suite;
