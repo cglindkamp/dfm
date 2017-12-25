@@ -80,11 +80,12 @@ END_TEST
 START_TEST(test_clipboard_nonempty)
 {
 	char *cpath = __real_strdup("foo");
+	char *item;
 	list_t *clist = list_new(0);
 
-	assert_oom(clist != NULL);
-	assert_oom(list_append(clist, __real_strdup("1")));
-	assert_oom(list_append(clist, __real_strdup("2")));
+	assert_oom_cleanup(clist != NULL, free(cpath));
+	assert_oom_cleanup(list_append(clist, item = __real_strdup("1")), list_delete(clist, free), free(cpath), free(item));
+	assert_oom_cleanup(list_append(clist, item = __real_strdup("2")), list_delete(clist, free), free(cpath), free(item));
 
 	struct clipboard clipboard;
 	static char path[] = PATH_TEMPLATE;
@@ -108,11 +109,12 @@ END_TEST
 START_TEST(test_clipboard_empty_after_nonempty)
 {
 	char *cpath = __real_strdup("foo");
+	char *item;
 	list_t *clist = list_new(0);
 
-	assert_oom(clist != NULL);
-	assert_oom(list_append(clist, __real_strdup("1")));
-	assert_oom(list_append(clist, __real_strdup("2")));
+	assert_oom_cleanup(clist != NULL, free(cpath));
+	assert_oom_cleanup(list_append(clist, item = __real_strdup("1")), list_delete(clist, free), free(cpath), free(item));
+	assert_oom_cleanup(list_append(clist, item = __real_strdup("2")), list_delete(clist, free), free(cpath), free(item));
 
 	struct clipboard clipboard;
 	static char path[] = PATH_TEMPLATE;
@@ -158,11 +160,12 @@ END_TEST
 START_TEST(test_clipboard_shared_nonempty)
 {
 	char *cpath = __real_strdup("bar");
+	char *item;
 	list_t *clist = list_new(0);
 
-	assert_oom(clist != NULL);
-	assert_oom(list_append(clist, __real_strdup("2")));
-	assert_oom(list_append(clist, __real_strdup("3")));
+	assert_oom_cleanup(clist != NULL, free(cpath));
+	assert_oom_cleanup(list_append(clist, item = __real_strdup("2")), list_delete(clist, free), free(cpath), free(item));
+	assert_oom_cleanup(list_append(clist, item = __real_strdup("3")), list_delete(clist, free), free(cpath), free(item));
 
 	static char clipboard_path[] = PATH_TEMPLATE;
 	ck_assert(mkdtemp(clipboard_path) != NULL);
@@ -204,11 +207,12 @@ END_TEST
 START_TEST(test_clipboard_shared_empty_after_nonempty)
 {
 	char *cpath = __real_strdup("foo");
+	char *item;
 	list_t *clist = list_new(0);
 
-	assert_oom(clist != NULL);
-	assert_oom(list_append(clist, __real_strdup("1")));
-	assert_oom(list_append(clist, __real_strdup("2")));
+	assert_oom_cleanup(clist != NULL, free(cpath));
+	assert_oom_cleanup(list_append(clist, item = __real_strdup("1")), list_delete(clist, free), free(cpath), free(item));
+	assert_oom_cleanup(list_append(clist, item = __real_strdup("2")), list_delete(clist, free), free(cpath), free(item));
 
 	static char clipboard_path[] = PATH_TEMPLATE;
 	ck_assert(mkdtemp(clipboard_path) != NULL);
@@ -236,11 +240,12 @@ END_TEST
 START_TEST(test_clipboard_shared_directory_nonexistant)
 {
 	char *cpath = __real_strdup("foo");
+	char *item;
 	list_t *clist = list_new(0);
 
-	assert_oom(clist != NULL);
-	assert_oom(list_append(clist, __real_strdup("1")));
-	assert_oom(list_append(clist, __real_strdup("2")));
+	assert_oom_cleanup(clist != NULL, free(cpath));
+	assert_oom_cleanup(list_append(clist, item = __real_strdup("1")), list_delete(clist, free), free(cpath), free(item));
+	assert_oom_cleanup(list_append(clist, item = __real_strdup("2")), list_delete(clist, free), free(cpath), free(item));
 
 	static char path[] = PATH_TEMPLATE;
 	ck_assert(mkdtemp(path) != NULL);
