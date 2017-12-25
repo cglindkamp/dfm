@@ -437,6 +437,7 @@ static void handle_stdin(struct application *app)
 			char command[wcstombs(NULL, wcommand, 0) + 1];
 			wcstombs(command, wcommand, sizeof(command));
 			command_execute(command, app, application_command_map);
+			commandline_history_add(&app->commandline, wcsdup(wcommand));
 		} else if(ret != KEY_CODE_YES && key == L'\t') {
 		} else
 			commandline_handlekey(&app->commandline, key, ret == KEY_CODE_YES ? true : false);
