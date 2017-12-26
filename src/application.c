@@ -271,6 +271,16 @@ static void command_invert_marks(struct application *app, const char *unused)
 	}
 }
 
+static void command_mark(struct application *app, const char *regex)
+{
+	dirmodel_regex_setmark(&app->model, regex, true);
+}
+
+static void command_unmark(struct application *app, const char *regex)
+{
+	dirmodel_regex_setmark(&app->model, regex, false);
+}
+
 static void command_yank(struct application *app, const char *unused)
 {
 	(void)unused;
@@ -399,6 +409,8 @@ struct command_map application_command_map[] = {
 	{ "navigate_last", command_navigate_last, false },
 	{ "togglemark", command_togglemark, false },
 	{ "invert_marks", command_invert_marks, false },
+	{ "mark", command_mark, true },
+	{ "unmark", command_unmark, true },
 	{ "cd", command_change_directory, true },
 	{ "invoke_handler", command_invoke_handler, true },
 	{ "yank", command_yank, false },
