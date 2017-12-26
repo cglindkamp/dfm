@@ -9,6 +9,8 @@ end       navigate_last
 
 space     togglemark
 *         invert_marks
++         cmdline mark 
+-         cmdline unmark 
 1         cd                ~
 2         cd                /
 D         invoke_handler    delete
