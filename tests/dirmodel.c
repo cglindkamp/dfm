@@ -423,6 +423,45 @@ START_TEST(test_dirmodel_regexsearch_foundbackward)
 }
 END_TEST
 
+START_TEST(test_dirmodel_regexmark)
+{
+	assert_oom(dirmodel_change_directory(&model, path) == true);
+
+	dirmodel_regex_setmark(&model, ".fo", true);
+
+	const list_t *list;
+	int ret = dirmodel_getmarkedfilenames(&model, &list);
+	assert_oom(ret != ENOMEM);
+	ck_assert(ret == 0);
+	ck_assert_uint_eq(list_length(list), 3);
+	ck_assert_str_eq(list_get_item(list, 0), "barfoo");
+	ck_assert_str_eq(list_get_item(list, 1), "barfop");
+	ck_assert_str_eq(list_get_item(list, 2), "bazfop");
+
+	list_delete(list, free);
+}
+END_TEST
+
+START_TEST(test_dirmodel_regexunmark)
+{
+	assert_oom(dirmodel_change_directory(&model, path) == true);
+
+	dirmodel_regex_setmark(&model, ".*", true);
+	dirmodel_regex_setmark(&model, "foo", false);
+
+	const list_t *list;
+	int ret = dirmodel_getmarkedfilenames(&model, &list);
+	assert_oom(ret != ENOMEM);
+	ck_assert(ret == 0);
+	ck_assert_uint_eq(list_length(list), 3);
+	ck_assert_str_eq(list_get_item(list, 0), "bar");
+	ck_assert_str_eq(list_get_item(list, 1), "barfop");
+	ck_assert_str_eq(list_get_item(list, 2), "bazfop");
+
+	list_delete(list, free);
+}
+END_TEST
+
 Suite *dirmodel_suite(void)
 {
 	Suite *suite;
@@ -462,6 +501,8 @@ Suite *dirmodel_suite(void)
 	tcase_add_test(tcase, test_dirmodel_regexsearch_notfoundbackward);
 	tcase_add_test(tcase, test_dirmodel_regexsearch_foundforward);
 	tcase_add_test(tcase, test_dirmodel_regexsearch_foundbackward);
+	tcase_add_test(tcase, test_dirmodel_regexmark);
+	tcase_add_test(tcase, test_dirmodel_regexunmark);
 	suite_add_tcase(suite, tcase);
 
 	return suite;

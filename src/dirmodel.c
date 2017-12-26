@@ -271,6 +271,27 @@ size_t dirmodel_regex_getnext(struct listmodel *model, const char *regex, size_t
 	return result;
 }
 
+void dirmodel_regex_setmark(struct listmodel *model, const char *regex, bool mark)
+{
+	struct data *data = model->data;
+	list_t *list = data->list;
+	regex_t cregex;
+
+	int ret = regcomp(&cregex, regex, REG_EXTENDED | REG_ICASE | REG_NOSUB);
+	if(ret != 0)
+		return;
+
+	for(size_t i = 0; i < list_length(list); i++) {
+		struct filedata *filedata = list_get_item(list, i);
+		if(regexec(&cregex, filedata->filename, 0, NULL, 0) == 0) {
+			filedata->is_marked = mark;
+			listmodel_notify_change(model, i, MODEL_CHANGE);
+		}
+	}
+
+	regfree(&cregex);
+}
+
 void dirmodel_notify_file_deleted(struct listmodel *model, const char *filename)
 {
 	struct data *data = model->data;
