@@ -7,7 +7,7 @@ right     navigate_right
 home      navigate_first
 end       navigate_last
 
-space     mark
+space     togglemark
 *         invert_marks
 1         cd                ~
 2         cd                /

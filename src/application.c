@@ -249,7 +249,7 @@ static void command_change_directory(struct application *app, const char *path)
 		enter_directory(app, NULL);
 }
 
-static void command_mark(struct application *app, const char *unused)
+static void command_togglemark(struct application *app, const char *unused)
 {
 	(void)unused;
 	if(listmodel_count(&app->model) == 0)
@@ -397,7 +397,7 @@ struct command_map application_command_map[] = {
 	{ "navigate_right", command_navigate_right, false },
 	{ "navigate_first", command_navigate_first, false },
 	{ "navigate_last", command_navigate_last, false },
-	{ "mark", command_mark, false },
+	{ "togglemark", command_togglemark, false },
 	{ "invert_marks", command_invert_marks, false },
 	{ "cd", command_change_directory, true },
 	{ "invoke_handler", command_invoke_handler, true },
