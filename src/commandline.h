@@ -10,7 +10,7 @@
 
 struct commandline {
 	WINDOW *window;
-	list_t *history;
+	struct list *history;
 	size_t history_position;
 	wchar_t *buffer;
 	wchar_t *backup_buffer;

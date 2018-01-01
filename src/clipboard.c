@@ -11,7 +11,7 @@
 #define CLIPBOARD_PATH "clipboard_path"
 #define CLIPBOARD_LIST "clipboard_list"
 
-static bool dump_contents_to_directory(int dir_fd, const char *path, const list_t *filelist) {
+static bool dump_contents_to_directory(int dir_fd, const char *path, const struct list *filelist) {
 	if(path && filelist) {
 		if(!dump_string_to_file(dir_fd, CLIPBOARD_PATH, path))
 			return false;
@@ -22,7 +22,7 @@ static bool dump_contents_to_directory(int dir_fd, const char *path, const list_
 	return true;
 }
 
-bool clipboard_set_contents(struct clipboard *clipboard, const char *path, const list_t *filelist)
+bool clipboard_set_contents(struct clipboard *clipboard, const char *path, const struct list *filelist)
 {
 	if(clipboard->shared_clipboard_path) {
 		int clipboard_dir_fd = open(clipboard->shared_clipboard_path, O_RDONLY);

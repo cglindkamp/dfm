@@ -11,11 +11,11 @@ struct list {
 	void **items;
 };
 
-list_t *list_new(size_t initial_size)
+struct list *list_new(size_t initial_size)
 {
-	list_t *list;
+	struct list *list;
 
-	list = malloc(sizeof(list_t));
+	list = malloc(sizeof(*list));
 	if(list == NULL)
 		return NULL;
 
@@ -33,7 +33,7 @@ list_t *list_new(size_t initial_size)
 	return list;
 }
 
-void list_delete(const list_t *list, list_item_deallocator deallocator)
+void list_delete(const struct list *list, list_item_deallocator deallocator)
 {
 	if(list == NULL)
 		return;
@@ -44,12 +44,12 @@ void list_delete(const list_t *list, list_item_deallocator deallocator)
 	free((void *)list);
 }
 
-size_t list_length(const list_t *list)
+size_t list_length(const struct list *list)
 {
 	return list->length;
 }
 
-static bool list_make_room(list_t *list)
+static bool list_make_room(struct list *list)
 {
 	void *newitems = realloc(list->items, 2 * list->allocated_items * sizeof(void *));
 	if(newitems == NULL)
@@ -61,7 +61,7 @@ static bool list_make_room(list_t *list)
 	return true;
 }
 
-bool list_append(list_t *list, void *item)
+bool list_append(struct list *list, void *item)
 {
 	if(list->length == list->allocated_items)
 		if(!list_make_room(list))
@@ -73,7 +73,7 @@ bool list_append(list_t *list, void *item)
 	return true;
 }
 
-bool list_insert(list_t *list, size_t index, void *item)
+bool list_insert(struct list *list, size_t index, void *item)
 {
 	assert(index <= list->length);
 
@@ -88,7 +88,7 @@ bool list_insert(list_t *list, size_t index, void *item)
 	return true;
 }
 
-void list_remove(list_t *list, size_t index)
+void list_remove(struct list *list, size_t index)
 {
 	assert(index < list->length);
 
@@ -96,26 +96,26 @@ void list_remove(list_t *list, size_t index)
 	list->length--;
 }
 
-void *list_get_item(const list_t *list, size_t index)
+void *list_get_item(const struct list *list, size_t index)
 {
 	assert(index < list->length);
 
 	return list->items[index];
 }
 
-void list_set_item(list_t *list, size_t index, void *item)
+void list_set_item(struct list *list, size_t index, void *item)
 {
 	assert(index < list->length);
 
 	list->items[index] = item;
 }
 
-void list_sort(list_t *list, int (*compare)(const void *, const void *))
+void list_sort(struct list *list, int (*compare)(const void *, const void *))
 {
 	qsort(list->items, list->length, sizeof(void *), compare);
 }
 
-bool list_find_item_or_insertpoint(const list_t *list, int (*compare)(const void *, const void *), void *item, size_t *index)
+bool list_find_item_or_insertpoint(const struct list *list, int (*compare)(const void *, const void *), void *item, size_t *index)
 {
 	void *currentitem;
 	size_t min, middle, max;

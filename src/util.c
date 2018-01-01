@@ -31,7 +31,7 @@ void remove_directory_recursively(const char *path)
 struct path *determine_usable_config_file(const char *project, const char *subdir, const char *config, int flags)
 {
 	struct path *path = NULL;
-	list_t *list = xdg_get_config_dirs(true);
+	struct list *list = xdg_get_config_dirs(true);
 
 	if(list == NULL)
 		return NULL;
@@ -69,7 +69,7 @@ bool dump_string_to_file(int dir_fd, const char *filename, const char *value)
 	return ret < 0 ? false : true;
 }
 
-bool dump_filelist_to_file(int dir_fd, const char *filename, const list_t *list)
+bool dump_filelist_to_file(int dir_fd, const char *filename, const struct list *list)
 {
 	int ret = 0;
 

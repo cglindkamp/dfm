@@ -20,7 +20,7 @@ enum mode {
 struct application {
 	struct listview view;
 	struct listmodel model;
-	list_t *stored_positions;
+	struct list *stored_positions;
 	WINDOW *status;
 	struct commandline commandline;
 	struct path cwd;

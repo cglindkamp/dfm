@@ -9,12 +9,12 @@ struct dict_item {
 	void *value;
 };
 
-list_t *dict_new()
+struct list *dict_new()
 {
 	return list_new(0);
 }
 
-void dict_delete(list_t *list, bool free_value)
+void dict_delete(struct list *list, bool free_value)
 {
 	struct dict_item *item;
 	size_t i;
@@ -40,7 +40,7 @@ static int compare_key(const void *a, const void *b)
 	return strcmp(item1->key, item2->key);
 }
 
-bool dict_set(list_t *list, const char *key, void *value)
+bool dict_set(struct list *list, const char *key, void *value)
 {
 	struct dict_item *item, needle;
 
@@ -73,7 +73,7 @@ bool dict_set(list_t *list, const char *key, void *value)
 	return true;
 }
 
-void *dict_get(list_t *list, const char *key)
+void *dict_get(struct list *list, const char *key)
 {
 	struct dict_item item;
 	size_t index;

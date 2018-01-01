@@ -41,12 +41,12 @@ int xdg_get_config_home(struct path **path)
 	return 0;
 }
 
-list_t *xdg_get_config_dirs(bool include_config_home)
+struct list *xdg_get_config_dirs(bool include_config_home)
 {
 	struct path *path;
 	int ret;
 
-	list_t *list = list_new(0);
+	struct list *list = list_new(0);
 	if(list == NULL)
 		return NULL;
 

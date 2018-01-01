@@ -7,7 +7,7 @@
 #include <sys/types.h>
 
 struct processmanager {
-	list_t *processlist;
+	struct list *processlist;
 };
 
 int processmanager_spawn(struct processmanager *pm, const char *program, char * const argv[], const char *tmpdir, bool forground, pid_t *pid);

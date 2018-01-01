@@ -7,7 +7,7 @@
 
 char *__real_strdup(const char *s);
 
-list_t *dict;
+struct list *dict;
 
 static void setup(void)
 {

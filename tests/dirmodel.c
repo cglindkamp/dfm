@@ -350,7 +350,7 @@ START_TEST(test_dirmodel_markfiles_getfilenames)
 	listmodel_setmark(&model, 3, true);
 	listmodel_setmark(&model, 4, true);
 
-	const list_t *list;
+	const struct list *list;
 	int ret = dirmodel_getmarkedfilenames(&model, &list);
 	assert_oom(ret != ENOMEM);
 	ck_assert(ret == 0);
@@ -367,7 +367,7 @@ START_TEST(test_dirmodel_markfiles_getfilenames_nomarkedfiles)
 {
 	assert_oom(dirmodel_change_directory(&model, path) == true);
 
-	const list_t *list;
+	const struct list *list;
 	int ret = dirmodel_getmarkedfilenames(&model, &list);
 	assert_oom(ret != ENOMEM);
 	ck_assert(ret == ENOENT);
@@ -429,7 +429,7 @@ START_TEST(test_dirmodel_regexmark)
 
 	dirmodel_regex_setmark(&model, ".fo", true);
 
-	const list_t *list;
+	const struct list *list;
 	int ret = dirmodel_getmarkedfilenames(&model, &list);
 	assert_oom(ret != ENOMEM);
 	ck_assert(ret == 0);
@@ -449,7 +449,7 @@ START_TEST(test_dirmodel_regexunmark)
 	dirmodel_regex_setmark(&model, ".*", true);
 	dirmodel_regex_setmark(&model, "foo", false);
 
-	const list_t *list;
+	const struct list *list;
 	int ret = dirmodel_getmarkedfilenames(&model, &list);
 	assert_oom(ret != ENOMEM);
 	ck_assert(ret == 0);

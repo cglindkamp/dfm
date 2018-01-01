@@ -5,7 +5,7 @@
 #include "../src/list.h"
 #include "tests.h"
 
-list_t *list;
+struct list *list;
 
 static void setup(void)
 {
@@ -97,7 +97,7 @@ static int compare_int(const void *item1, const void *item2)
 	return 0;
 }
 
-static int int_list_is_sorted(list_t *list)
+static int int_list_is_sorted(struct list *list)
 {
 	intptr_t last = (intptr_t)list_get_item(list, 0);
 	for(size_t i = 1; i < 8192; i++) {

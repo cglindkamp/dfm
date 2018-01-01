@@ -126,7 +126,7 @@ static void command_invoke_handler(struct application *app, const char *handler_
 			goto err_dircreated;
 	}
 
-	const list_t *list;
+	const struct list *list;
 	int ret = dirmodel_getmarkedfilenames(&app->model, &list);
 	if(ret == 0) {
 		bool ret = dump_filelist_to_file(dir_fd, "marked", list);
@@ -284,7 +284,7 @@ static void command_unmark(struct application *app, const char *regex)
 static void command_yank(struct application *app, const char *unused)
 {
 	(void)unused;
-	const list_t *list = NULL;
+	const struct list *list = NULL;
 
 	int ret = dirmodel_getmarkedfilenames(&app->model, &list);
 	char *cwd_copy = strdup(path_tocstr(&app->cwd));
@@ -299,7 +299,7 @@ static void command_yank(struct application *app, const char *unused)
 		if(listmodel_count(&app->model) == 0)
 			goto err;
 
-		list_t *selectedlist = list_new(1);
+		struct list *selectedlist = list_new(1);
 		if(selectedlist == NULL)
 			goto err;
 		list = selectedlist;

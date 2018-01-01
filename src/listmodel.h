@@ -11,7 +11,7 @@ struct listmodel {
 	size_t (*render)(struct listmodel *model, wchar_t *buffer, size_t len, size_t width, size_t index);
 	void (*setmark)(struct listmodel *model, size_t index, bool mark);
 	bool (*ismarked)(struct listmodel *model, size_t index);
-	list_t *change_callbacks;
+	struct list *change_callbacks;
 	void *data;
 };
 
