@@ -1,6 +1,6 @@
 #!/bin/sh
 
-source `dirname $0`/xterminal "$@"
+. `dirname $0`/xterminal "$@"
 
 if [ ! -e "$1"/clipboard_list ]; then
 	exit 0;

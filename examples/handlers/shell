@@ -1,5 +1,5 @@
 #!/bin/sh
 
-source `dirname $0`/xterminal "$@"
+. `dirname $0`/xterminal "$@"
 
 exec /bin/bash
