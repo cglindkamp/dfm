@@ -1,20 +1,18 @@
 /* See LICENSE file for copyright and license details. */
-#include <dirent.h>
-#include <fcntl.h>
-#include <regex.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/inotify.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <wchar.h>
-
 #include "dirmodel.h"
+
 #include "filedata.h"
 #include "listmodel_impl.h"
 #include "list.h"
+
+#include <dirent.h>
+#include <errno.h>
+#include <regex.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <wchar.h>
 
 #define INFO_SEPARATOR        L" "
 #define INFO_SEPARATOR_LENGTH 1

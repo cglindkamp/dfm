@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 #include "../src/dict.h"
+#include "../src/list.h"
 #include "tests.h"
 
 char *__real_strdup(const char *s);

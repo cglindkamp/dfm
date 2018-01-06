@@ -2,9 +2,10 @@
 #ifndef PROCESSMANAGER_H
 #define PROCESSMANAGER_H
 
-#include "list.h"
-
+#include <stdbool.h>
 #include <sys/types.h>
+
+struct list;
 
 struct processmanager {
 	struct list *processlist;

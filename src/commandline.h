@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include <wchar.h>
 
-#include "list.h"
+struct list;
 
 struct commandline {
 	WINDOW *window;

@@ -2,7 +2,9 @@
 #ifndef DICT_H
 #define DICT_H
 
-#include "list.h"
+#include <stdbool.h>
+
+struct list;
 
 struct list *dict_new() __attribute__((warn_unused_result));
 void dict_delete(struct list *list, bool free_value);

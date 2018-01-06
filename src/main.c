@@ -1,8 +1,8 @@
 /* See LICENSE file for copyright and license details. */
+#include "application.h"
+
 #include <locale.h>
 #include <ncurses.h>
-
-#include "application.h"
 
 void _nc_freeall();
 

@@ -1,8 +1,10 @@
 /* See LICENSE file for copyright and license details. */
+#include "dict.h"
+
+#include "list.h"
+
 #include <stdlib.h>
 #include <string.h>
-
-#include "dict.h"
 
 struct dict_item {
 	const char *key;

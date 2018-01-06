@@ -2,15 +2,17 @@
 #ifndef APPLICATION_H
 #define APPLICATION_H
 
-#include <stdbool.h>
-
 #include "clipboard.h"
 #include "commandline.h"
-#include "list.h"
 #include "listmodel.h"
 #include "listview.h"
 #include "path.h"
 #include "processmanager.h"
+
+#include <ncurses.h>
+#include <stdbool.h>
+
+struct list;
 
 enum mode {
 	MODE_NORMAL,

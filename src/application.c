@@ -1,8 +1,16 @@
 /* See LICENSE file for copyright and license details. */
+#include "application.h"
+
+#include "command.h"
+#include "dirmodel.h"
+#include "dict.h"
+#include "keymap.h"
+#include "list.h"
+#include "util.h"
+
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
-#include <ncurses.h>
 #include <poll.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -13,12 +21,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <wchar.h>
-
-#include "application.h"
-#include "dirmodel.h"
-#include "dict.h"
-#include "keymap.h"
-#include "util.h"
 
 static void save_current_position(struct application *app)
 {

@@ -1,7 +1,9 @@
 /* See LICENSE file for copyright and license details. */
-#include <stdlib.h>
-
 #include "listmodel.h"
+
+#include "list.h"
+
+#include <stdlib.h>
 
 struct callback {
 	model_change_callback *cb;

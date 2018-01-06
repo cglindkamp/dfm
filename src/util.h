@@ -4,8 +4,7 @@
 
 #include <stdbool.h>
 
-#include "list.h"
-struct path;
+struct list;
 
 void remove_directory_recursively(const char *path);
 struct path *determine_usable_config_file(const char *project, const char *subdir, const char *config, int flags);

@@ -4,7 +4,7 @@
 
 #include <stdbool.h>
 
-#include "list.h"
+struct list;
 struct path;
 
 int xdg_get_config_home(struct path **path) __attribute__((warn_unused_result));

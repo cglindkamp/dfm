@@ -1,17 +1,18 @@
 /* See LICENSE file for copyright and license details. */
+#include "util.h"
+
+#include "list.h"
+#include "path.h"
+#include "xdg.h"
+
 #include <fcntl.h>
 #include <ftw.h>
-#include <ncurses.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/wait.h>
 #include <unistd.h>
-
-#include "path.h"
-#include "util.h"
-#include "xdg.h"
 
 static int remove_file(const char *path, const struct stat *sbuf, int type, struct FTW *ftwb)
 {

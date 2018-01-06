@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 
 #include "../src/application.h"
+#include "../src/command.h"
 #include "../src/keymap.h"
 #include "tests.h"
 

@@ -1,9 +1,11 @@
+/* See LICENSE file for copyright and license details. */
+#include "filedata.h"
+
+#include <errno.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-
-#include "filedata.h"
 
 int filedata_new_from_file(struct filedata **filedata, int dirfd, const char *filename)
 {

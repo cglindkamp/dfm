@@ -2,12 +2,11 @@
 #ifndef KEYMAP_H
 #define KEYMAP_H
 
-#include "command.h"
-
 #include <stdbool.h>
 #include <wchar.h>
 
 struct application;
+struct command_map;
 
 struct keyspec {
 	bool iskeycode;

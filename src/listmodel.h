@@ -2,9 +2,10 @@
 #ifndef LISTMODEL_H
 #define LISTMODEL_H
 
+#include <stdbool.h>
 #include <wchar.h>
 
-#include "list.h"
+struct list;
 
 struct listmodel {
 	size_t (*count)(struct listmodel *model);

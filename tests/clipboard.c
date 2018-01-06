@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 #include "../src/clipboard.h"
+#include "../src/list.h"
 #include "../src/util.h"
 #include "tests.h"
 

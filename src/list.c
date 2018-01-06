@@ -1,9 +1,9 @@
 /* See LICENSE file for copyright and license details. */
+#include "list.h"
+
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "list.h"
 
 struct list {
 	size_t length;

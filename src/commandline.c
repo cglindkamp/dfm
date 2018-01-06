@@ -1,6 +1,8 @@
 /* See LICENSE file for copyright and license details. */
 #include "commandline.h"
 
+#include "list.h"
+
 #include <errno.h>
 #include <stdlib.h>
 

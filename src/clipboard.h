@@ -2,7 +2,9 @@
 #ifndef CLIPBOARD_H
 #define CLIPBOARD_H
 
-#include "list.h"
+#include <stdbool.h>
+
+struct list;
 
 struct clipboard {
 	const char *path;

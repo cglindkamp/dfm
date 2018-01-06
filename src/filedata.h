@@ -1,7 +1,7 @@
+/* See LICENSE file for copyright and license details. */
 #ifndef FILEDATA_H
 #define FILEDATA_H
 
-#include <errno.h>
 #include <stdbool.h>
 #include <sys/stat.h>
 

@@ -1,11 +1,10 @@
 /* See LICENSE file for copyright and license details. */
+#include "path.h"
+
 #include <errno.h>
-#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
-#include "path.h"
 
 static bool path_make_room(struct path *path, size_t size)
 {

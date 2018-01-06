@@ -10,6 +10,7 @@
 #include <unistd.h>
 
 #include "../src/dirmodel.h"
+#include "../src/list.h"
 #include "../src/util.h"
 #include "tests.h"
 

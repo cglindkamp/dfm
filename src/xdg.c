@@ -1,11 +1,12 @@
 /* See LICENSE file for copyright and license details. */
+#include "xdg.h"
+
+#include "list.h"
+#include "path.h"
+
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "xdg.h"
-
-#include "path.h"
 
 int xdg_get_config_home(struct path **path)
 {

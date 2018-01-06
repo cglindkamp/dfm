@@ -1,9 +1,10 @@
 /* See LICENSE file for copyright and license details. */
-#include <ncurses.h>
-#include <wchar.h>
+#include "listview.h"
 
 #include "listmodel.h"
-#include "listview.h"
+
+#include <ncurses.h>
+#include <wchar.h>
 
 static int attrs_for_index(struct listmodel *model, size_t index, size_t selected)
 {

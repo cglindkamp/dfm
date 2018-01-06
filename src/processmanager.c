@@ -1,12 +1,11 @@
 /* See LICENSE file for copyright and license details. */
 #include "processmanager.h"
 
+#include "list.h"
 #include "util.h"
 
 #include <errno.h>
 #include <fcntl.h>
-#include <ftw.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/wait.h>

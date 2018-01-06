@@ -1,12 +1,14 @@
 /* See LICENSE file for copyright and license details. */
+#include "clipboard.h"
+
+#include "list.h"
+#include "util.h"
+
 #include <fcntl.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-
-#include "clipboard.h"
-#include "util.h"
 
 #define CLIPBOARD_PATH "clipboard_path"
 #define CLIPBOARD_LIST "clipboard_list"

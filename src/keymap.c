@@ -1,3 +1,7 @@
+#include "keymap.h"
+
+#include "command.h"
+
 #include <errno.h>
 #include <fcntl.h>
 #include <ncurses.h>
@@ -6,8 +10,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-
-#include "keymap.h"
 
 int keymap_handlekey(struct keymap *keymap, struct application *application, wint_t key, bool iskeycode, struct command_map *commandmap)
 {
