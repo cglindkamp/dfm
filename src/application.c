@@ -2,7 +2,6 @@
 #include "application.h"
 
 #include "command.h"
-#include "dirmodel.h"
 #include "dict.h"
 #include "keymap.h"
 #include "list.h"
@@ -24,7 +23,7 @@
 
 static void save_current_position(struct application *app)
 {
-	if(listmodel_count(&app->model) != 0) {
+	if(listmodel_count(&app->model.listmodel) != 0) {
 		free(dict_get(app->stored_positions, path_tocstr(&app->cwd)));
 
 		size_t index = listview_getindex(&app->view);
@@ -43,7 +42,7 @@ static void select_filename(struct application *app, const char *filename)
 	size_t index;
 
 	dirmodel_get_index(&app->model, filename, &index);
-	if(index == listmodel_count(&app->model))
+	if(index == listmodel_count(&app->model.listmodel))
 		index--;
 	listview_setindex(&app->view, index);
 }
@@ -121,7 +120,7 @@ static void command_invoke_handler(struct application *app, const char *handler_
 	if(dir_fd < 0)
 		goto err_dircreated;
 
-	if(listmodel_count(&app->model) > 0) {
+	if(listmodel_count(&app->model.listmodel) > 0) {
 		size_t index = listview_getindex(&app->view);
 		const char *selected = dirmodel_getfilename(&app->model, index);
 		if(!dump_string_to_file(dir_fd, "selected", selected))
@@ -212,7 +211,7 @@ static void command_navigate_right(struct application *app, const char *unused)
 {
 	(void)unused;
 
-	if(listmodel_count(&app->model) == 0)
+	if(listmodel_count(&app->model.listmodel) == 0)
 		return;
 
 	save_current_position(app);
@@ -237,7 +236,7 @@ static void command_navigate_first(struct application *app, const char *unused)
 static void command_navigate_last(struct application *app, const char *unused)
 {
 	(void)unused;
-	size_t count = listmodel_count(&app->model);
+	size_t count = listmodel_count(&app->model.listmodel);
 
 	if(count > 0)
 		listview_setindex(&app->view, count - 1);
@@ -254,22 +253,22 @@ static void command_change_directory(struct application *app, const char *path)
 static void command_togglemark(struct application *app, const char *unused)
 {
 	(void)unused;
-	if(listmodel_count(&app->model) == 0)
+	if(listmodel_count(&app->model.listmodel) == 0)
 		return;
 
 	size_t index = listview_getindex(&app->view);
-	listmodel_setmark(&app->model, index, !listmodel_ismarked(&app->model, index));
+	listmodel_setmark(&app->model.listmodel, index, !listmodel_ismarked(&app->model.listmodel, index));
 	listview_down(&app->view);
 }
 
 static void command_invert_marks(struct application *app, const char *unused)
 {
 	(void)unused;
-	size_t count = listmodel_count(&app->model);
+	size_t count = listmodel_count(&app->model.listmodel);
 
 	if(count > 0) {
 		for(size_t i = 0; i < count; i++)
-			listmodel_setmark(&app->model, i, !listmodel_ismarked(&app->model, i));
+			listmodel_setmark(&app->model.listmodel, i, !listmodel_ismarked(&app->model.listmodel, i));
 	}
 }
 
@@ -298,7 +297,7 @@ static void command_yank(struct application *app, const char *unused)
 		if(cwd_copy == NULL)
 			goto err;
 	} else if(ret == ENOENT) {
-		if(listmodel_count(&app->model) == 0)
+		if(listmodel_count(&app->model.listmodel) == 0)
 			goto err;
 
 		struct list *selectedlist = list_new(1);
@@ -356,7 +355,7 @@ static void command_cmdline(struct application *app, const char *command)
 
 static void command_rename(struct application *app, const char *newfilename)
 {
-	if(listmodel_count(&app->model) == 0)
+	if(listmodel_count(&app->model.listmodel) == 0)
 		return;
 
 	size_t index = listview_getindex(&app->view);
@@ -610,7 +609,7 @@ bool application_init(struct application *app)
 	if(!path_init(&app->cwd, PATH_MAX))
 		ret = false;
 
-	if(!listview_init(&app->view, &app->model, 0, 0, COLS, LINES - 1))
+	if(!listview_init(&app->view, &app->model.listmodel, 0, 0, COLS, LINES - 1))
 		ret = false;
 
 	if(!load_keymap(app))

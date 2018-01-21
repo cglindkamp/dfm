@@ -168,9 +168,9 @@ static bool dirmodel_ismarked(struct listmodel *model, size_t index)
 	return filedata->is_marked;
 }
 
-int dirmodel_getmarkedfilenames(struct listmodel *model, const struct list **markedlist_out)
+int dirmodel_getmarkedfilenames(struct dirmodel *model, const struct list **markedlist_out)
 {
-	struct data *data = model->data;
+	struct data *data = model->listmodel.data;
 	struct list *list = data->list;
 	struct list *markedlist = list_new(0);
 
@@ -215,9 +215,9 @@ static int sort_filename(const void *a, const void *b)
 	return 1;
 }
 
-bool dirmodel_get_index(struct listmodel *model, const char *filename, size_t *index)
+bool dirmodel_get_index(struct dirmodel *model, const char *filename, size_t *index)
 {
-	struct data *data = model->data;
+	struct data *data = model->listmodel.data;
 	struct list *list = data->list;
 	struct filedata filedata;
 	bool found;
@@ -236,9 +236,9 @@ bool dirmodel_get_index(struct listmodel *model, const char *filename, size_t *i
 	return found;
 }
 
-size_t dirmodel_regex_getnext(struct listmodel *model, const char *regex, size_t start_index, int direction)
+size_t dirmodel_regex_getnext(struct dirmodel *model, const char *regex, size_t start_index, int direction)
 {
-	struct data *data = model->data;
+	struct data *data = model->listmodel.data;
 	struct list *list = data->list;
 	regex_t cregex;
 	size_t result = start_index;
@@ -269,9 +269,9 @@ size_t dirmodel_regex_getnext(struct listmodel *model, const char *regex, size_t
 	return result;
 }
 
-void dirmodel_regex_setmark(struct listmodel *model, const char *regex, bool mark)
+void dirmodel_regex_setmark(struct dirmodel *model, const char *regex, bool mark)
 {
-	struct data *data = model->data;
+	struct data *data = model->listmodel.data;
 	struct list *list = data->list;
 	regex_t cregex;
 
@@ -283,16 +283,16 @@ void dirmodel_regex_setmark(struct listmodel *model, const char *regex, bool mar
 		struct filedata *filedata = list_get_item(list, i);
 		if(regexec(&cregex, filedata->filename, 0, NULL, 0) == 0) {
 			filedata->is_marked = mark;
-			listmodel_notify_change(model, i, MODEL_CHANGE);
+			listmodel_notify_change(&model->listmodel, i, MODEL_CHANGE);
 		}
 	}
 
 	regfree(&cregex);
 }
 
-void dirmodel_notify_file_deleted(struct listmodel *model, const char *filename)
+void dirmodel_notify_file_deleted(struct dirmodel *model, const char *filename)
 {
-	struct data *data = model->data;
+	struct data *data = model->listmodel.data;
 	struct list *list = data->list;
 	size_t index;
 
@@ -301,13 +301,13 @@ void dirmodel_notify_file_deleted(struct listmodel *model, const char *filename)
 		struct filedata *filedata = list_get_item(list, index);
 		filedata_delete(filedata);
 		list_remove(list, index);
-		listmodel_notify_change(model, index, MODEL_REMOVE);
+		listmodel_notify_change(&model->listmodel, index, MODEL_REMOVE);
 	}
 }
 
-int dirmodel_notify_file_added_or_changed(struct listmodel *model, const char *filename)
+int dirmodel_notify_file_added_or_changed(struct dirmodel *model, const char *filename)
 {
-	struct data *data = model->data;
+	struct data *data = model->listmodel.data;
 	struct list *list = data->list;
 	struct filedata *filedata;
 	size_t index;
@@ -321,44 +321,44 @@ int dirmodel_notify_file_added_or_changed(struct listmodel *model, const char *f
 		struct filedata *filedataold = list_get_item(list, index);
 		list_set_item(list, index, filedata);
 		filedata_delete(filedataold);
-		listmodel_notify_change(model, index, MODEL_CHANGE);
+		listmodel_notify_change(&model->listmodel, index, MODEL_CHANGE);
 	} else {
 		if(!list_insert(list, index, filedata)) {
 			filedata_delete(filedata);
 			return ENOMEM;
 		}
-		listmodel_notify_change(model, index, MODEL_ADD);
+		listmodel_notify_change(&model->listmodel, index, MODEL_ADD);
 	}
 
 	return 0;
 }
 
-const char *dirmodel_getfilename(struct listmodel *model, size_t index)
+const char *dirmodel_getfilename(struct dirmodel *model, size_t index)
 {
-	struct data *data = model->data;
+	struct data *data = model->listmodel.data;
 	struct list *list = data->list;
 	struct filedata *filedata = list_get_item(list, index);
 	return filedata->filename;
 }
 
-bool dirmodel_isdir(struct listmodel *model, size_t index)
+bool dirmodel_isdir(struct dirmodel *model, size_t index)
 {
-	struct data *data = model->data;
+	struct data *data = model->listmodel.data;
 	struct list *list = data->list;
 	struct filedata *filedata = list_get_item(list, index);
 	return S_ISDIR(filedata->stat.st_mode);
 }
 
-static bool internal_init(struct listmodel *model, const char *path)
+static bool internal_init(struct dirmodel *model, const char *path)
 {
 	DIR *dir;
 	struct filedata *filedata;
 
-	model->data = malloc(sizeof(struct data));
-	if(model->data == NULL)
+	model->listmodel.data = malloc(sizeof(struct data));
+	if(model->listmodel.data == NULL)
 		goto err_malloc;
 
-	struct data *data = model->data;
+	struct data *data = model->listmodel.data;
 
 	dir = opendir(path);
 	if(dir == NULL)
@@ -399,15 +399,15 @@ err_readdir:
 err_newlist:
 	closedir(dir);
 err_opendir:
-	free(model->data);
-	model->data = NULL;
+	free(model->listmodel.data);
+	model->listmodel.data = NULL;
 err_malloc:
 	return false;
 }
 
-static void internal_destroy(struct listmodel *model)
+static void internal_destroy(struct dirmodel *model)
 {
-	struct data *data = model->data;
+	struct data *data = model->listmodel.data;
 	if(data == NULL)
 		return;
 
@@ -416,32 +416,32 @@ static void internal_destroy(struct listmodel *model)
 	closedir(data->dir);
 
 	list_delete(list, (list_item_deallocator)filedata_delete);
-	free(model->data);
-	model->data = NULL;
+	free(model->listmodel.data);
+	model->listmodel.data = NULL;
 }
 
-bool dirmodel_change_directory(struct listmodel *model, const char *path)
+bool dirmodel_change_directory(struct dirmodel *model, const char *path)
 {
 	internal_destroy(model);
 	if(!internal_init(model, path))
 		return false;
-	listmodel_notify_change(model, 0, MODEL_RELOAD);
+	listmodel_notify_change(&model->listmodel, 0, MODEL_RELOAD);
 	return true;
 }
 
-void dirmodel_init(struct listmodel *model)
+void dirmodel_init(struct dirmodel *model)
 {
-	listmodel_init(model);
+	listmodel_init(&model->listmodel);
 
-	model->data = NULL;
-	model->count = dirmodel_count;
-	model->render = dirmodel_render;
-	model->setmark = dirmodel_setmark;
-	model->ismarked = dirmodel_ismarked;
+	model->listmodel.data = NULL;
+	model->listmodel.count = dirmodel_count;
+	model->listmodel.render = dirmodel_render;
+	model->listmodel.setmark = dirmodel_setmark;
+	model->listmodel.ismarked = dirmodel_ismarked;
 }
 
-void dirmodel_destroy(struct listmodel *model)
+void dirmodel_destroy(struct dirmodel *model)
 {
 	internal_destroy(model);
-	listmodel_destroy(model);
+	listmodel_destroy(&model->listmodel);
 }

@@ -4,6 +4,7 @@
 
 #include "clipboard.h"
 #include "commandline.h"
+#include "dirmodel.h"
 #include "listmodel.h"
 #include "listview.h"
 #include "path.h"
@@ -21,7 +22,7 @@ enum mode {
 
 struct application {
 	struct listview view;
-	struct listmodel model;
+	struct dirmodel model;
 	struct list *stored_positions;
 	WINDOW *status;
 	struct commandline commandline;
