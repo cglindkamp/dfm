@@ -13,7 +13,6 @@ struct listmodel {
 	void (*setmark)(struct listmodel *model, size_t index, bool mark);
 	bool (*ismarked)(struct listmodel *model, size_t index);
 	struct list *change_callbacks;
-	void *data;
 };
 
 enum model_change {
