@@ -5,20 +5,25 @@
 #include "../src/listmodel.h"
 #include "../src/listmodel_impl.h"
 #include "../src/listview.h"
+#include "../src/util.h"
 #include "tests.h"
 
-static struct listmodel model;
+static struct testmodel {
+	struct listmodel listmodel;
+	size_t count;
+} model;
+
 static struct listview listview;
 
-static size_t testmodel_count(struct listmodel *model)
+static size_t testmodel_count(struct listmodel *listmodel)
 {
-	return (size_t)model->data;
+	return container_of(listmodel, struct testmodel, listmodel)->count;
 }
 
-static size_t testmodel_render(struct listmodel *model, wchar_t *buffer, size_t len, size_t width, size_t index)
+static size_t testmodel_render(struct listmodel *listmodel, wchar_t *buffer, size_t len, size_t width, size_t index)
 {
 	ck_assert(len >= width);
-	ck_assert(index < (size_t)model->data);
+	ck_assert(index < container_of(listmodel, struct testmodel, listmodel)->count);
 
 	for(size_t i = 0; i < width; i++) {
 		buffer[i] = L' ';
@@ -28,28 +33,33 @@ static size_t testmodel_render(struct listmodel *model, wchar_t *buffer, size_t 
 	return width;
 }
 
-static void testmodel_init(struct listmodel *model, size_t count)
+static void testmodel_init(struct testmodel *model, size_t count)
 {
-	listmodel_init(model);
-	model->count = testmodel_count;
-	model->render = testmodel_render;
-	model->data = (void*)count;
+	listmodel_init(&model->listmodel);
+	model->listmodel.count = testmodel_count;
+	model->listmodel.render = testmodel_render;
+	model->count = count;
 }
 
-static void testmodel_add(struct listmodel *model, size_t index)
+static void testmodel_destroy(struct testmodel *model)
 {
-	model->data = (void*)((size_t)model->data + 1);
-	listmodel_notify_change(model, index, MODEL_ADD);
+	listmodel_destroy(&model->listmodel);
 }
 
-static void testmodel_remove(struct listmodel *model, size_t index)
+static void testmodel_add(struct testmodel *model, size_t index)
 {
-	model->data = (void*)((size_t)model->data - 1);
-	listmodel_notify_change(model, index, MODEL_REMOVE);
+	model->count++;
+	listmodel_notify_change(&model->listmodel, index, MODEL_ADD);
+}
+
+static void testmodel_remove(struct testmodel *model, size_t index)
+{
+	model->count--;
+	listmodel_notify_change(&model->listmodel, index, MODEL_REMOVE);
 }
 
 static bool create_view() {
-	return listview_init(&listview, &model, 0, 0, 80, 25);
+	return listview_init(&listview, &model.listmodel, 0, 0, 80, 25);
 }
 
 START_TEST(test_listview_initialization)
@@ -61,7 +71,7 @@ START_TEST(test_listview_initialization)
 	ck_assert_uint_eq(listview_getfirst(&listview), 0);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
@@ -76,7 +86,7 @@ START_TEST(test_listview_setindex_first)
 	ck_assert_uint_eq(listview_getindex(&listview), 0);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
@@ -89,7 +99,7 @@ START_TEST(test_listview_setindex_middle)
 	ck_assert_uint_eq(listview_getindex(&listview), 10);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
@@ -102,7 +112,7 @@ START_TEST(test_listview_setindex_last)
 	ck_assert_uint_eq(listview_getindex(&listview), 99);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
@@ -115,7 +125,7 @@ START_TEST(test_listview_setindex_outofbounds)
 	ck_assert_uint_eq(listview_getindex(&listview), 99);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
@@ -135,7 +145,7 @@ START_TEST(test_listview_setindex_scrollonlywhenneeded)
 	ck_assert_uint_eq(listview_getfirst(&listview), 16);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
@@ -150,7 +160,7 @@ START_TEST(test_listview_up)
 	ck_assert_uint_eq(listview_getindex(&listview), 9);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
@@ -163,7 +173,7 @@ START_TEST(test_listview_up_onfirstindex)
 	ck_assert_uint_eq(listview_getindex(&listview), 0);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
@@ -182,7 +192,7 @@ START_TEST(test_listview_up_scroll)
 	ck_assert_uint_eq(listview_getfirst(&listview), 15);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
@@ -196,7 +206,7 @@ START_TEST(test_listview_down)
 	ck_assert_uint_eq(listview_getindex(&listview), 1);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
@@ -210,7 +220,7 @@ START_TEST(test_listview_down_onlastindex)
 	ck_assert_uint_eq(listview_getindex(&listview), 99);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
@@ -228,7 +238,7 @@ START_TEST(test_listview_down_scroll)
 	ck_assert_uint_eq(listview_getfirst(&listview), 17);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
@@ -242,7 +252,7 @@ START_TEST(test_listview_pageup_onfirstindex)
 	ck_assert_uint_eq(listview_getindex(&listview), 0);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
@@ -264,7 +274,7 @@ START_TEST(test_listview_pageup_scroll)
 	ck_assert_uint_eq(listview_getfirst(&listview), 0);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
@@ -279,7 +289,7 @@ START_TEST(test_listview_pagedown_onlastindex)
 	ck_assert_uint_eq(listview_getindex(&listview), 99);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
@@ -297,7 +307,7 @@ START_TEST(test_listview_pagedown_scroll)
 	ck_assert_uint_eq(listview_getfirst(&listview), 25);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
@@ -315,7 +325,7 @@ START_TEST(test_listview_pageupdown_smalllist)
 	ck_assert_uint_eq(listview_getfirst(&listview), 0);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
@@ -331,7 +341,7 @@ START_TEST(test_listview_resize_makebigger)
 	ck_assert_uint_eq(listview_getfirst(&listview), 16);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
@@ -346,7 +356,7 @@ START_TEST(test_listview_resize_makebiggerthanfirsttoendoflist)
 	ck_assert_uint_eq(listview_getfirst(&listview), 10);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
@@ -361,7 +371,7 @@ START_TEST(test_listview_resize_makebiggerthanlist)
 	ck_assert_uint_eq(listview_getfirst(&listview), 0);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
@@ -377,7 +387,7 @@ START_TEST(test_listview_resize_makesmaller)
 	ck_assert_uint_eq(listview_getfirst(&listview), 16);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
@@ -392,7 +402,7 @@ START_TEST(test_listview_resize_makesmallerthanindextofirst)
 	ck_assert_uint_eq(listview_getfirst(&listview), 21);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
@@ -407,7 +417,7 @@ START_TEST(test_listview_resize_toone)
 	ck_assert_uint_eq(listview_getfirst(&listview), 40);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
@@ -429,7 +439,7 @@ START_TEST(test_listview_modelchange_addbeforefirst)
 	ck_assert_uint_eq(listview_getfirst(&listview), 17);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
@@ -444,7 +454,7 @@ START_TEST(test_listview_modelchange_removebeforefirst)
 	ck_assert_uint_eq(listview_getfirst(&listview), 15);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
@@ -459,7 +469,7 @@ START_TEST(test_listview_modelchange_addbetweenfirstandindex)
 	ck_assert_uint_eq(listview_getfirst(&listview), 17);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
@@ -474,7 +484,7 @@ START_TEST(test_listview_modelchange_removebetweenfirstandindex)
 	ck_assert_uint_eq(listview_getfirst(&listview), 15);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
@@ -489,7 +499,7 @@ START_TEST(test_listview_modelchange_addonindex)
 	ck_assert_uint_eq(listview_getfirst(&listview), 17);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
@@ -504,7 +514,7 @@ START_TEST(test_listview_modelchange_removeonindex)
 	ck_assert_uint_eq(listview_getfirst(&listview), 16);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
@@ -519,7 +529,7 @@ START_TEST(test_listview_modelchange_addafterindex)
 	ck_assert_uint_eq(listview_getfirst(&listview), 16);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
@@ -534,7 +544,7 @@ START_TEST(test_listview_modelchange_removeafterindex)
 	ck_assert_uint_eq(listview_getfirst(&listview), 16);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
@@ -554,7 +564,7 @@ START_TEST(test_listview_modelchange_removeafterindex_atendoflist)
 	ck_assert_uint_eq(listview_getfirst(&listview), 74);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
@@ -573,7 +583,7 @@ START_TEST(test_listview_modelchange_addbeforefirst_smallist)
 	ck_assert_uint_eq(listview_getfirst(&listview), 0);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
@@ -588,7 +598,7 @@ START_TEST(test_listview_modelchange_removelastindex_listitemsequalsrows)
 	ck_assert_uint_eq(listview_getfirst(&listview), 0);
 
 	listview_destroy(&listview);
-	listmodel_destroy(&model);
+	testmodel_destroy(&model);
 }
 END_TEST
 
