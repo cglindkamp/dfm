@@ -4,8 +4,12 @@
 
 #include "listmodel.h"
 
+#include <dirent.h>
+
 struct dirmodel {
 	struct listmodel listmodel;
+	struct list *list;
+	DIR *dir;
 };
 
 const char *dirmodel_getfilename(struct dirmodel *model, size_t index);
