@@ -6,6 +6,9 @@
 
 struct list;
 
+#define container_of(ptr, type, member) \
+	((type *)((char *)ptr - offsetof(type, member)))
+
 void remove_directory_recursively(const char *path);
 struct path *determine_usable_config_file(const char *project, const char *subdir, const char *config, int flags);
 bool dump_string_to_file(int dir_fd, const char *filename, const char *value);
