@@ -463,6 +463,51 @@ START_TEST(test_dirmodel_regexunmark)
 }
 END_TEST
 
+START_TEST(test_dirmodel_setfilter_null)
+{
+	dirmodel_setfilter(&model, NULL);
+	assert_oom(dirmodel_change_directory(&model, path) == true);
+
+	ck_assert_uint_eq(listmodel_count(&model.listmodel), 5);
+	ck_assert_str_eq(dirmodel_getfilename(&model, 0), "bar");
+	ck_assert_str_eq(dirmodel_getfilename(&model, 1), "barfoo");
+	ck_assert_str_eq(dirmodel_getfilename(&model, 2), "barfop");
+	ck_assert_str_eq(dirmodel_getfilename(&model, 3), "bazfop");
+	ck_assert_str_eq(dirmodel_getfilename(&model, 4), "foo");
+}
+END_TEST
+
+START_TEST(test_dirmodel_setfilter_filter)
+{
+	dirmodel_setfilter(&model, ".fo");
+	assert_oom(dirmodel_change_directory(&model, path) == true);
+
+	ck_assert_uint_eq(listmodel_count(&model.listmodel), 3);
+	ck_assert_str_eq(dirmodel_getfilename(&model, 0), "barfoo");
+	ck_assert_str_eq(dirmodel_getfilename(&model, 1), "barfop");
+	ck_assert_str_eq(dirmodel_getfilename(&model, 2), "bazfop");
+}
+END_TEST
+
+START_TEST(test_dirmodel_setfilter_filteraddedfile)
+{
+	dirmodel_setfilter(&model, "^[^.]");
+	assert_oom(dirmodel_change_directory(&model, path) == true);
+
+	ck_assert_uint_eq(listmodel_count(&model.listmodel), 5);
+	ck_assert_str_eq(dirmodel_getfilename(&model, 0), "bar");
+	ck_assert_str_eq(dirmodel_getfilename(&model, 1), "barfoo");
+	ck_assert_str_eq(dirmodel_getfilename(&model, 2), "barfop");
+	ck_assert_str_eq(dirmodel_getfilename(&model, 3), "bazfop");
+	ck_assert_str_eq(dirmodel_getfilename(&model, 4), "foo");
+
+	create_file(dir_fd, ".hiddenfile", 0);
+	assert_oom(dirmodel_notify_file_added_or_changed(&model, ".hiddenfile") != ENOMEM);
+
+	ck_assert_uint_eq(listmodel_count(&model.listmodel), 5);
+}
+END_TEST
+
 Suite *dirmodel_suite(void)
 {
 	Suite *suite;
@@ -504,6 +549,9 @@ Suite *dirmodel_suite(void)
 	tcase_add_test(tcase, test_dirmodel_regexsearch_foundbackward);
 	tcase_add_test(tcase, test_dirmodel_regexmark);
 	tcase_add_test(tcase, test_dirmodel_regexunmark);
+	tcase_add_test(tcase, test_dirmodel_setfilter_null);
+	tcase_add_test(tcase, test_dirmodel_setfilter_filter);
+	tcase_add_test(tcase, test_dirmodel_setfilter_filteraddedfile);
 	suite_add_tcase(suite, tcase);
 
 	return suite;

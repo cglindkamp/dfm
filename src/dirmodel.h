@@ -5,11 +5,14 @@
 #include "listmodel.h"
 
 #include <dirent.h>
+#include <regex.h>
 
 struct dirmodel {
 	struct listmodel listmodel;
 	struct list *list;
 	DIR *dir;
+	regex_t filter;
+	bool filter_active;
 };
 
 const char *dirmodel_getfilename(struct dirmodel *model, size_t index);
@@ -20,6 +23,7 @@ bool dirmodel_isdir(struct dirmodel *model, size_t index);
 bool dirmodel_get_index(struct dirmodel *model, const char *filename, size_t *index);
 size_t dirmodel_regex_getnext(struct dirmodel *model, const char *regex, size_t start_index, int direction);
 void dirmodel_regex_setmark(struct dirmodel *model, const char *regex, bool mark);
+bool dirmodel_setfilter(struct dirmodel *model, const char *regex);
 bool dirmodel_change_directory(struct dirmodel *model, const char *path) __attribute__((warn_unused_result));
 void dirmodel_init(struct dirmodel *model);
 void dirmodel_destroy(struct dirmodel *model);

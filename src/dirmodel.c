@@ -7,7 +7,6 @@
 #include "util.h"
 
 #include <errno.h>
-#include <regex.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -281,6 +280,21 @@ void dirmodel_regex_setmark(struct dirmodel *model, const char *regex, bool mark
 	regfree(&cregex);
 }
 
+bool dirmodel_setfilter(struct dirmodel *model, const char *regex)
+{
+	if(model->filter_active)
+		regfree(&model->filter);
+
+	if(regex == NULL) {
+		model->filter_active = false;
+	} else {
+		int ret = regcomp(&model->filter, regex, REG_EXTENDED | REG_ICASE | REG_NOSUB);
+		model->filter_active = (ret == 0);
+	}
+
+	return model->filter_active;
+}
+
 void dirmodel_notify_file_deleted(struct dirmodel *model, const char *filename)
 {
 	struct list *list = model->list;
@@ -300,6 +314,9 @@ int dirmodel_notify_file_added_or_changed(struct dirmodel *model, const char *fi
 	struct list *list = model->list;
 	struct filedata *filedata;
 	size_t index;
+
+	if(model->filter_active && regexec(&model->filter, filename, 0, NULL, 0) != 0)
+		return 0;
 
 	int ret = filedata_new_from_file(&filedata, dirfd(model->dir), filename);
 	if(ret != 0)
@@ -353,7 +370,8 @@ static bool internal_init(struct dirmodel *model, const char *path)
 
 	while(entry) {
 		if(strcmp(entry->d_name, ".") != 0 &&
-		   strcmp(entry->d_name, "..") != 0) {
+		   strcmp(entry->d_name, "..") != 0 &&
+		   (model->filter_active ? regexec(&model->filter, entry->d_name, 0, NULL, 0) == 0 : true)) {
 			int ret = filedata_new_from_file(&filedata, dirfd(dir), entry->d_name);
 
 			if(ret == ENOMEM)
@@ -413,10 +431,13 @@ void dirmodel_init(struct dirmodel *model)
 	model->listmodel.render = dirmodel_render;
 	model->listmodel.setmark = dirmodel_setmark;
 	model->listmodel.ismarked = dirmodel_ismarked;
+	model->filter_active = false;
 }
 
 void dirmodel_destroy(struct dirmodel *model)
 {
 	internal_destroy(model);
 	listmodel_destroy(&model->listmodel);
+	if(model->filter_active)
+		regfree(&model->filter);
 }
