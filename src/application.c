@@ -399,6 +399,12 @@ static void command_search_reverse(struct application *app, const char *regex)
 	search(app, regex, -1);
 }
 
+static void command_filter(struct application *app, const char *regex)
+{
+	dirmodel_setfilter(&app->model, regex);
+	enter_directory(app, NULL);
+}
+
 struct command_map application_command_map[] = {
 	{ "navigate_up", command_navigate_up, false },
 	{ "navigate_down", command_navigate_down, false },
@@ -422,6 +428,7 @@ struct command_map application_command_map[] = {
 	{ "search", command_search, true },
 	{ "search_next", command_search_next, false },
 	{ "search_reverse", command_search_reverse, true },
+	{ "filter", command_filter, false },
 	{ NULL, NULL, false },
 };
 
