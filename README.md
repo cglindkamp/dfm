@@ -11,6 +11,8 @@ Features
   default scripts use xdg-open, cp, mv and rm to perform the requested actions.
 * Remembers the last selected file in every directory to quickly navigate to
   previously visited paths
+* Filtered view: Show only files/directories matching a regular expression,
+  i.e. certain file types. Can also be used to exclude dot-files.
 
 Installation
 ------------
@@ -49,8 +51,10 @@ scripts to ~/.config/dfm/handlers and edit them to your liking.
 | Right    | Enter the selected directory or open the selected/marked file(s)                     |
 | Home     | Go to the first file                                                                 |
 | End      | Go to the last file                                                                  |
-| Space    | Mark currently selected file                                                         |
+| Space    | Mark/unmark currently selected file                                                  |
 | *        | Invert mark status of every file                                                     |
+| +        | Mark all files matching the entered regular expression                               |
+| -        | Unmark all files matching the entered regular expression                             |
 | 1        | Go to home (~) directory                                                             |
 | 2        | Go to root (/) directory                                                             |
 | D        | Delete currently marked files, or when no file is marked the currently selected file |
@@ -60,5 +64,9 @@ scripts to ~/.config/dfm/handlers and edit them to your liking.
 | y        | Copy currently marked files or the currently selected file to clipboard              |
 | q        | Quit dfm                                                                             |
 | :        | Open the command line                                                                |
+| F6       | Rename currently selected file/directory                                             |
 | F7       | Create a new directory                                                               |
+| /        | Jump to the next file matching the entered regular expression                        |
+| ?        | Jump to the previous file matching the entered regular expression                    |
+| n        | Repeat the previous search                                                           |
 

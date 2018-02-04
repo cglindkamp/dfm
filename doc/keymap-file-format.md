@@ -30,14 +30,21 @@ The table below shows all supported commands:
 | navigate_right    | none                |
 | navigate_first    | none                |
 | navigate_last     | none                |
-| mark              | none                |
+| togglemark        | none                |
 | invert_marks      | none                |
+| mark              | filename regex      |
+| unmark            | filename regex      |
 | cd                | target directory    |
 | invoke_handler    | handler script name |
 | yank              | none                |
 | quit              | none                |
 | mkdir             | directory to create |
 | cmdline           | command             |
+| rename            | new filename        |
+| search            | filename regex      |
+| search_reverse    | filename regex      |
+| search_next       | none                |
+| filter            | filename regex      |
 
 The optional parameter starts with first non-whitespace character after the
 command and goes to the end of the line. So all further whitespace characters
