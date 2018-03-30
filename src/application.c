@@ -104,6 +104,13 @@ static bool enter_directory(struct application *app, const char *oldpathname)
 	return true;
 }
 
+static void background_process(void)
+{
+	int fd = open("/dev/null", O_RDWR);
+	dup2(fd, 0);
+	dup2(fd, 1);
+	dup2(fd, 2);
+}
 
 static void command_invoke_handler(struct application *app, const char *handler_name)
 {
@@ -155,13 +162,13 @@ static void command_invoke_handler(struct application *app, const char *handler_
 
 	if(foreground) {
 		endwin();
-		if(processmanager_spawn(&app->pm, path_tocstr(handler_path), args, path, foreground, &pid) == 0) {
+		if(processmanager_spawn(&app->pm, path_tocstr(handler_path), args, path, NULL, &pid) == 0) {
 			processmanager_waitpid(&app->pm, pid, &status);
 			doupdate();
 			goto success;
 		} else
 			doupdate();
-	} else if(processmanager_spawn(&app->pm, path_tocstr(handler_path), args, path, foreground, &pid) == 0)
+	} else if(processmanager_spawn(&app->pm, path_tocstr(handler_path), args, path, background_process, &pid) == 0)
 		goto success;
 
 err_dircreated:

@@ -22,7 +22,7 @@ void process_delete(struct process *process)
 	free(process);
 }
 
-int processmanager_spawn(struct processmanager *pm, const char *program, char * const argv[], const char *tmpdir, bool foreground, pid_t *pid)
+int processmanager_spawn(struct processmanager *pm, const char *program, char * const argv[], const char *tmpdir, pre_exec_callback cb, pid_t *pid)
 {
 	struct process *process = NULL;
 
@@ -59,12 +59,8 @@ int processmanager_spawn(struct processmanager *pm, const char *program, char * 
 		return 0;
 	}
 
-	if(!foreground) {
-		int fd = open("/dev/null", O_RDWR);
-		dup2(fd, 0);
-		dup2(fd, 1);
-		dup2(fd, 2);
-	}
+	if(cb)
+		cb();
 
 	execvp(program, argv);
 	exit(EXIT_FAILURE);

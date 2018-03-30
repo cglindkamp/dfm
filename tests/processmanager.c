@@ -35,7 +35,7 @@ START_TEST(test_processmanager_spawn)
 
 	processmanager_init(&pm);
 
-	int ret = processmanager_spawn(&pm, spawn_testtable[_i].executable_path, args, NULL, true, &pid);
+	int ret = processmanager_spawn(&pm, spawn_testtable[_i].executable_path, args, NULL, NULL, &pid);
 	ck_assert_int_eq(ret, 0);
 	ck_assert(processmanager_waitpid(&pm, pid, &status) == pid);
 	ck_assert(WIFEXITED(status));
@@ -61,7 +61,7 @@ START_TEST(test_processmanager_tmpdircleanup)
 
 	processmanager_init(&pm);
 
-	int ret = processmanager_spawn(&pm, "/bin/true", args, path, true, &pid);
+	int ret = processmanager_spawn(&pm, "/bin/true", args, path, NULL, &pid);
 	assert_oom_cleanup(ret != ENOMEM, processmanager_destroy(&pm), remove_directory_recursively(path));
 	ck_assert_int_eq(ret, 0);
 
