@@ -104,12 +104,24 @@ static bool enter_directory(struct application *app, const char *oldpathname)
 	return true;
 }
 
-static void background_process(void)
+static void unblock_signals(void)
+{
+	sigset_t sigset;
+
+	sigemptyset(&sigset);
+	sigaddset(&sigset, SIGWINCH);
+	sigaddset(&sigset, SIGCHLD);
+	sigprocmask(SIG_UNBLOCK, &sigset, NULL);
+}
+
+static void background_process_and_unblock_signals(void)
 {
 	int fd = open("/dev/null", O_RDWR);
 	dup2(fd, 0);
 	dup2(fd, 1);
 	dup2(fd, 2);
+
+	unblock_signals();
 }
 
 static void command_invoke_handler(struct application *app, const char *handler_name)
@@ -162,13 +174,13 @@ static void command_invoke_handler(struct application *app, const char *handler_
 
 	if(foreground) {
 		endwin();
-		if(processmanager_spawn(&app->pm, path_tocstr(handler_path), args, path, NULL, &pid) == 0) {
+		if(processmanager_spawn(&app->pm, path_tocstr(handler_path), args, path, unblock_signals, &pid) == 0) {
 			processmanager_waitpid(&app->pm, pid, &status);
 			doupdate();
 			goto success;
 		} else
 			doupdate();
-	} else if(processmanager_spawn(&app->pm, path_tocstr(handler_path), args, path, background_process, &pid) == 0)
+	} else if(processmanager_spawn(&app->pm, path_tocstr(handler_path), args, path, background_process_and_unblock_signals, &pid) == 0)
 		goto success;
 
 err_dircreated:
