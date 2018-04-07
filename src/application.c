@@ -451,6 +451,24 @@ struct command_map application_command_map[] = {
 	{ NULL, NULL, false },
 };
 
+static void insert_current_file_into_commandline(struct application *app)
+{
+	if(listmodel_count(&app->model.listmodel) == 0)
+		return;
+
+	size_t index = listview_getindex(&app->view);
+	const char *filename = dirmodel_getfilename(&app->model, index);
+	size_t length = mbstowcs(NULL, filename, 0);
+
+	if(length != (size_t)-1) {
+		wchar_t buffer[length + 1];
+		mbstowcs(buffer, filename, length);
+
+		for(size_t i = 0; i < length; i++)
+			commandline_handlekey(&app->commandline, buffer[i], false);
+	}
+}
+
 static void handle_stdin(struct application *app)
 {
 	wint_t key;
@@ -460,12 +478,6 @@ static void handle_stdin(struct application *app)
 	if(ret == ERR)
 		return;
 
-	if(ret != KEY_CODE_YES && key == 27) {
-		app->mode = MODE_NORMAL;
-		curs_set(0);
-		display_current_path(app);
-		return;
-	}
 	if(app->mode == MODE_COMMAND) {
 		if(ret != KEY_CODE_YES && key == L'\n') {
 			app->mode = MODE_NORMAL;
@@ -478,6 +490,16 @@ static void handle_stdin(struct application *app)
 			command_execute(command, app, application_command_map);
 			commandline_history_add(&app->commandline, wcsdup(wcommand));
 		} else if(ret != KEY_CODE_YES && key == L'\t') {
+		} else if(ret != KEY_CODE_YES && key == 27) {
+			ret = wget_wch(app->status, &key);
+			if(ret == ERR) {
+				app->mode = MODE_NORMAL;
+				curs_set(0);
+				display_current_path(app);
+				return;
+			}
+			if(ret != KEY_CODE_YES && key == L'\n')
+				insert_current_file_into_commandline(app);
 		} else
 			commandline_handlekey(&app->commandline, key, ret == KEY_CODE_YES ? true : false);
 
