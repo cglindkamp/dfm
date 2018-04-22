@@ -5,6 +5,7 @@
 #include "clipboard.h"
 #include "commandline.h"
 #include "dirmodel.h"
+#include "keymap.h"
 #include "listmodel.h"
 #include "listview.h"
 #include "path.h"
@@ -28,7 +29,7 @@ struct application {
 	struct commandline commandline;
 	struct path cwd;
 	struct clipboard clipboard;
-	struct keymap *keymap;
+	struct keymap keymap;
 	struct processmanager pm;
 	int signal_fd;
 	int inotify_fd;

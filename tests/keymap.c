@@ -47,33 +47,42 @@ static struct command_map command_map[] = {
 
 static struct {
 	const char *string;
-	struct keymap keymap;
+	struct keyspec keyspec;
+	int cmdnr;
+	const char *param;
 } singlelinetesttable[] = {
-	{ "a command1", { .keyspec = { .key = L'a', .iskeycode = false }, .command = "command1" } },
-	{ "a \t  command1", { .keyspec = { .key = L'a', .iskeycode = false }, .command = "command1" } },
-	{ "b command2 foo", { .keyspec = { .key = L'b', .iskeycode = false }, .command = "command2 foo" } },
-	{ "b command4 foo", { .keyspec = { .key = L'b', .iskeycode = false }, .command = "command4 foo" } },
-	{ "  b command2  foo bar", { .keyspec = { .key = L'b', .iskeycode = false }, .command = "command2  foo bar" } },
-	{ u8"ü command1", { .keyspec = { .key = L'ü', .iskeycode = false }, .command = "command1" } },
-	{ "space command2", { .keyspec = { .key = L' ', .iskeycode = false }, .command = "command2" } },
-	{ "up command2", { .keyspec = { .key = KEY_UP, .iskeycode = true }, .command = "command2" } },
+	{ "a command1", .keyspec = { .key = L'a', .iskeycode = false }, .cmdnr =1, .param = NULL },
+	{ "a \t  command1", .keyspec = { .key = L'a', .iskeycode = false }, .cmdnr = 1, .param = NULL },
+	{ "b command2 foo", .keyspec = { .key = L'b', .iskeycode = false }, .cmdnr = 2, .param = "foo" },
+	{ "b command4 foo", .keyspec = { .key = L'b', .iskeycode = false }, .cmdnr = 4, .param = "foo" },
+	{ "  b command2  foo bar", .keyspec = { .key = L'b', .iskeycode = false }, .cmdnr = 2, .param ="foo bar" },
+	{ u8"ü command1", .keyspec = { .key = L'ü', .iskeycode = false }, .cmdnr = 1, .param = NULL },
+	{ "space command2", .keyspec = { .key = L' ', .iskeycode = false }, .cmdnr = 2, .param = NULL },
+	{ "up command2", .keyspec = { .key = KEY_UP, .iskeycode = true }, .cmdnr = 2, .param = NULL },
 };
 
 START_TEST(test_keymap_singleline)
 {
-	struct keymap *keymap;
+	struct keymap keymap;
 	char keymapstring[strlen(singlelinetesttable[_i].string) + 1];
 	strcpy(keymapstring, singlelinetesttable[_i].string);
 
-	int ret = keymap_newfromstring(&keymap, keymapstring, command_map);
+	keymap_init(&keymap);
+	int ret = keymap_setfromstring(&keymap, keymapstring, command_map);
 
 	assert_oom(ret != ENOMEM);
-	ck_assert(keymap != NULL);
-	ck_assert(keymap[0].keyspec.iskeycode == singlelinetesttable[_i].keymap.keyspec.iskeycode);
-	ck_assert(keymap[0].keyspec.key == singlelinetesttable[_i].keymap.keyspec.key);
-	ck_assert_str_eq(keymap[0].command, singlelinetesttable[_i].keymap.command);
+	app = NULL;
+	param[0] = '\0';
+	command = 0;
+	assert_oom(keymap_handlekey(&keymap, (struct application *)0xfe, singlelinetesttable[_i].keyspec.key, singlelinetesttable[_i].keyspec.iskeycode, command_map) != ENOMEM);
+	ck_assert_ptr_eq(app, (struct application *)0xfe);
+	ck_assert_int_eq(command, singlelinetesttable[_i].cmdnr);
+	if(singlelinetesttable[_i].param == NULL)
+		ck_assert_str_eq(param, "");
+	else
+		ck_assert_str_eq(param, singlelinetesttable[_i].param);
 
-	keymap_delete(keymap);
+	keymap_destroy(&keymap);
 }
 END_TEST
 
@@ -87,11 +96,12 @@ const char *singlelinetesttable_invalid[] = {
 
 START_TEST(test_keymap_singleline_invalid)
 {
-	struct keymap *keymap;
+	struct keymap keymap;
 	char keymapstring[strlen(singlelinetesttable_invalid[_i]) + 1];
 	strcpy(keymapstring, singlelinetesttable_invalid[_i]);
 
-	int ret = keymap_newfromstring(&keymap, keymapstring, command_map);
+	keymap_init(&keymap);
+	int ret = keymap_setfromstring(&keymap, keymapstring, command_map);
 
 	assert_oom(ret != ENOMEM);
 	ck_assert_int_eq(ret, EINVAL);
@@ -100,40 +110,18 @@ END_TEST
 
 START_TEST(test_keymap_multiline)
 {
-	struct keymap *keymap;
-	char keymapstring[] = "a command1\n \nup command2 bar";
-
-	int ret = keymap_newfromstring(&keymap, keymapstring, command_map);
-
-	assert_oom(ret != ENOMEM);
-	ck_assert(keymap != NULL);
-
-	ck_assert(keymap[0].keyspec.iskeycode == false);
-	ck_assert(keymap[0].keyspec.key == L'a');
-	ck_assert_str_eq(keymap[0].command, "command1");
-
-	ck_assert(keymap[1].keyspec.iskeycode == true);
-	ck_assert(keymap[1].keyspec.key == KEY_UP);
-	ck_assert_str_eq(keymap[1].command, "command2 bar");
-
-	keymap_delete(keymap);
-}
-END_TEST
-
-START_TEST(test_keymap_handlekeys)
-{
-	struct keymap *keymap;
+	struct keymap keymap;
 	char keymapstring[] = "a command1\nup command2 bar";
 
-	int ret = keymap_newfromstring(&keymap, keymapstring, command_map);
+	keymap_init(&keymap);
+	int ret = keymap_setfromstring(&keymap, keymapstring, command_map);
 
 	assert_oom(ret != ENOMEM);
-	ck_assert(keymap != NULL);
 
 	app = NULL;
 	param[0] = '\0';
 	command = 0;
-	assert_oom(keymap_handlekey(keymap, (struct application *)0xfe, L'a', false, command_map) != ENOMEM);
+	assert_oom(keymap_handlekey(&keymap, (struct application *)0xfe, L'a', false, command_map) != ENOMEM);
 	ck_assert_ptr_eq(app, (struct application *)0xfe);
 	ck_assert_int_eq(command, 1);
 	ck_assert_str_eq(param, "");
@@ -141,45 +129,52 @@ START_TEST(test_keymap_handlekeys)
 	app = NULL;
 	param[0] = '\0';
 	command = 0;
-	assert_oom(keymap_handlekey(keymap, (struct application *)0xff, KEY_UP, true, command_map) != ENOMEM);
+	assert_oom(keymap_handlekey(&keymap, (struct application *)0xff, KEY_UP, true, command_map) != ENOMEM);
 	ck_assert_ptr_eq(app, (struct application *)0xff);
 	ck_assert_int_eq(command, 2);
 	ck_assert_str_eq(param, "bar");
 
-	keymap_delete(keymap);
+	keymap_destroy(&keymap);
 }
 END_TEST
 
 START_TEST(test_keymap_deletenull)
 {
-	keymap_delete(NULL);
+	keymap_destroy(NULL);
 }
 END_TEST
 
 START_TEST(test_keymap_nonexistantfile)
 {
-	struct keymap *keymap;
+	struct keymap keymap;
 
-	int ret = keymap_newfromfile(&keymap, "examples/nonexistantfile", command_map);
+	keymap_init(&keymap);
+	int ret = keymap_setfromfile(&keymap, "examples/nonexistantfile", command_map);
 
 	assert_oom(ret != ENOMEM);
 	ck_assert_int_eq(ret, ENOENT);
+
+	keymap_destroy(&keymap);
 }
 END_TEST
 
 START_TEST(test_keymap_inaccessablefile)
 {
-	struct keymap *keymap;
+	struct keymap keymap;
 
 	char path[] = "/tmp/keymap.XXXXXX";
 	ck_assert_int_ne(mkstemp(path), -1);
 	chmod(path, 0);
-	int ret = keymap_newfromfile(&keymap, path, command_map);
+
+	keymap_init(&keymap);
+	int ret = keymap_setfromfile(&keymap, path, command_map);
 
 	assert_oom_cleanup(ret != ENOMEM, remove(path));
 	ck_assert_int_eq(ret, EACCES);
 
 	remove(path);
+
+	keymap_destroy(&keymap);
 }
 END_TEST
 
@@ -187,15 +182,15 @@ extern struct command_map application_command_map[];
 
 START_TEST(test_keymap_examplefile)
 {
-	struct keymap *keymap;
+	struct keymap keymap;
 
-	int ret = keymap_newfromfile(&keymap, "examples/keymap", application_command_map);
+	keymap_init(&keymap);
+	int ret = keymap_setfromfile(&keymap, "examples/keymap", application_command_map);
 
 	assert_oom(ret != ENOMEM);
 	ck_assert_int_eq(ret, 0);
-	ck_assert_ptr_ne(keymap, NULL);
 
-	keymap_delete(keymap);
+	keymap_destroy(&keymap);
 }
 END_TEST
 
@@ -211,7 +206,6 @@ Suite *keymap_suite(void)
 	tcase_add_loop_test(tcase, test_keymap_singleline_invalid, 0, sizeof(singlelinetesttable_invalid)/sizeof(singlelinetesttable_invalid[0]));
 	tcase_add_test(tcase, test_keymap_multiline);
 	tcase_add_test(tcase, test_keymap_deletenull);
-	tcase_add_test(tcase, test_keymap_handlekeys);
 	tcase_add_test(tcase, test_keymap_nonexistantfile);
 	tcase_add_test(tcase, test_keymap_inaccessablefile);
 	tcase_add_test(tcase, test_keymap_examplefile);

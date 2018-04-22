@@ -13,9 +13,9 @@
 
 int keymap_handlekey(struct keymap *keymap, struct application *application, wint_t key, bool iskeycode, struct command_map *commandmap)
 {
-	struct keymap *curitem;
+	struct keymap_entry *curitem;
 
-	for(curitem = keymap; curitem->command != NULL; curitem++) {
+	for(curitem = keymap->entries; curitem->command != NULL; curitem++) {
 		if(curitem->keyspec.key == key && curitem->keyspec.iskeycode == iskeycode) {
 			char buffer[strlen(curitem->command) + 1];
 			strcpy(buffer, curitem->command);
@@ -71,7 +71,7 @@ static void keymap_string_to_keyspec(struct keyspec *keyspec, const char *keystr
 	keyspec->key = WEOF;
 }
 
-static int keymap_parse_line(struct keymap *keymap, char *line, struct command_map *commandmap)
+static int keymap_parse_line(struct keymap_entry *entry, char *line, struct command_map *commandmap)
 {
 	char *token = line + strspn(line, " \t");
 	size_t length = strcspn(token, " \t");
@@ -79,8 +79,8 @@ static int keymap_parse_line(struct keymap *keymap, char *line, struct command_m
 		if(token[length] == '\0')
 			return EINVAL;
 		token[length] = '\0';
-		keymap_string_to_keyspec(&keymap->keyspec, token);
-		if(keymap->keyspec.key == WEOF)
+		keymap_string_to_keyspec(&entry->keyspec, token);
+		if(entry->keyspec.key == WEOF)
 			return EINVAL;
 	} else
 		return 0;
@@ -90,8 +90,8 @@ static int keymap_parse_line(struct keymap *keymap, char *line, struct command_m
 
 	int ret = command_verify(command, commandmap);
 	if(ret == 0) {
-		keymap->command = strdup(command);
-		if(keymap->command == NULL)
+		entry->command = strdup(command);
+		if(entry->command == NULL)
 			return ENOMEM;
 	} else
 		return ret;
@@ -99,7 +99,7 @@ static int keymap_parse_line(struct keymap *keymap, char *line, struct command_m
 	return 0;
 }
 
-int keymap_newfromstring(struct keymap **keymap, char *keymapstring, struct command_map *commandmap)
+int keymap_setfromstring(struct keymap *keymap, char *keymapstring, struct command_map *commandmap)
 {
 	size_t parsed_lines = 0;
 	char *saveptr;
@@ -108,31 +108,31 @@ int keymap_newfromstring(struct keymap **keymap, char *keymapstring, struct comm
 	if(token == NULL)
 		return EINVAL;
 
-	*keymap = malloc(sizeof(struct keymap));
-	if(*keymap == NULL)
+	keymap->entries = malloc(sizeof(keymap->entries[0]));
+	if(keymap->entries == NULL)
 		return ENOMEM;
 
 	do {
-		int ret = keymap_parse_line(&((*keymap)[parsed_lines]), token, commandmap);
+		int ret = keymap_parse_line(&(keymap->entries[parsed_lines]), token, commandmap);
 		if(ret != 0) {
-			(*keymap)[parsed_lines].command = NULL;
-			keymap_delete(*keymap);
+			keymap->entries[parsed_lines].command = NULL;
+			keymap_destroy(keymap);
 			return ret;
 		}
 
-		if((*keymap)[parsed_lines].command != NULL) {
+		if(keymap->entries[parsed_lines].command != NULL) {
 			parsed_lines++;
 
-			struct keymap *newkeymap = realloc(*keymap, sizeof(struct keymap) * (parsed_lines + 1));
-			if(newkeymap == NULL) {
-				free((char*)(*keymap)[parsed_lines - 1].command);
-				(*keymap)[parsed_lines - 1].command = NULL;
-				keymap_delete(*keymap);
+			struct keymap_entry *newentries = realloc(keymap->entries, sizeof(keymap->entries[0]) * (parsed_lines + 1));
+			if(newentries == NULL) {
+				free((char*)keymap->entries[parsed_lines - 1].command);
+				keymap->entries[parsed_lines - 1].command = NULL;
+				keymap_destroy(keymap);
 				return ENOMEM;
 			}
-			*keymap = newkeymap;
+			keymap->entries = newentries;
 
-			(*keymap)[parsed_lines].command = NULL;
+			keymap->entries[parsed_lines].command = NULL;
 		}
 
 	} while((token = strtok_r(NULL, "\n", &saveptr)) != NULL);
@@ -140,7 +140,7 @@ int keymap_newfromstring(struct keymap **keymap, char *keymapstring, struct comm
 	return 0;
 }
 
-int keymap_newfromfile(struct keymap **keymap, const char *filename, struct command_map *commandmap)
+int keymap_setfromfile(struct keymap *keymap, const char *filename, struct command_map *commandmap)
 {
 	struct stat st;
 	int ret = stat(filename, &st);
@@ -164,7 +164,7 @@ int keymap_newfromfile(struct keymap **keymap, const char *filename, struct comm
 
 	if(ret > 0) {
 		contents[ret] = '\0';
-		ret = keymap_newfromstring(keymap, contents, commandmap);
+		ret = keymap_setfromstring(keymap, contents, commandmap);
 	} else
 		ret = errno;
 
@@ -172,13 +172,21 @@ int keymap_newfromfile(struct keymap **keymap, const char *filename, struct comm
 	return ret;
 }
 
-void keymap_delete(struct keymap *keymap)
+void keymap_init(struct keymap *keymap)
+{
+	keymap->entries = NULL;
+}
+
+void keymap_destroy(struct keymap *keymap)
 {
 	if(keymap == NULL)
 		return;
 
-	for(struct keymap *curitem = keymap; curitem->command != NULL; curitem++)
+	if(keymap->entries == NULL)
+		return;
+
+	for(struct keymap_entry *curitem = keymap->entries; curitem->command != NULL; curitem++)
 		free((char*)curitem->command);
 
-	free(keymap);
+	free(keymap->entries);
 }

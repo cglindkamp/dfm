@@ -3,7 +3,6 @@
 
 #include "command.h"
 #include "dict.h"
-#include "keymap.h"
 #include "list.h"
 #include "util.h"
 
@@ -504,7 +503,7 @@ static void handle_stdin(struct application *app)
 			commandline_handlekey(&app->commandline, key, ret == KEY_CODE_YES ? true : false);
 
 	} else
-		keymap_handlekey(app->keymap, app, key, ret == KEY_CODE_YES ? true : false, application_command_map);
+		keymap_handlekey(&app->keymap, app, key, ret == KEY_CODE_YES ? true : false, application_command_map);
 }
 
 static void handle_signal(struct application *app)
@@ -603,13 +602,10 @@ static int create_signalfd()
 static bool load_keymap(struct application *app)
 {
 	struct path *keymap_path = determine_usable_config_file(PROJECT, NULL, "keymap", R_OK);
-	if(keymap_path == NULL) {
-		app->keymap = NULL;
+	if(keymap_path == NULL)
 		return false;
-	}
 
-	if(keymap_newfromfile(&app->keymap, path_tocstr(keymap_path), application_command_map) != 0) {
-		app->keymap = NULL;
+	if(keymap_setfromfile(&app->keymap, path_tocstr(keymap_path), application_command_map) != 0) {
 		path_delete(keymap_path);
 		return false;
 	}
@@ -639,6 +635,7 @@ bool application_init(struct application *app)
 	app->inotify_watch = -1;
 
 	dirmodel_init(&app->model);
+	keymap_init(&app->keymap);
 
 	app->stored_positions = dict_new();
 	if(app->stored_positions == NULL)
@@ -682,7 +679,6 @@ bool application_init(struct application *app)
 void application_destroy(struct application *app)
 {
 	free((void*)app->lastsearch_regex);
-	keymap_delete(app->keymap);
 	listview_destroy(&app->view);
 	path_destroy(&app->cwd);
 	commandline_destroy(&app->commandline);
@@ -690,6 +686,7 @@ void application_destroy(struct application *app)
 		delwin(app->status);
 	dict_delete(app->stored_positions, true);
 	dirmodel_destroy(&app->model);
+	keymap_destroy(&app->keymap);
 	clipboard_destroy(&app->clipboard);
 	processmanager_destroy(&app->pm);
 }
