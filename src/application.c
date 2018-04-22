@@ -503,7 +503,7 @@ static void handle_stdin(struct application *app)
 			commandline_handlekey(&app->commandline, key, ret == KEY_CODE_YES ? true : false);
 
 	} else
-		keymap_handlekey(&app->keymap, app, key, ret == KEY_CODE_YES ? true : false, application_command_map);
+		keymap_handlekey(&app->keymap, app, key, ret == KEY_CODE_YES ? true : false);
 }
 
 static void handle_signal(struct application *app)
@@ -605,7 +605,7 @@ static bool load_keymap(struct application *app)
 	if(keymap_path == NULL)
 		return false;
 
-	if(keymap_setfromfile(&app->keymap, path_tocstr(keymap_path), application_command_map) != 0) {
+	if(keymap_setfromfile(&app->keymap, path_tocstr(keymap_path)) != 0) {
 		path_delete(keymap_path);
 		return false;
 	}
@@ -635,7 +635,7 @@ bool application_init(struct application *app)
 	app->inotify_watch = -1;
 
 	dirmodel_init(&app->model);
-	keymap_init(&app->keymap);
+	keymap_init(&app->keymap, application_command_map);
 
 	app->stored_positions = dict_new();
 	if(app->stored_positions == NULL)

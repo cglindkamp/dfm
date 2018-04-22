@@ -19,13 +19,14 @@ struct keymap_entry {
 };
 
 struct keymap {
+	struct command_map *commandmap;
 	struct keymap_entry *entries;
 };
 
-int keymap_handlekey(struct keymap *keymap, struct application *application, wint_t key, bool iskeycode, struct command_map *commandmap);
-int keymap_setfromstring(struct keymap *keymap, char *keymapstring, struct command_map *commandmap);
-int keymap_setfromfile(struct keymap *keymap, const char *filename, struct command_map *commandmap);
-void keymap_init(struct keymap *keymap);
+int keymap_handlekey(struct keymap *keymap, struct application *application, wint_t key, bool iskeycode);
+int keymap_setfromstring(struct keymap *keymap, char *keymapstring);
+int keymap_setfromfile(struct keymap *keymap, const char *filename);
+void keymap_init(struct keymap *keymap, struct command_map *commandmap);
 void keymap_destroy(struct keymap *keymap);
 
 #endif

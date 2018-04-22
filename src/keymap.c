@@ -11,7 +11,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-int keymap_handlekey(struct keymap *keymap, struct application *application, wint_t key, bool iskeycode, struct command_map *commandmap)
+int keymap_handlekey(struct keymap *keymap, struct application *application, wint_t key, bool iskeycode)
 {
 	struct keymap_entry *curitem;
 
@@ -20,7 +20,7 @@ int keymap_handlekey(struct keymap *keymap, struct application *application, win
 			char buffer[strlen(curitem->command) + 1];
 			strcpy(buffer, curitem->command);
 
-			return command_execute(buffer, application, commandmap);
+			return command_execute(buffer, application, keymap->commandmap);
 		}
 	}
 	return 0;
@@ -99,7 +99,7 @@ static int keymap_parse_line(struct keymap_entry *entry, char *line, struct comm
 	return 0;
 }
 
-int keymap_setfromstring(struct keymap *keymap, char *keymapstring, struct command_map *commandmap)
+int keymap_setfromstring(struct keymap *keymap, char *keymapstring)
 {
 	size_t parsed_lines = 0;
 	char *saveptr;
@@ -113,7 +113,7 @@ int keymap_setfromstring(struct keymap *keymap, char *keymapstring, struct comma
 		return ENOMEM;
 
 	do {
-		int ret = keymap_parse_line(&(keymap->entries[parsed_lines]), token, commandmap);
+		int ret = keymap_parse_line(&(keymap->entries[parsed_lines]), token, keymap->commandmap);
 		if(ret != 0) {
 			keymap->entries[parsed_lines].command = NULL;
 			keymap_destroy(keymap);
@@ -140,7 +140,7 @@ int keymap_setfromstring(struct keymap *keymap, char *keymapstring, struct comma
 	return 0;
 }
 
-int keymap_setfromfile(struct keymap *keymap, const char *filename, struct command_map *commandmap)
+int keymap_setfromfile(struct keymap *keymap, const char *filename)
 {
 	struct stat st;
 	int ret = stat(filename, &st);
@@ -164,7 +164,7 @@ int keymap_setfromfile(struct keymap *keymap, const char *filename, struct comma
 
 	if(ret > 0) {
 		contents[ret] = '\0';
-		ret = keymap_setfromstring(keymap, contents, commandmap);
+		ret = keymap_setfromstring(keymap, contents);
 	} else
 		ret = errno;
 
@@ -172,9 +172,10 @@ int keymap_setfromfile(struct keymap *keymap, const char *filename, struct comma
 	return ret;
 }
 
-void keymap_init(struct keymap *keymap)
+void keymap_init(struct keymap *keymap, struct command_map *commandmap)
 {
 	keymap->entries = NULL;
+	keymap->commandmap = commandmap;
 }
 
 void keymap_destroy(struct keymap *keymap)
