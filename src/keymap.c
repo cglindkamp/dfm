@@ -1,6 +1,6 @@
 #include "keymap.h"
 
-#include "command.h"
+#include "commandexecutor.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -11,7 +11,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-int keymap_handlekey(struct keymap *keymap, struct application *application, wint_t key, bool iskeycode)
+int keymap_handlekey(struct keymap *keymap, wint_t key, bool iskeycode)
 {
 	struct keymap_entry *curitem;
 
@@ -20,7 +20,7 @@ int keymap_handlekey(struct keymap *keymap, struct application *application, win
 			char buffer[strlen(curitem->command) + 1];
 			strcpy(buffer, curitem->command);
 
-			return command_execute(buffer, application, keymap->commandmap);
+			return commandexecutor_execute(keymap->commandexecutor, buffer);
 		}
 	}
 	return 0;
@@ -71,7 +71,7 @@ static void keymap_string_to_keyspec(struct keyspec *keyspec, const char *keystr
 	keyspec->key = WEOF;
 }
 
-static int keymap_parse_line(struct keymap_entry *entry, char *line, struct command_map *commandmap)
+static int keymap_parse_line(struct keymap_entry *entry, char *line, struct commandexecutor *commandexecutor)
 {
 	char *token = line + strspn(line, " \t");
 	size_t length = strcspn(token, " \t");
@@ -88,7 +88,7 @@ static int keymap_parse_line(struct keymap_entry *entry, char *line, struct comm
 	char *command = token + length + 1;
 	command = command + strspn(command, " \t");
 
-	int ret = command_verify(command, commandmap);
+	int ret = commandexecutor_verify(commandexecutor, command);
 	if(ret == 0) {
 		entry->command = strdup(command);
 		if(entry->command == NULL)
@@ -113,7 +113,7 @@ int keymap_setfromstring(struct keymap *keymap, char *keymapstring)
 		return ENOMEM;
 
 	do {
-		int ret = keymap_parse_line(&(keymap->entries[parsed_lines]), token, keymap->commandmap);
+		int ret = keymap_parse_line(&(keymap->entries[parsed_lines]), token, keymap->commandexecutor);
 		if(ret != 0) {
 			keymap->entries[parsed_lines].command = NULL;
 			keymap_destroy(keymap);
@@ -172,10 +172,10 @@ int keymap_setfromfile(struct keymap *keymap, const char *filename)
 	return ret;
 }
 
-void keymap_init(struct keymap *keymap, struct command_map *commandmap)
+void keymap_init(struct keymap *keymap, struct commandexecutor *commandexecutor)
 {
 	keymap->entries = NULL;
-	keymap->commandmap = commandmap;
+	keymap->commandexecutor = commandexecutor;
 }
 
 void keymap_destroy(struct keymap *keymap)

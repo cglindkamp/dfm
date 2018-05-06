@@ -3,6 +3,7 @@
 #define APPLICATION_H
 
 #include "clipboard.h"
+#include "commandexecutor.h"
 #include "commandline.h"
 #include "dirmodel.h"
 #include "keymap.h"
@@ -30,6 +31,7 @@ struct application {
 	struct path cwd;
 	struct clipboard clipboard;
 	struct keymap keymap;
+	struct commandexecutor commandexecutor;
 	struct processmanager pm;
 	int signal_fd;
 	int inotify_fd;

@@ -6,33 +6,33 @@
 #include <sys/stat.h>
 
 #include "../src/application.h"
-#include "../src/command.h"
+#include "../src/commandexecutor.h"
 #include "../src/keymap.h"
 #include "tests.h"
 
-static struct application *app;
+static struct commandexecutor *cmdex;
 static char param[10];
 static int command;
 
-static void command1(struct application *a, const char *p)
+static void command1(struct commandexecutor *c, const char *p)
 {
-	app = a;
+	cmdex = c;
 	command = 1;
 	if(p)
 		strcpy(param, p);
 }
 
-static void command2(struct application *a, const char *p)
+static void command2(struct commandexecutor *c, const char *p)
 {
-	app = a;
+	cmdex = c;
 	command = 2;
 	if(p)
 		strcpy(param, p);
 }
 
-static void command4(struct application *a, const char *p)
+static void command4(struct commandexecutor *c, const char *p)
 {
-	app = a;
+	cmdex = c;
 	command = 4;
 	if(p)
 		strcpy(param, p);
@@ -63,19 +63,21 @@ static struct {
 
 START_TEST(test_keymap_singleline)
 {
+	struct commandexecutor commandexecutor;
 	struct keymap keymap;
 	char keymapstring[strlen(singlelinetesttable[_i].string) + 1];
 	strcpy(keymapstring, singlelinetesttable[_i].string);
 
-	keymap_init(&keymap, command_map);
+	commandexecutor_init(&commandexecutor, command_map);
+	keymap_init(&keymap, &commandexecutor);
 	int ret = keymap_setfromstring(&keymap, keymapstring);
 
 	assert_oom(ret != ENOMEM);
-	app = NULL;
+	cmdex = NULL;
 	param[0] = '\0';
 	command = 0;
-	assert_oom(keymap_handlekey(&keymap, (struct application *)0xfe, singlelinetesttable[_i].keyspec.key, singlelinetesttable[_i].keyspec.iskeycode) != ENOMEM);
-	ck_assert_ptr_eq(app, (struct application *)0xfe);
+	assert_oom(keymap_handlekey(&keymap, singlelinetesttable[_i].keyspec.key, singlelinetesttable[_i].keyspec.iskeycode) != ENOMEM);
+	ck_assert_ptr_eq(cmdex, &commandexecutor);
 	ck_assert_int_eq(command, singlelinetesttable[_i].cmdnr);
 	if(singlelinetesttable[_i].param == NULL)
 		ck_assert_str_eq(param, "");
@@ -96,11 +98,13 @@ const char *singlelinetesttable_invalid[] = {
 
 START_TEST(test_keymap_singleline_invalid)
 {
+	struct commandexecutor commandexecutor;
 	struct keymap keymap;
 	char keymapstring[strlen(singlelinetesttable_invalid[_i]) + 1];
 	strcpy(keymapstring, singlelinetesttable_invalid[_i]);
 
-	keymap_init(&keymap, command_map);
+	commandexecutor_init(&commandexecutor, command_map);
+	keymap_init(&keymap, &commandexecutor);
 	int ret = keymap_setfromstring(&keymap, keymapstring);
 
 	assert_oom(ret != ENOMEM);
@@ -110,27 +114,29 @@ END_TEST
 
 START_TEST(test_keymap_multiline)
 {
+	struct commandexecutor commandexecutor;
 	struct keymap keymap;
 	char keymapstring[] = "a command1\nup command2 bar";
 
-	keymap_init(&keymap, command_map);
+	commandexecutor_init(&commandexecutor, command_map);
+	keymap_init(&keymap, &commandexecutor);
 	int ret = keymap_setfromstring(&keymap, keymapstring);
 
 	assert_oom(ret != ENOMEM);
 
-	app = NULL;
+	cmdex = NULL;
 	param[0] = '\0';
 	command = 0;
-	assert_oom(keymap_handlekey(&keymap, (struct application *)0xfe, L'a', false) != ENOMEM);
-	ck_assert_ptr_eq(app, (struct application *)0xfe);
+	assert_oom(keymap_handlekey(&keymap, L'a', false) != ENOMEM);
+	ck_assert_ptr_eq(cmdex, &commandexecutor);
 	ck_assert_int_eq(command, 1);
 	ck_assert_str_eq(param, "");
 
-	app = NULL;
+	cmdex = NULL;
 	param[0] = '\0';
 	command = 0;
-	assert_oom(keymap_handlekey(&keymap, (struct application *)0xff, KEY_UP, true) != ENOMEM);
-	ck_assert_ptr_eq(app, (struct application *)0xff);
+	assert_oom(keymap_handlekey(&keymap, KEY_UP, true) != ENOMEM);
+	ck_assert_ptr_eq(cmdex, &commandexecutor);
 	ck_assert_int_eq(command, 2);
 	ck_assert_str_eq(param, "bar");
 
@@ -146,9 +152,11 @@ END_TEST
 
 START_TEST(test_keymap_nonexistantfile)
 {
+	struct commandexecutor commandexecutor;
 	struct keymap keymap;
 
-	keymap_init(&keymap, command_map);
+	commandexecutor_init(&commandexecutor, command_map);
+	keymap_init(&keymap, &commandexecutor);
 	int ret = keymap_setfromfile(&keymap, "examples/nonexistantfile");
 
 	assert_oom(ret != ENOMEM);
@@ -160,13 +168,15 @@ END_TEST
 
 START_TEST(test_keymap_inaccessablefile)
 {
+	struct commandexecutor commandexecutor;
 	struct keymap keymap;
 
 	char path[] = "/tmp/keymap.XXXXXX";
 	ck_assert_int_ne(mkstemp(path), -1);
 	chmod(path, 0);
 
-	keymap_init(&keymap, command_map);
+	commandexecutor_init(&commandexecutor, command_map);
+	keymap_init(&keymap, &commandexecutor);
 	int ret = keymap_setfromfile(&keymap, path);
 
 	assert_oom_cleanup(ret != ENOMEM, remove(path));
@@ -182,9 +192,11 @@ extern struct command_map application_command_map[];
 
 START_TEST(test_keymap_examplefile)
 {
+	struct commandexecutor commandexecutor;
 	struct keymap keymap;
 
-	keymap_init(&keymap, application_command_map);
+	commandexecutor_init(&commandexecutor, application_command_map);
+	keymap_init(&keymap, &commandexecutor);
 	int ret = keymap_setfromfile(&keymap, "examples/keymap");
 
 	assert_oom(ret != ENOMEM);

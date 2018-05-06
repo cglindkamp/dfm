@@ -1,5 +1,5 @@
 /* See LICENSE file for copyright and license details. */
-#include "command.h"
+#include "commandexecutor.h"
 
 #include <errno.h>
 #include <stddef.h>
@@ -50,25 +50,30 @@ static int command_parse(char *command, command_ptr *commandptr, char **param, s
 	return 0;
 }
 
-int command_verify(const char *command, struct command_map *commandmap) {
+int commandexecutor_verify(struct commandexecutor *commandexecutor, const char *command) {
 	command_ptr commandptr;
 	char *param;
 
 	char buffer[strlen(command) + 1];
 	strcpy(buffer, command);
 
-	return command_parse(buffer, &commandptr, &param, commandmap);
+	return command_parse(buffer, &commandptr, &param, commandexecutor->commandmap);
 }
 
-int command_execute(char *command, struct application *application, struct command_map *commandmap) {
+int commandexecutor_execute(struct commandexecutor *commandexecutor, char *command) {
 	command_ptr commandptr;
 	char *param;
 
-	int ret = command_parse(command, &commandptr, &param, commandmap);
+	int ret = command_parse(command, &commandptr, &param, commandexecutor->commandmap);
 	if(ret == 0)
-		commandptr(application, param);
+		commandptr(commandexecutor, param);
 	else
 		return ret;
 	return 0;
+}
+
+void commandexecutor_init(struct commandexecutor *commandexecutor, struct command_map *commandmap)
+{
+	commandexecutor->commandmap = commandmap;
 }
 

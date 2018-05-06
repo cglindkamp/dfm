@@ -38,7 +38,7 @@ HANDLERS = \
 OBJECTS = \
 	src/application.o \
 	src/clipboard.o \
-	src/command.o \
+	src/commandexecutor.o \
 	src/commandline.o \
 	src/dict.o \
 	src/dirmodel.o \

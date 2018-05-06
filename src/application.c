@@ -1,7 +1,7 @@
 /* See LICENSE file for copyright and license details. */
 #include "application.h"
 
-#include "command.h"
+#include "commandexecutor.h"
 #include "dict.h"
 #include "list.h"
 #include "util.h"
@@ -123,8 +123,9 @@ static void background_process_and_unblock_signals(void)
 	unblock_signals();
 }
 
-static void command_invoke_handler(struct application *app, const char *handler_name)
+static void command_invoke_handler(struct commandexecutor *commandexecutor, const char *handler_name)
 {
+	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	struct path *handler_path = determine_usable_config_file(PROJECT, "handlers", handler_name, X_OK);
 	if(handler_path == NULL)
 		return;
@@ -190,32 +191,37 @@ err_dir:
 	path_delete(handler_path);
 }
 
-static void command_navigate_up(struct application *app, const char *unused)
+static void command_navigate_up(struct commandexecutor *commandexecutor, const char *unused)
 {
+	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	(void)unused;
 	listview_up(&app->view);
 }
 
-static void command_navigate_down(struct application *app, const char *unused)
+static void command_navigate_down(struct commandexecutor *commandexecutor, const char *unused)
 {
+	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	(void)unused;
 	listview_down(&app->view);
 }
 
-static void command_navigate_pageup(struct application *app, const char *unused)
+static void command_navigate_pageup(struct commandexecutor *commandexecutor, const char *unused)
 {
+	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	(void)unused;
 	listview_pageup(&app->view);
 }
 
-static void command_navigate_pagedown(struct application *app, const char *unused)
+static void command_navigate_pagedown(struct commandexecutor *commandexecutor, const char *unused)
 {
+	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	(void)unused;
 	listview_pagedown(&app->view);
 }
 
-static void command_navigate_left(struct application *app, const char *unused)
+static void command_navigate_left(struct commandexecutor *commandexecutor, const char *unused)
 {
+	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	(void)unused;
 	const char *oldpathname = NULL;
 
@@ -225,8 +231,9 @@ static void command_navigate_left(struct application *app, const char *unused)
 		enter_directory(app, oldpathname);
 }
 
-static void command_navigate_right(struct application *app, const char *unused)
+static void command_navigate_right(struct commandexecutor *commandexecutor, const char *unused)
 {
+	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	(void)unused;
 
 	if(listmodel_count(&app->model.listmodel) == 0)
@@ -241,18 +248,20 @@ static void command_navigate_right(struct application *app, const char *unused)
 			return;
 		enter_directory(app, NULL);
 	} else {
-		command_invoke_handler(app, "open");
+		command_invoke_handler(commandexecutor, "open");
 	}
 }
 
-static void command_navigate_first(struct application *app, const char *unused)
+static void command_navigate_first(struct commandexecutor *commandexecutor, const char *unused)
 {
+	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	(void)unused;
 	listview_setindex(&app->view, 0);
 }
 
-static void command_navigate_last(struct application *app, const char *unused)
+static void command_navigate_last(struct commandexecutor *commandexecutor, const char *unused)
 {
+	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	(void)unused;
 	size_t count = listmodel_count(&app->model.listmodel);
 
@@ -260,16 +269,18 @@ static void command_navigate_last(struct application *app, const char *unused)
 		listview_setindex(&app->view, count - 1);
 }
 
-static void command_change_directory(struct application *app, const char *path)
+static void command_change_directory(struct commandexecutor *commandexecutor, const char *path)
 {
+	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	save_current_position(app);
 
 	if(path_set_from_string(&app->cwd, path) == 0)
 		enter_directory(app, NULL);
 }
 
-static void command_togglemark(struct application *app, const char *unused)
+static void command_togglemark(struct commandexecutor *commandexecutor, const char *unused)
 {
+	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	(void)unused;
 	if(listmodel_count(&app->model.listmodel) == 0)
 		return;
@@ -279,8 +290,9 @@ static void command_togglemark(struct application *app, const char *unused)
 	listview_down(&app->view);
 }
 
-static void command_invert_marks(struct application *app, const char *unused)
+static void command_invert_marks(struct commandexecutor *commandexecutor, const char *unused)
 {
+	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	(void)unused;
 	size_t count = listmodel_count(&app->model.listmodel);
 
@@ -290,18 +302,21 @@ static void command_invert_marks(struct application *app, const char *unused)
 	}
 }
 
-static void command_mark(struct application *app, const char *regex)
+static void command_mark(struct commandexecutor *commandexecutor, const char *regex)
 {
+	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	dirmodel_regex_setmark(&app->model, regex, true);
 }
 
-static void command_unmark(struct application *app, const char *regex)
+static void command_unmark(struct commandexecutor *commandexecutor, const char *regex)
 {
+	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	dirmodel_regex_setmark(&app->model, regex, false);
 }
 
-static void command_yank(struct application *app, const char *unused)
+static void command_yank(struct commandexecutor *commandexecutor, const char *unused)
 {
+	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	(void)unused;
 	const struct list *list = NULL;
 
@@ -341,20 +356,23 @@ err:
 	clipboard_set_contents(&app->clipboard, NULL, NULL);
 }
 
-static void command_quit(struct application *app, const char *unused)
+static void command_quit(struct commandexecutor *commandexecutor, const char *unused)
 {
+	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	(void)unused;
 	app->running = false;
 }
 
-static void command_mkdir(struct application *app, const char *dirname)
+static void command_mkdir(struct commandexecutor *commandexecutor, const char *dirname)
 {
+	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	(void)app;
 	mkdir(dirname, 0777);
 }
 
-static void command_cmdline(struct application *app, const char *command)
+static void command_cmdline(struct commandexecutor *commandexecutor, const char *command)
 {
+	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	app->mode = MODE_COMMAND;
 	curs_set(1);
 	commandline_start(&app->commandline, L':');
@@ -371,8 +389,9 @@ static void command_cmdline(struct application *app, const char *command)
 	}
 }
 
-static void command_rename(struct application *app, const char *newfilename)
+static void command_rename(struct commandexecutor *commandexecutor, const char *newfilename)
 {
+	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	if(listmodel_count(&app->model.listmodel) == 0)
 		return;
 
@@ -385,8 +404,9 @@ static void command_rename(struct application *app, const char *newfilename)
 	}
 }
 
-static void command_search_next(struct application *app, const char *unused)
+static void command_search_next(struct commandexecutor *commandexecutor, const char *unused)
 {
+	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	(void)unused;
 	if(!app->lastsearch_regex)
 		return;
@@ -404,21 +424,24 @@ static void search(struct application *app, const char *regex, int direction)
 	app->lastsearch_regex = strdup(regex);
 	app->lastsearch_direction = direction;
 
-	command_search_next(app, NULL);
+	command_search_next(&app->commandexecutor, NULL);
 }
 
-static void command_search(struct application *app, const char *regex)
+static void command_search(struct commandexecutor *commandexecutor, const char *regex)
 {
+	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	search(app, regex, 1);
 }
 
-static void command_search_reverse(struct application *app, const char *regex)
+static void command_search_reverse(struct commandexecutor *commandexecutor, const char *regex)
 {
+	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	search(app, regex, -1);
 }
 
-static void command_filter(struct application *app, const char *regex)
+static void command_filter(struct commandexecutor *commandexecutor, const char *regex)
 {
+	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	dirmodel_setfilter(&app->model, regex);
 	enter_directory(app, NULL);
 }
@@ -486,7 +509,7 @@ static void handle_stdin(struct application *app)
 			const wchar_t *wcommand = commandline_getcommand(&app->commandline);
 			char command[wcstombs(NULL, wcommand, 0) + 1];
 			wcstombs(command, wcommand, sizeof(command));
-			command_execute(command, app, application_command_map);
+			commandexecutor_execute(&app->commandexecutor, command);
 			commandline_history_add(&app->commandline, wcsdup(wcommand));
 		} else if(ret != KEY_CODE_YES && key == L'\t') {
 		} else if(ret != KEY_CODE_YES && key == 27) {
@@ -503,7 +526,7 @@ static void handle_stdin(struct application *app)
 			commandline_handlekey(&app->commandline, key, ret == KEY_CODE_YES ? true : false);
 
 	} else
-		keymap_handlekey(&app->keymap, app, key, ret == KEY_CODE_YES ? true : false);
+		keymap_handlekey(&app->keymap, key, ret == KEY_CODE_YES ? true : false);
 }
 
 static void handle_signal(struct application *app)
@@ -635,7 +658,8 @@ bool application_init(struct application *app)
 	app->inotify_watch = -1;
 
 	dirmodel_init(&app->model);
-	keymap_init(&app->keymap, application_command_map);
+	commandexecutor_init(&app->commandexecutor, application_command_map);
+	keymap_init(&app->keymap, &app->commandexecutor);
 
 	app->stored_positions = dict_new();
 	if(app->stored_positions == NULL)
