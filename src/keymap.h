@@ -19,7 +19,7 @@ struct keymap_entry {
 
 struct keymap {
 	struct commandexecutor *commandexecutor;
-	struct keymap_entry *entries;
+	struct list *entries;
 };
 
 int keymap_handlekey(struct keymap *keymap, wint_t key, bool iskeycode);

@@ -1,6 +1,7 @@
 #include "keymap.h"
 
 #include "commandexecutor.h"
+#include "list.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -13,9 +14,8 @@
 
 int keymap_handlekey(struct keymap *keymap, wint_t key, bool iskeycode)
 {
-	struct keymap_entry *curitem;
-
-	for(curitem = keymap->entries; curitem->command != NULL; curitem++) {
+	for(size_t i = 0; i < list_length(keymap->entries); i++) {
+		struct keymap_entry *curitem = list_get_item(keymap->entries, i);
 		if(curitem->keyspec.key == key && curitem->keyspec.iskeycode == iskeycode) {
 			char buffer[strlen(curitem->command) + 1];
 			strcpy(buffer, curitem->command);
@@ -71,6 +71,11 @@ static void keymap_string_to_keyspec(struct keyspec *keyspec, const char *keystr
 	keyspec->key = WEOF;
 }
 
+static void keymap_entry_delete(struct keymap_entry *entry) {
+	free((void*)entry->command);
+	free(entry);
+}
+
 static int keymap_parse_line(struct keymap_entry *entry, char *line, struct commandexecutor *commandexecutor)
 {
 	char *token = line + strspn(line, " \t");
@@ -101,38 +106,33 @@ static int keymap_parse_line(struct keymap_entry *entry, char *line, struct comm
 
 int keymap_setfromstring(struct keymap *keymap, char *keymapstring)
 {
-	size_t parsed_lines = 0;
 	char *saveptr;
 	char *token = strtok_r(keymapstring, "\n", &saveptr);
 
 	if(token == NULL)
 		return EINVAL;
 
-	keymap->entries = malloc(sizeof(keymap->entries[0]));
+	keymap->entries = list_new(0);
 	if(keymap->entries == NULL)
 		return ENOMEM;
 
 	do {
-		int ret = keymap_parse_line(&(keymap->entries[parsed_lines]), token, keymap->commandexecutor);
+		struct keymap_entry *entry = malloc(sizeof(*entry));
+		if(entry == NULL)
+			return ENOMEM;
+
+		entry->command = NULL;
+		int ret = keymap_parse_line(entry, token, keymap->commandexecutor);
 		if(ret != 0) {
-			keymap->entries[parsed_lines].command = NULL;
-			keymap_destroy(keymap);
+			keymap_entry_delete(entry);
 			return ret;
 		}
 
-		if(keymap->entries[parsed_lines].command != NULL) {
-			parsed_lines++;
-
-			struct keymap_entry *newentries = realloc(keymap->entries, sizeof(keymap->entries[0]) * (parsed_lines + 1));
-			if(newentries == NULL) {
-				free((char*)keymap->entries[parsed_lines - 1].command);
-				keymap->entries[parsed_lines - 1].command = NULL;
-				keymap_destroy(keymap);
+		if(entry->command != NULL) {
+			if(!list_append(keymap->entries, entry)) {
+				keymap_entry_delete(entry);
 				return ENOMEM;
 			}
-			keymap->entries = newentries;
-
-			keymap->entries[parsed_lines].command = NULL;
 		}
 
 	} while((token = strtok_r(NULL, "\n", &saveptr)) != NULL);
@@ -183,11 +183,5 @@ void keymap_destroy(struct keymap *keymap)
 	if(keymap == NULL)
 		return;
 
-	if(keymap->entries == NULL)
-		return;
-
-	for(struct keymap_entry *curitem = keymap->entries; curitem->command != NULL; curitem++)
-		free((char*)curitem->command);
-
-	free(keymap->entries);
+	list_delete(keymap->entries, (list_item_deallocator)keymap_entry_delete);
 }

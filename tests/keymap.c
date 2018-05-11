@@ -72,7 +72,7 @@ START_TEST(test_keymap_singleline)
 	keymap_init(&keymap, &commandexecutor);
 	int ret = keymap_setfromstring(&keymap, keymapstring);
 
-	assert_oom(ret != ENOMEM);
+	assert_oom_cleanup(ret != ENOMEM, keymap_destroy(&keymap));
 	cmdex = NULL;
 	param[0] = '\0';
 	command = 0;
@@ -107,8 +107,9 @@ START_TEST(test_keymap_singleline_invalid)
 	keymap_init(&keymap, &commandexecutor);
 	int ret = keymap_setfromstring(&keymap, keymapstring);
 
-	assert_oom(ret != ENOMEM);
+	assert_oom_cleanup(ret != ENOMEM, keymap_destroy(&keymap));
 	ck_assert_int_eq(ret, EINVAL);
+	keymap_destroy(&keymap);
 }
 END_TEST
 
@@ -122,7 +123,7 @@ START_TEST(test_keymap_multiline)
 	keymap_init(&keymap, &commandexecutor);
 	int ret = keymap_setfromstring(&keymap, keymapstring);
 
-	assert_oom(ret != ENOMEM);
+	assert_oom_cleanup(ret != ENOMEM, keymap_destroy(&keymap));
 
 	cmdex = NULL;
 	param[0] = '\0';
@@ -159,7 +160,7 @@ START_TEST(test_keymap_nonexistantfile)
 	keymap_init(&keymap, &commandexecutor);
 	int ret = keymap_setfromfile(&keymap, "examples/nonexistantfile");
 
-	assert_oom(ret != ENOMEM);
+	assert_oom_cleanup(ret != ENOMEM, keymap_destroy(&keymap));
 	ck_assert_int_eq(ret, ENOENT);
 
 	keymap_destroy(&keymap);
@@ -179,7 +180,7 @@ START_TEST(test_keymap_inaccessablefile)
 	keymap_init(&keymap, &commandexecutor);
 	int ret = keymap_setfromfile(&keymap, path);
 
-	assert_oom_cleanup(ret != ENOMEM, remove(path));
+	assert_oom_cleanup(ret != ENOMEM, remove(path), keymap_destroy(&keymap));
 	ck_assert_int_eq(ret, EACCES);
 
 	remove(path);
@@ -199,7 +200,7 @@ START_TEST(test_keymap_examplefile)
 	keymap_init(&keymap, &commandexecutor);
 	int ret = keymap_setfromfile(&keymap, "examples/keymap");
 
-	assert_oom(ret != ENOMEM);
+	assert_oom_cleanup(ret != ENOMEM, keymap_destroy(&keymap));
 	ck_assert_int_eq(ret, 0);
 
 	keymap_destroy(&keymap);
