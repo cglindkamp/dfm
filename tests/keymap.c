@@ -76,7 +76,7 @@ START_TEST(test_keymap_singleline)
 	cmdex = NULL;
 	param[0] = '\0';
 	command = 0;
-	assert_oom(keymap_handlekey(&keymap, singlelinetesttable[_i].keyspec.key, singlelinetesttable[_i].keyspec.iskeycode) != ENOMEM);
+	ck_assert_int_eq(keymap_handlekey(&keymap, singlelinetesttable[_i].keyspec.key, singlelinetesttable[_i].keyspec.iskeycode), 0);
 	ck_assert_ptr_eq(cmdex, &commandexecutor);
 	ck_assert_int_eq(command, singlelinetesttable[_i].cmdnr);
 	if(singlelinetesttable[_i].param == NULL)
@@ -128,7 +128,7 @@ START_TEST(test_keymap_multiline)
 	cmdex = NULL;
 	param[0] = '\0';
 	command = 0;
-	assert_oom(keymap_handlekey(&keymap, L'a', false) != ENOMEM);
+	ck_assert_int_eq(keymap_handlekey(&keymap, L'a', false), 0);
 	ck_assert_ptr_eq(cmdex, &commandexecutor);
 	ck_assert_int_eq(command, 1);
 	ck_assert_str_eq(param, "");
@@ -136,7 +136,7 @@ START_TEST(test_keymap_multiline)
 	cmdex = NULL;
 	param[0] = '\0';
 	command = 0;
-	assert_oom(keymap_handlekey(&keymap, KEY_UP, true) != ENOMEM);
+	ck_assert_int_eq(keymap_handlekey(&keymap, KEY_UP, true), 0);
 	ck_assert_ptr_eq(cmdex, &commandexecutor);
 	ck_assert_int_eq(command, 2);
 	ck_assert_str_eq(param, "bar");
