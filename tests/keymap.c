@@ -14,7 +14,7 @@ static struct commandexecutor *cmdex;
 static char param[10];
 static int command;
 
-static void command1(struct commandexecutor *c, const char *p)
+static void command1(struct commandexecutor *c, char *p)
 {
 	cmdex = c;
 	command = 1;
@@ -22,7 +22,7 @@ static void command1(struct commandexecutor *c, const char *p)
 		strcpy(param, p);
 }
 
-static void command2(struct commandexecutor *c, const char *p)
+static void command2(struct commandexecutor *c, char *p)
 {
 	cmdex = c;
 	command = 2;
@@ -30,7 +30,7 @@ static void command2(struct commandexecutor *c, const char *p)
 		strcpy(param, p);
 }
 
-static void command4(struct commandexecutor *c, const char *p)
+static void command4(struct commandexecutor *c, char *p)
 {
 	cmdex = c;
 	command = 4;

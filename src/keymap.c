@@ -104,6 +104,41 @@ static int keymap_parse_line(struct keymap_entry *entry, char *line, struct comm
 	return 0;
 }
 
+int keymap_addmapping(struct keymap *keymap, char *keymapstring)
+{
+	struct keymap_entry *entry = malloc(sizeof(*entry));
+	if(entry == NULL)
+		return ENOMEM;
+
+	entry->command = NULL;
+	int ret = keymap_parse_line(entry, keymapstring, keymap->commandexecutor);
+	if(ret != 0) {
+		keymap_entry_delete(entry);
+		return ret;
+	}
+
+	if(entry->command != NULL) {
+		struct keymap_entry *oldentry;
+		size_t i;
+		for(i = 0; i < list_length(keymap->entries); i++) {
+			oldentry = list_get_item(keymap->entries, i);
+			if(oldentry->keyspec.iskeycode == entry->keyspec.iskeycode &&
+			   oldentry->keyspec.key == entry->keyspec.key)
+				break;
+		}
+
+		if(i < list_length(keymap->entries)) {
+			free((void*)oldentry->command);
+			oldentry->command = entry->command;
+			free(entry);
+		} else if(!list_append(keymap->entries, entry)) {
+			keymap_entry_delete(entry);
+			return ENOMEM;
+		}
+	}
+	return 0;
+}
+
 int keymap_setfromstring(struct keymap *keymap, char *keymapstring)
 {
 	char *saveptr;
@@ -117,37 +152,9 @@ int keymap_setfromstring(struct keymap *keymap, char *keymapstring)
 		return ENOMEM;
 
 	do {
-		struct keymap_entry *entry = malloc(sizeof(*entry));
-		if(entry == NULL)
-			return ENOMEM;
-
-		entry->command = NULL;
-		int ret = keymap_parse_line(entry, token, keymap->commandexecutor);
-		if(ret != 0) {
-			keymap_entry_delete(entry);
+		int ret = keymap_addmapping(keymap, token);
+		if(ret != 0)
 			return ret;
-		}
-
-		if(entry->command != NULL) {
-			struct keymap_entry *oldentry;
-			size_t i;
-			for(i = 0; i < list_length(keymap->entries); i++) {
-				oldentry = list_get_item(keymap->entries, i);
-				if(oldentry->keyspec.iskeycode == entry->keyspec.iskeycode &&
-				   oldentry->keyspec.key == entry->keyspec.key)
-					break;
-			}
-
-			if(i < list_length(keymap->entries)) {
-				free((void*)oldentry->command);
-				oldentry->command = entry->command;
-				free(entry);
-			} else if(!list_append(keymap->entries, entry)) {
-				keymap_entry_delete(entry);
-				return ENOMEM;
-			}
-		}
-
 	} while((token = strtok_r(NULL, "\n", &saveptr)) != NULL);
 
 	return 0;

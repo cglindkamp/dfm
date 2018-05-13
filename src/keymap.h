@@ -23,6 +23,7 @@ struct keymap {
 };
 
 int keymap_handlekey(struct keymap *keymap, wint_t key, bool iskeycode);
+int keymap_addmapping(struct keymap *keymap, char *keymapstring);
 int keymap_setfromstring(struct keymap *keymap, char *keymapstring);
 int keymap_setfromfile(struct keymap *keymap, const char *filename);
 void keymap_init(struct keymap *keymap, struct commandexecutor *commandexecutor);
