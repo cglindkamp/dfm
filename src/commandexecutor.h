@@ -6,7 +6,7 @@
 
 struct commandexecutor;
 
-typedef void (*command_ptr)(struct commandexecutor *, const char *);
+typedef void (*command_ptr)(struct commandexecutor *, char *);
 typedef command_ptr (*command_map_ptr)(const char *);
 
 struct command_map {

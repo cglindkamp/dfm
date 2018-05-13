@@ -123,7 +123,7 @@ static void background_process_and_unblock_signals(void)
 	unblock_signals();
 }
 
-static void command_invoke_handler(struct commandexecutor *commandexecutor, const char *handler_name)
+static void command_invoke_handler(struct commandexecutor *commandexecutor, char *handler_name)
 {
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	struct path *handler_path = determine_usable_config_file(PROJECT, "handlers", handler_name, X_OK);
@@ -191,35 +191,35 @@ err_dir:
 	path_delete(handler_path);
 }
 
-static void command_navigate_up(struct commandexecutor *commandexecutor, const char *unused)
+static void command_navigate_up(struct commandexecutor *commandexecutor, char *unused)
 {
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	(void)unused;
 	listview_up(&app->view);
 }
 
-static void command_navigate_down(struct commandexecutor *commandexecutor, const char *unused)
+static void command_navigate_down(struct commandexecutor *commandexecutor, char *unused)
 {
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	(void)unused;
 	listview_down(&app->view);
 }
 
-static void command_navigate_pageup(struct commandexecutor *commandexecutor, const char *unused)
+static void command_navigate_pageup(struct commandexecutor *commandexecutor, char *unused)
 {
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	(void)unused;
 	listview_pageup(&app->view);
 }
 
-static void command_navigate_pagedown(struct commandexecutor *commandexecutor, const char *unused)
+static void command_navigate_pagedown(struct commandexecutor *commandexecutor, char *unused)
 {
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	(void)unused;
 	listview_pagedown(&app->view);
 }
 
-static void command_navigate_left(struct commandexecutor *commandexecutor, const char *unused)
+static void command_navigate_left(struct commandexecutor *commandexecutor, char *unused)
 {
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	(void)unused;
@@ -231,7 +231,7 @@ static void command_navigate_left(struct commandexecutor *commandexecutor, const
 		enter_directory(app, oldpathname);
 }
 
-static void command_navigate_right(struct commandexecutor *commandexecutor, const char *unused)
+static void command_navigate_right(struct commandexecutor *commandexecutor, char *unused)
 {
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	(void)unused;
@@ -252,14 +252,14 @@ static void command_navigate_right(struct commandexecutor *commandexecutor, cons
 	}
 }
 
-static void command_navigate_first(struct commandexecutor *commandexecutor, const char *unused)
+static void command_navigate_first(struct commandexecutor *commandexecutor, char *unused)
 {
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	(void)unused;
 	listview_setindex(&app->view, 0);
 }
 
-static void command_navigate_last(struct commandexecutor *commandexecutor, const char *unused)
+static void command_navigate_last(struct commandexecutor *commandexecutor, char *unused)
 {
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	(void)unused;
@@ -269,7 +269,7 @@ static void command_navigate_last(struct commandexecutor *commandexecutor, const
 		listview_setindex(&app->view, count - 1);
 }
 
-static void command_change_directory(struct commandexecutor *commandexecutor, const char *path)
+static void command_change_directory(struct commandexecutor *commandexecutor, char *path)
 {
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	save_current_position(app);
@@ -278,7 +278,7 @@ static void command_change_directory(struct commandexecutor *commandexecutor, co
 		enter_directory(app, NULL);
 }
 
-static void command_togglemark(struct commandexecutor *commandexecutor, const char *unused)
+static void command_togglemark(struct commandexecutor *commandexecutor, char *unused)
 {
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	(void)unused;
@@ -290,7 +290,7 @@ static void command_togglemark(struct commandexecutor *commandexecutor, const ch
 	listview_down(&app->view);
 }
 
-static void command_invert_marks(struct commandexecutor *commandexecutor, const char *unused)
+static void command_invert_marks(struct commandexecutor *commandexecutor, char *unused)
 {
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	(void)unused;
@@ -302,19 +302,19 @@ static void command_invert_marks(struct commandexecutor *commandexecutor, const 
 	}
 }
 
-static void command_mark(struct commandexecutor *commandexecutor, const char *regex)
+static void command_mark(struct commandexecutor *commandexecutor, char *regex)
 {
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	dirmodel_regex_setmark(&app->model, regex, true);
 }
 
-static void command_unmark(struct commandexecutor *commandexecutor, const char *regex)
+static void command_unmark(struct commandexecutor *commandexecutor, char *regex)
 {
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	dirmodel_regex_setmark(&app->model, regex, false);
 }
 
-static void command_yank(struct commandexecutor *commandexecutor, const char *unused)
+static void command_yank(struct commandexecutor *commandexecutor, char *unused)
 {
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	(void)unused;
@@ -356,21 +356,21 @@ err:
 	clipboard_set_contents(&app->clipboard, NULL, NULL);
 }
 
-static void command_quit(struct commandexecutor *commandexecutor, const char *unused)
+static void command_quit(struct commandexecutor *commandexecutor, char *unused)
 {
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	(void)unused;
 	app->running = false;
 }
 
-static void command_mkdir(struct commandexecutor *commandexecutor, const char *dirname)
+static void command_mkdir(struct commandexecutor *commandexecutor, char *dirname)
 {
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	(void)app;
 	mkdir(dirname, 0777);
 }
 
-static void command_cmdline(struct commandexecutor *commandexecutor, const char *command)
+static void command_cmdline(struct commandexecutor *commandexecutor, char *command)
 {
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	app->mode = MODE_COMMAND;
@@ -389,7 +389,7 @@ static void command_cmdline(struct commandexecutor *commandexecutor, const char 
 	}
 }
 
-static void command_rename(struct commandexecutor *commandexecutor, const char *newfilename)
+static void command_rename(struct commandexecutor *commandexecutor, char *newfilename)
 {
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	if(listmodel_count(&app->model.listmodel) == 0)
@@ -404,7 +404,7 @@ static void command_rename(struct commandexecutor *commandexecutor, const char *
 	}
 }
 
-static void command_search_next(struct commandexecutor *commandexecutor, const char *unused)
+static void command_search_next(struct commandexecutor *commandexecutor, char *unused)
 {
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	(void)unused;
@@ -427,19 +427,19 @@ static void search(struct application *app, const char *regex, int direction)
 	command_search_next(&app->commandexecutor, NULL);
 }
 
-static void command_search(struct commandexecutor *commandexecutor, const char *regex)
+static void command_search(struct commandexecutor *commandexecutor, char *regex)
 {
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	search(app, regex, 1);
 }
 
-static void command_search_reverse(struct commandexecutor *commandexecutor, const char *regex)
+static void command_search_reverse(struct commandexecutor *commandexecutor, char *regex)
 {
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	search(app, regex, -1);
 }
 
-static void command_filter(struct commandexecutor *commandexecutor, const char *regex)
+static void command_filter(struct commandexecutor *commandexecutor, char *regex)
 {
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	dirmodel_setfilter(&app->model, regex);
