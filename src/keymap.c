@@ -129,7 +129,20 @@ int keymap_setfromstring(struct keymap *keymap, char *keymapstring)
 		}
 
 		if(entry->command != NULL) {
-			if(!list_append(keymap->entries, entry)) {
+			struct keymap_entry *oldentry;
+			size_t i;
+			for(i = 0; i < list_length(keymap->entries); i++) {
+				oldentry = list_get_item(keymap->entries, i);
+				if(oldentry->keyspec.iskeycode == entry->keyspec.iskeycode &&
+				   oldentry->keyspec.key == entry->keyspec.key)
+					break;
+			}
+
+			if(i < list_length(keymap->entries)) {
+				free((void*)oldentry->command);
+				oldentry->command = entry->command;
+				free(entry);
+			} else if(!list_append(keymap->entries, entry)) {
 				keymap_entry_delete(entry);
 				return ENOMEM;
 			}
