@@ -446,6 +446,12 @@ static void command_filter(struct commandexecutor *commandexecutor, char *regex)
 	enter_directory(app, NULL);
 }
 
+static void command_map(struct commandexecutor *commandexecutor, char *keymapstring)
+{
+	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
+	keymap_addmapping(&app->keymap, keymapstring);
+}
+
 struct command_map application_command_map[] = {
 	{ "navigate_up", command_navigate_up, false },
 	{ "navigate_down", command_navigate_down, false },
@@ -470,6 +476,7 @@ struct command_map application_command_map[] = {
 	{ "search_next", command_search_next, false },
 	{ "search_reverse", command_search_reverse, true },
 	{ "filter", command_filter, false },
+	{ "map", command_map, true },
 	{ NULL, NULL, false },
 };
 
