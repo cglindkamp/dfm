@@ -644,6 +644,59 @@ static bool load_keymap(struct application *app)
 	return true;
 }
 
+static char *application_load_rcfile(const char *filename)
+{
+	struct stat st;
+	int ret = stat(filename, &st);
+	if(ret != 0)
+		return NULL;
+
+	size_t size = st.st_size;
+	char *contents = malloc(size + 1);
+
+	if(contents == NULL)
+		return NULL;
+
+	int fd = open(filename, O_RDONLY);
+	if(fd < 0) {
+		free(contents);
+		return NULL;
+	}
+
+	ret = read(fd, contents, size);
+	close(fd);
+
+	if(ret < 0)
+		return NULL;
+
+	contents[ret] = '\0';
+	return contents;
+}
+
+static bool application_run_rcfile(struct application *app)
+{
+	struct path *rc_path = determine_usable_config_file(PROJECT, NULL, "rc", R_OK);
+	if(rc_path == NULL)
+		return false;
+
+	char *rcstr = application_load_rcfile(path_tocstr(rc_path));
+	if(rcstr == NULL) {
+		path_delete(rc_path);
+		return false;
+	}
+
+	char *saveptr;
+	char *token = strtok_r(rcstr, "\n", &saveptr);
+
+	do {
+		commandexecutor_execute(&app->commandexecutor, token);
+	} while((token = strtok_r(NULL, "\n", &saveptr)) != NULL);
+
+	path_delete(rc_path);
+	free(rcstr);
+	return true;
+}
+
 bool application_init(struct application *app)
 {
 	bool ret = true;
@@ -703,6 +756,8 @@ bool application_init(struct application *app)
 	app->signal_fd = create_signalfd();
 	if(app->signal_fd == -1)
 		return false;
+
+	application_run_rcfile(app);
 
 	return true;
 }
