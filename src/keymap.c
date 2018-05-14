@@ -14,6 +14,8 @@
 
 int keymap_handlekey(struct keymap *keymap, wint_t key, bool iskeycode)
 {
+	if(keymap->entries == NULL)
+		return EINVAL;
 	for(size_t i = 0; i < list_length(keymap->entries); i++) {
 		struct keymap_entry *curitem = list_get_item(keymap->entries, i);
 		if(curitem->keyspec.key == key && curitem->keyspec.iskeycode == iskeycode) {
@@ -88,7 +90,7 @@ static int keymap_parse_line(struct keymap_entry *entry, char *line, struct comm
 		if(entry->keyspec.key == WEOF)
 			return EINVAL;
 	} else
-		return 0;
+		return EINVAL;
 
 	char *command = token + length + 1;
 	command = command + strspn(command, " \t");
@@ -106,6 +108,11 @@ static int keymap_parse_line(struct keymap_entry *entry, char *line, struct comm
 
 int keymap_addmapping(struct keymap *keymap, char *keymapstring)
 {
+	if(keymap->entries == NULL)
+		keymap->entries = list_new(0);
+	if(keymap->entries == NULL)
+		return ENOMEM;
+
 	struct keymap_entry *entry = malloc(sizeof(*entry));
 	if(entry == NULL)
 		return ENOMEM;
@@ -137,59 +144,6 @@ int keymap_addmapping(struct keymap *keymap, char *keymapstring)
 		}
 	}
 	return 0;
-}
-
-int keymap_setfromstring(struct keymap *keymap, char *keymapstring)
-{
-	char *saveptr;
-	char *token = strtok_r(keymapstring, "\n", &saveptr);
-
-	if(token == NULL)
-		return EINVAL;
-
-	keymap->entries = list_new(0);
-	if(keymap->entries == NULL)
-		return ENOMEM;
-
-	do {
-		int ret = keymap_addmapping(keymap, token);
-		if(ret != 0)
-			return ret;
-	} while((token = strtok_r(NULL, "\n", &saveptr)) != NULL);
-
-	return 0;
-}
-
-int keymap_setfromfile(struct keymap *keymap, const char *filename)
-{
-	struct stat st;
-	int ret = stat(filename, &st);
-	if(ret != 0)
-		return errno;
-
-	size_t size = st.st_size;
-	char *contents = malloc(size + 1);
-
-	if(contents == NULL)
-		return ENOMEM;
-
-	int fd = open(filename, O_RDONLY);
-	if(fd < 0) {
-		free(contents);
-		return errno;
-	}
-
-	ret = read(fd, contents, size);
-	close(fd);
-
-	if(ret > 0) {
-		contents[ret] = '\0';
-		ret = keymap_setfromstring(keymap, contents);
-	} else
-		ret = errno;
-
-	free(contents);
-	return ret;
 }
 
 void keymap_init(struct keymap *keymap, struct commandexecutor *commandexecutor)

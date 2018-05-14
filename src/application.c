@@ -629,21 +629,6 @@ static int create_signalfd()
 	return signalfd(-1, &sigset, SFD_CLOEXEC);
 }
 
-static bool load_keymap(struct application *app)
-{
-	struct path *keymap_path = determine_usable_config_file(PROJECT, NULL, "keymap", R_OK);
-	if(keymap_path == NULL)
-		return false;
-
-	if(keymap_setfromfile(&app->keymap, path_tocstr(keymap_path)) != 0) {
-		path_delete(keymap_path);
-		return false;
-	}
-
-	path_delete(keymap_path);
-	return true;
-}
-
 static char *application_load_rcfile(const char *filename)
 {
 	struct stat st;
@@ -652,6 +637,8 @@ static char *application_load_rcfile(const char *filename)
 		return NULL;
 
 	size_t size = st.st_size;
+	if(size == 0)
+		return NULL;
 	char *contents = malloc(size + 1);
 
 	if(contents == NULL)
@@ -741,9 +728,6 @@ bool application_init(struct application *app)
 	if(!listview_init(&app->view, &app->model.listmodel, 0, 0, COLS, LINES - 1))
 		ret = false;
 
-	if(!load_keymap(app))
-		ret = false;
-
 	if(ret == false)
 		return false;
 
@@ -757,7 +741,8 @@ bool application_init(struct application *app)
 	if(app->signal_fd == -1)
 		return false;
 
-	application_run_rcfile(app);
+	if(!application_run_rcfile(app))
+		return false;
 
 	return true;
 }

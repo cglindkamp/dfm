@@ -70,7 +70,7 @@ START_TEST(test_keymap_singleline)
 
 	commandexecutor_init(&commandexecutor, command_map);
 	keymap_init(&keymap, &commandexecutor);
-	int ret = keymap_setfromstring(&keymap, keymapstring);
+	int ret = keymap_addmapping(&keymap, keymapstring);
 
 	assert_oom_cleanup(ret != ENOMEM, keymap_destroy(&keymap));
 	cmdex = NULL;
@@ -105,7 +105,7 @@ START_TEST(test_keymap_singleline_invalid)
 
 	commandexecutor_init(&commandexecutor, command_map);
 	keymap_init(&keymap, &commandexecutor);
-	int ret = keymap_setfromstring(&keymap, keymapstring);
+	int ret = keymap_addmapping(&keymap, keymapstring);
 
 	assert_oom_cleanup(ret != ENOMEM, keymap_destroy(&keymap));
 	ck_assert_int_eq(ret, EINVAL);
@@ -117,12 +117,16 @@ START_TEST(test_keymap_multiline)
 {
 	struct commandexecutor commandexecutor;
 	struct keymap keymap;
-	char keymapstring[] = "a command1\nup command2 bar";
+	char keymapstring1[] = "a command1";
+	char keymapstring2[] = "up command2 bar";
 
 	commandexecutor_init(&commandexecutor, command_map);
 	keymap_init(&keymap, &commandexecutor);
-	int ret = keymap_setfromstring(&keymap, keymapstring);
 
+	int ret = keymap_addmapping(&keymap, keymapstring1);
+	assert_oom_cleanup(ret != ENOMEM, keymap_destroy(&keymap));
+
+	ret = keymap_addmapping(&keymap, keymapstring2);
 	assert_oom_cleanup(ret != ENOMEM, keymap_destroy(&keymap));
 
 	cmdex = NULL;
@@ -149,12 +153,16 @@ START_TEST(test_keymap_duplicate_entry)
 {
 	struct commandexecutor commandexecutor;
 	struct keymap keymap;
-	char keymapstring[] = "a command1\na command2 bar";
+	char keymapstring1[] = "a command1";
+	char keymapstring2[] = "a command2 bar";
 
 	commandexecutor_init(&commandexecutor, command_map);
 	keymap_init(&keymap, &commandexecutor);
-	int ret = keymap_setfromstring(&keymap, keymapstring);
 
+	int ret = keymap_addmapping(&keymap, keymapstring1);
+	assert_oom_cleanup(ret != ENOMEM, keymap_destroy(&keymap));
+
+	ret = keymap_addmapping(&keymap, keymapstring2);
 	assert_oom_cleanup(ret != ENOMEM, keymap_destroy(&keymap));
 
 	cmdex = NULL;
@@ -175,43 +183,6 @@ START_TEST(test_keymap_deletenull)
 }
 END_TEST
 
-START_TEST(test_keymap_nonexistantfile)
-{
-	struct commandexecutor commandexecutor;
-	struct keymap keymap;
-
-	commandexecutor_init(&commandexecutor, command_map);
-	keymap_init(&keymap, &commandexecutor);
-	int ret = keymap_setfromfile(&keymap, "examples/nonexistantfile");
-
-	assert_oom_cleanup(ret != ENOMEM, keymap_destroy(&keymap));
-	ck_assert_int_eq(ret, ENOENT);
-
-	keymap_destroy(&keymap);
-}
-END_TEST
-
-START_TEST(test_keymap_inaccessablefile)
-{
-	struct commandexecutor commandexecutor;
-	struct keymap keymap;
-
-	char path[] = "/tmp/keymap.XXXXXX";
-	ck_assert_int_ne(mkstemp(path), -1);
-	chmod(path, 0);
-
-	commandexecutor_init(&commandexecutor, command_map);
-	keymap_init(&keymap, &commandexecutor);
-	int ret = keymap_setfromfile(&keymap, path);
-
-	assert_oom_cleanup(ret != ENOMEM, remove(path), keymap_destroy(&keymap));
-	ck_assert_int_eq(ret, EACCES);
-
-	remove(path);
-
-	keymap_destroy(&keymap);
-}
-END_TEST
 Suite *keymap_suite(void)
 {
 	Suite *suite;
@@ -225,8 +196,6 @@ Suite *keymap_suite(void)
 	tcase_add_test(tcase, test_keymap_multiline);
 	tcase_add_test(tcase, test_keymap_duplicate_entry);
 	tcase_add_test(tcase, test_keymap_deletenull);
-	tcase_add_test(tcase, test_keymap_nonexistantfile);
-	tcase_add_test(tcase, test_keymap_inaccessablefile);
 	suite_add_tcase(suite, tcase);
 
 	return suite;
