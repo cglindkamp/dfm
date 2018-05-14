@@ -212,25 +212,6 @@ START_TEST(test_keymap_inaccessablefile)
 	keymap_destroy(&keymap);
 }
 END_TEST
-
-extern struct command_map application_command_map[];
-
-START_TEST(test_keymap_examplefile)
-{
-	struct commandexecutor commandexecutor;
-	struct keymap keymap;
-
-	commandexecutor_init(&commandexecutor, application_command_map);
-	keymap_init(&keymap, &commandexecutor);
-	int ret = keymap_setfromfile(&keymap, "examples/keymap");
-
-	assert_oom_cleanup(ret != ENOMEM, keymap_destroy(&keymap));
-	ck_assert_int_eq(ret, 0);
-
-	keymap_destroy(&keymap);
-}
-END_TEST
-
 Suite *keymap_suite(void)
 {
 	Suite *suite;
@@ -246,7 +227,6 @@ Suite *keymap_suite(void)
 	tcase_add_test(tcase, test_keymap_deletenull);
 	tcase_add_test(tcase, test_keymap_nonexistantfile);
 	tcase_add_test(tcase, test_keymap_inaccessablefile);
-	tcase_add_test(tcase, test_keymap_examplefile);
 	suite_add_tcase(suite, tcase);
 
 	return suite;

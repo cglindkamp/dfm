@@ -1,0 +1,30 @@
+map up        navigate_up
+map down      navigate_down
+map pageup    navigate_pageup
+map pagedown  navigate_pagedown
+map left      navigate_left
+map right     navigate_right
+map home      navigate_first
+map end       navigate_last
+
+map space     togglemark
+map *         invert_marks
+map +         cmdline mark 
+map -         cmdline unmark 
+map 1         cd                ~
+map 2         cd                /
+map D         invoke_handler    delete
+map l         invoke_handler    symlink
+map p         invoke_handler    copy
+map P         invoke_handler    move
+map s         invoke_handler    shell
+map y         yank
+map q         quit
+
+map :         cmdline
+map f6        cmdline           rename 
+map f7        cmdline           mkdir 
+
+map /         cmdline           search 
+map ?         cmdline           search_reverse 
+map n         search_next
