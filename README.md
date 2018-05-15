@@ -13,6 +13,10 @@ Features
   previously visited paths
 * Filtered view: Show only files/directories matching a regular expression,
   i.e. certain file types. Can also be used to exclude dot-files.
+* Shared clipboard: Multiple instances of dfm can share a clipboard if the
+  environment variable DFM\_CLIPBOARD\_DIR is set to a writable directory. This
+  way you can emulate tabs with screen mutliplexers or mutliple xterns running
+  several dfm instances
 
 Installation
 ------------
@@ -35,8 +39,8 @@ To start dfm, just enter
 	dfm
 
 The following table shows the default key bindings. They can be configured
-globally in the file /etc/xdg/dfm/keymap or for each user in
-~/.config/dfm/keymap. Additionally, the behaviour of the open, copy, move,
+globally in the file /etc/xdg/dfm/rc or for each user in
+~/.config/dfm/rc. Additionally, the behaviour of the open, copy, move,
 delete or shell bindings can be customized through the corresponding handler
 scripts. See examples/handlers. If you want to change them, copy the handler
 scripts to ~/.config/dfm/handlers and edit them to your liking.
