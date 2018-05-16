@@ -83,19 +83,18 @@ static void keymap_entry_delete(struct keymap_entry *entry) {
 
 static int keymap_parse_line(struct keymap_entry *entry, char *line, struct commandexecutor *commandexecutor)
 {
-	char *token = line + strspn(line, " \t");
-	size_t length = strcspn(token, " \t");
+	size_t length = strcspn(line, " \t");
 	if(length > 0) {
-		if(token[length] == '\0')
+		if(line[length] == '\0')
 			return EINVAL;
-		token[length] = '\0';
-		keymap_string_to_keyspec(&entry->keyspec, token);
+		line[length] = '\0';
+		keymap_string_to_keyspec(&entry->keyspec, line);
 		if(entry->keyspec.key == WEOF)
 			return EINVAL;
 	} else
 		return EINVAL;
 
-	char *command = token + length + 1;
+	char *command = line + length + 1;
 	command = command + strspn(command, " \t");
 
 	int ret = commandexecutor_verify(commandexecutor, command);

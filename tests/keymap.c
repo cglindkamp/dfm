@@ -55,7 +55,6 @@ static struct {
 	{ "a \t  command1", .keyspec = { .key = L'a', .iskeycode = false }, .cmdnr = 1, .param = NULL },
 	{ "b command2 foo", .keyspec = { .key = L'b', .iskeycode = false }, .cmdnr = 2, .param = "foo" },
 	{ "b command4 foo", .keyspec = { .key = L'b', .iskeycode = false }, .cmdnr = 4, .param = "foo" },
-	{ "  b command2  foo bar", .keyspec = { .key = L'b', .iskeycode = false }, .cmdnr = 2, .param ="foo bar" },
 	{ u8"ü command1", .keyspec = { .key = L'ü', .iskeycode = false }, .cmdnr = 1, .param = NULL },
 	{ "space command2", .keyspec = { .key = L' ', .iskeycode = false }, .cmdnr = 2, .param = NULL },
 	{ "up command2", .keyspec = { .key = KEY_UP, .iskeycode = true }, .cmdnr = 2, .param = NULL },
