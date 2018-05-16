@@ -37,7 +37,9 @@ struct path *determine_usable_config_file(const char *project, const char *subdi
 	if(list == NULL)
 		return NULL;
 
-	for(size_t i = 0; i < list_length(list); i++) {
+	size_t length = list_length(list);;
+
+	for(size_t i = 0; i < length; i++) {
 		struct path *curpath = list_get_item(list, i);
 		if(!path_add_component(curpath, project))
 			goto err;
@@ -78,7 +80,9 @@ bool dump_filelist_to_file(int dir_fd, const char *filename, const struct list *
 	if(fd < 0)
 		return false;
 
-	for(size_t i = 0; i < list_length(list); i++) {
+	size_t length = list_length(list);;
+
+	for(size_t i = 0; i < length; i++) {
 		const char *file = list_get_item(list, i);
 		if((ret = write(fd, file, strlen(file))) < 0)
 			break;

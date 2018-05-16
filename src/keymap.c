@@ -16,7 +16,10 @@ int keymap_handlekey(struct keymap *keymap, wint_t key, bool iskeycode)
 {
 	if(keymap->entries == NULL)
 		return EINVAL;
-	for(size_t i = 0; i < list_length(keymap->entries); i++) {
+
+	size_t length = list_length(keymap->entries);
+
+	for(size_t i = 0; i < length; i++) {
 		struct keymap_entry *curitem = list_get_item(keymap->entries, i);
 		if(curitem->keyspec.key == key && curitem->keyspec.iskeycode == iskeycode) {
 			char buffer[strlen(curitem->command) + 1];
@@ -126,15 +129,16 @@ int keymap_addmapping(struct keymap *keymap, char *keymapstring)
 
 	if(entry->command != NULL) {
 		struct keymap_entry *oldentry;
+		size_t length = list_length(keymap->entries);
 		size_t i;
-		for(i = 0; i < list_length(keymap->entries); i++) {
+		for(i = 0; i < length; i++) {
 			oldentry = list_get_item(keymap->entries, i);
 			if(oldentry->keyspec.iskeycode == entry->keyspec.iskeycode &&
 			   oldentry->keyspec.key == entry->keyspec.key)
 				break;
 		}
 
-		if(i < list_length(keymap->entries)) {
+		if(i < length) {
 			free((void*)oldentry->command);
 			oldentry->command = entry->command;
 			free(entry);

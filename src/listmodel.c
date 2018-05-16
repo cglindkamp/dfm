@@ -61,9 +61,9 @@ void listmodel_unregister_change_callback(struct listmodel *model, model_change_
 {
 	struct list *list = model->change_callbacks;
 	struct callback *cb;
-	size_t i;
+	size_t length = list_length(list);;
 
-	for(i = 0; i < list_length(list); i++) {
+	for(size_t i = 0; i < length; i++) {
 		cb = list_get_item(list, i);
 		if(cb->cb == callback && cb->data == data) {
 			free(cb);
@@ -79,9 +79,9 @@ void listmodel_notify_change(struct listmodel *model, size_t index, enum model_c
 		return;
 
 	struct callback *cb;
-	size_t i;
+	size_t length = list_length(list);;
 
-	for(i = 0; i < list_length(list); i++) {
+	for(size_t i = 0; i < length; i++) {
 		cb = list_get_item(list, i);
 		cb->cb(index, change, cb->data);
 	}

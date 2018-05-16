@@ -75,7 +75,9 @@ pid_t processmanager_waitpid(struct processmanager *pm, pid_t pid, int *wstatus)
 	if(!pm->processlist)
 		return pid;
 
-	for(size_t i = 0; i < list_length(pm->processlist); i++) {
+	size_t length = list_length(pm->processlist);
+
+	for(size_t i = 0; i < length; i++) {
 		struct process *process = list_get_item(pm->processlist, i);
 
 		if(process->pid == pid) {

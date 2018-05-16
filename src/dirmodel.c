@@ -170,7 +170,9 @@ int dirmodel_getmarkedfilenames(struct dirmodel *model, const struct list **mark
 	if(markedlist == NULL)
 		return ENOMEM;
 
-	for(size_t i = 0; i < list_length(list); i++)
+	size_t length = list_length(list);
+
+	for(size_t i = 0; i < length; i++)
 	{
 		struct filedata *filedata = list_get_item(list, i);
 		if(filedata->is_marked) {
@@ -239,7 +241,8 @@ size_t dirmodel_regex_getnext(struct dirmodel *model, const char *regex, size_t 
 		return start_index;
 
 	if(direction > 0 && start_index < SIZE_MAX) {
-		for(size_t i = start_index + 1; i < list_length(list); i++) {
+		size_t length = list_length(list);
+		for(size_t i = start_index + 1; i < length; i++) {
 			struct filedata *filedata = list_get_item(list, i);
 			if(regexec(&cregex, filedata->filename, 0, NULL, 0) == 0) {
 				result = i;
@@ -269,7 +272,9 @@ void dirmodel_regex_setmark(struct dirmodel *model, const char *regex, bool mark
 	if(ret != 0)
 		return;
 
-	for(size_t i = 0; i < list_length(list); i++) {
+	size_t length = list_length(list);
+
+	for(size_t i = 0; i < length; i++) {
 		struct filedata *filedata = list_get_item(list, i);
 		if(regexec(&cregex, filedata->filename, 0, NULL, 0) == 0) {
 			filedata->is_marked = mark;

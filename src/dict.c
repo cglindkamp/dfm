@@ -19,12 +19,12 @@ struct list *dict_new()
 void dict_delete(struct list *list, bool free_value)
 {
 	struct dict_item *item;
-	size_t i;
 
 	if(list == NULL)
 		return;
 
-	for(i = 0; i < list_length(list); i++) {
+	size_t length = list_length(list);;
+	for(size_t i = 0; i < length; i++) {
 		item = list_get_item(list, i);
 		if(free_value)
 			free(item->value);
