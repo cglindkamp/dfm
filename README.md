@@ -39,11 +39,12 @@ To start dfm, just enter
 	dfm
 
 The following table shows the default key bindings. They can be configured
-globally in the file /etc/xdg/dfm/rc or for each user in
-~/.config/dfm/rc. Additionally, the behaviour of the open, copy, move,
-delete or shell bindings can be customized through the corresponding handler
-scripts. See examples/handlers. If you want to change them, copy the handler
-scripts to ~/.config/dfm/handlers and edit them to your liking.
+globally in the file /etc/xdg/dfm/rc or for each user in ~/.config/dfm/rc. A
+command reference can be found in doc/command-reference.md. Additionally, the
+behaviour of the open, copy, move, delete or shell bindings can be customized
+through the corresponding handler scripts. See examples/handlers. If you want
+to change them, copy the handler scripts to ~/.config/dfm/handlers and edit
+them to your liking.
 
 | Key      | Action                                                                               |
 | -------- | ------------------------------------------------------------------------------------ |
