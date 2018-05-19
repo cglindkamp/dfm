@@ -42,33 +42,33 @@ Command description
 
 navigate\_up
 ------------
-**short description**: move one file up
-**parameter**: none
+**Purpose**: move one file up  
+**Parameter**: none
 
 navigate\_down
 --------------
-**short description**: move one file down
-**parameter**: none
+**Purpose**: move one file down  
+**Parameter**: none
 
 navigate\_pageup
 ----------------
-**short description**: move to the top of the screen or one page up
-**parameter**: none
+**Purpose**: move to the top of the screen or one page up  
+**Parameter**: none
 
 navigate\_pagedown
 ------------------
-**short description**: move to the bottom of the screen or one page down
-**parameter**: none
+**Purpose**: move to the bottom of the screen or one page down  
+**Parameter**: none
 
 navigate\_left
 ---------------
-**short description**: enters parent directory
-**parameter**: none
+**Purpose**: enters parent directory  
+**Parameter**: none
 
 navigate\_right
 ---------------
-**short description**: enters selected directory or opens files
-**parameter**: none
+**Purpose**: enters selected directory or opens files  
+**Parameter**: none
 
 If the currently selected file is a directory, dfm enters this directory. If it
 is a file, it either opens this file, or, if multiple files are marked, it
@@ -77,45 +77,45 @@ with the "open" parameter on each file.
 
 navigate\_first
 ---------------
-**short description**: goes to first file in the file list
-**parameter**: none
+**Purpose**: goes to first file in the file list  
+**Parameter**: none
 
 navigate\_last
 --------------
-**short description**: goes to last file in the file list
-**parameter**: none
+**Purpose**: goes to last file in the file list  
+**Parameter**: none
 
 togglemark
 ----------
-**short description**: inverts the mark on the currently selected file
-**parameter**: none
+**Purpose**: inverts the mark on the currently selected file  
+**Parameter**: none
 
 invert\_marks
 -------------
-**short description**: inverts the mark on all files
-**parameter**: none
+**Purpose**: inverts the mark on all files  
+**Parameter**: none
 
 mark
 ----
-**short description**: sets a mark on the currently selected file
-**parameter**: none
+**Purpose**: sets a mark on the currently selected file  
+**Parameter**: none
 
 unmark
 ------
-**short description**: unsets a mark on the currently selected file
-**parameter**: none
+**Purpose**: unsets a mark on the currently selected file  
+**Parameter**: none
 
 cd
 --
-**short description**: changes the current directory
-**parameter**: path
+**Purpose**: changes the current directory  
+**Parameter**: path
 
 Only absolute paths and ~ are currently supported as a usable parameter.
 
 invoke\_handler
 ---------------
-**short description**: invokes an external script
-**parameter**: filename
+**Purpose**: invokes an external script  
+**Parameter**: filename
 
 This command invokes an external script/program to execute certain file actions like open, copy, move and delete. By default the handler scripts are located system wide in /etc/xdg/dfm/handlers or custom for a user in ~/.config/dfm/handlers.
 
@@ -133,28 +133,28 @@ Not all files are always present, so the script has to handle this.
 
 yank
 ----
-**short description**: puts files into the clipboard
-**parameter**: none
+**Purpose**: puts files into the clipboard  
+**Parameter**: none
 
 The yank command puts all currently marked files into the clipboard. If no
 files are marked, the currently selected file is put into the clipboard.
 
 quit
 -----
-**short description**: quits dfm
-**parameter**: none
+**Purpose**: quits dfm  
+**Parameter**: none
 
 mkdir
 -----
-**short description**: creates a directory
-**parameter**: directory\_name
+**Purpose**: creates a directory  
+**Parameter**: directory\_name
 
 The mkdir command creates the directory specified by directory\_name.
 
 cmdline
 -------
-**short description**: opens the command line
-**parameter**: [command]
+**Purpose**: opens the command line  
+**Parameter**: [command]
 
 The cmdline command opens the command line. If a command is given, it is
 preentered but not executed. This command is intended to be used in key
@@ -164,36 +164,36 @@ without typing the full command.
 
 rename
 ------
-**short description**: renames selected file
-**parameter**: filename
+**Purpose**: renames selected file  
+**Parameter**: filename
 
 The rename command renames the currently selected file to the given filename.
 
 search
 ------
-**short description**: searches a file in the file list
-**parameter**: regular\_expression
+**Purpose**: searches a file in the file list  
+**Parameter**: regular\_expression
 
 The search command jumps to the first file matching the regular expression. it
 starts the search at the current cursor position.
 
 search\_reverse
 ---------------
-**short description**: searches a file in the file list backwards
-**parameter**: regular\_expression
+**Purpose**: searches a file in the file list backwards  
+**Parameter**: regular\_expression
 
 Same as search, just search backwards.
 
 search\_next
 ------------
-**short description**: repeats previous search
-**parameter**: none
+**Purpose**: repeats previous search  
+**Parameter**: none
 
 Repeats the last search or search\_reverse command.
 
 filter
 ------
-**Short description**: sets or unsets the filter applied to the file list view
+**Purpose**: sets or unsets the filter applied to the file list view  
 **Parameter**: [regular\_expression]
 
 After issuing the filter command, the files in the list view will be filtered
@@ -203,7 +203,7 @@ removed. Filters don't stack, so only the last one set is a active.
 
 map
 ---
-**Short description**: binds a key to a command
+**Purpose**: binds a key to a command  
 **Parameter**: key\_specifier command [parameter]
 
 The map command binds a key decribed by key\_specifier to a command. The
