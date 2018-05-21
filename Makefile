@@ -13,7 +13,7 @@ all: $(PROJECT)
 -include coverage.mk
 COVERAGE = 0
 CPPFLAGS = -std=c11 -pedantic -Wall -MMD -DNDEBUG -D_XOPEN_SOURCE=700 -D_XOPEN_SOURCE_EXTENDED -DPROJECT=\"$(PROJECT)\" $(NCURSES_CFLAGS)
-CFLAGS = -Wextra
+CFLAGS = -Wextra -O2
 LIBS = $(NCURSES_LIBS)
 
 ifeq ($(COVERAGE),1)
