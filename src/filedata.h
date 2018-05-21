@@ -13,6 +13,8 @@ struct filedata {
 	bool is_marked;
 };
 
+int filedata_listcompare_directory_filename(const void *a, const void *b);
+
 int filedata_new_from_file(struct filedata **filedata, int dirfd, const char *filename);
 void filedata_delete(struct filedata *filedata);
 

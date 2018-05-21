@@ -7,6 +7,19 @@
 #include <string.h>
 #include <sys/types.h>
 
+int filedata_listcompare_directory_filename(const void *a, const void *b)
+{
+	struct filedata *filedata1 = *(struct filedata **)a;
+	struct filedata *filedata2 = *(struct filedata **)b;
+
+	if((!S_ISDIR(filedata1->stat.st_mode) && !S_ISDIR(filedata2->stat.st_mode)) ||
+	   ( S_ISDIR(filedata1->stat.st_mode) &&  S_ISDIR(filedata2->stat.st_mode)))
+		return strcoll(filedata1->filename, filedata2->filename);
+	if(S_ISDIR(filedata1->stat.st_mode))
+		return -1;
+	return 1;
+}
+
 int filedata_new_from_file(struct filedata **filedata, int dirfd, const char *filename)
 {
 	struct stat stat;

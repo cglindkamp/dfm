@@ -197,19 +197,6 @@ int dirmodel_getmarkedfilenames(struct dirmodel *model, const struct list **mark
 	return 0;
 }
 
-static int sort_filename(const void *a, const void *b)
-{
-	struct filedata *filedata1 = *(struct filedata **)a;
-	struct filedata *filedata2 = *(struct filedata **)b;
-
-	if((!S_ISDIR(filedata1->stat.st_mode) && !S_ISDIR(filedata2->stat.st_mode)) ||
-	   ( S_ISDIR(filedata1->stat.st_mode) &&  S_ISDIR(filedata2->stat.st_mode)))
-		return strcoll(filedata1->filename, filedata2->filename);
-	if(S_ISDIR(filedata1->stat.st_mode))
-		return -1;
-	return 1;
-}
-
 bool dirmodel_get_index(struct dirmodel *model, const char *filename, size_t *index)
 {
 	struct list *list = model->list;
@@ -222,10 +209,10 @@ bool dirmodel_get_index(struct dirmodel *model, const char *filename, size_t *in
 	 * used by the search function uses S_IFDIR. So search two times, with and
 	 * without the flag set */
 	filedata.stat.st_mode = S_IFDIR;
-	found = list_find_item_or_insertpoint(list, sort_filename, &filedata, index);
+	found = list_find_item_or_insertpoint(list, filedata_listcompare_directory_filename, &filedata, index);
 	if(!found) {
 		filedata.stat.st_mode = 0;
-		found = list_find_item_or_insertpoint(list, sort_filename, &filedata, index);
+		found = list_find_item_or_insertpoint(list, filedata_listcompare_directory_filename, &filedata, index);
 	}
 	return found;
 }
@@ -327,7 +314,7 @@ int dirmodel_notify_file_added_or_changed(struct dirmodel *model, const char *fi
 	if(ret != 0)
 		return ret;
 
-	bool found = list_find_item_or_insertpoint(list, sort_filename, filedata, &index);
+	bool found = list_find_item_or_insertpoint(list, filedata_listcompare_directory_filename, filedata, &index);
 	if(found) {
 		struct filedata *filedataold = list_get_item(list, index);
 		list_set_item(list, index, filedata);
@@ -393,7 +380,7 @@ static bool internal_init(struct dirmodel *model, const char *path)
 	model->dir = dir;
 	model->list = list;
 
-	list_sort(list, sort_filename);
+	list_sort(list, filedata_listcompare_directory_filename);
 
 	return true;
 
