@@ -22,7 +22,7 @@ enum model_change {
 	MODEL_RELOAD,
 };
 
-typedef void(model_change_callback)(size_t index, enum model_change change, void *data);
+typedef void(model_change_callback)(enum model_change change, size_t newindex, size_t oldindex, void *data);
 
 size_t listmodel_count(struct listmodel *model);
 size_t listmodel_render(struct listmodel *model, wchar_t *buffer, size_t len, size_t width, size_t index);

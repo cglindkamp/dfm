@@ -8,15 +8,17 @@
 
 static struct listmodel model;
 
-static size_t cb_index;
+static size_t cb_newindex;
+static size_t cb_oldindex;
 static enum model_change cb_change;
 static void *cb_data;
 static unsigned int cb_count;
 
-static void change_callback(size_t index, enum model_change change, void *data)
+static void change_callback(enum model_change change, size_t newindex, size_t oldindex, void *data)
 {
 	cb_count++;
-	cb_index = index;
+	cb_newindex = newindex;
+	cb_oldindex = oldindex;
 	cb_change = change;
 	cb_data = data;
 }
@@ -24,7 +26,8 @@ static void change_callback(size_t index, enum model_change change, void *data)
 static void setup(void)
 {
 	cb_count = 0;
-	cb_index = 0;
+	cb_newindex = 0;
+	cb_oldindex = 0;
 	cb_change = MODEL_RELOAD;
 	cb_data = NULL;
 	listmodel_init(&model);
@@ -39,19 +42,20 @@ START_TEST(test_single_callback)
 {
 	assert_oom(listmodel_register_change_callback(&model, change_callback, &model) == true);
 	ck_assert_uint_eq(cb_count, 0);
-	ck_assert_uint_eq(cb_index, 0);
+	ck_assert_uint_eq(cb_newindex, 0);
+	ck_assert_uint_eq(cb_oldindex, 0);
 	ck_assert_ptr_eq(cb_data, NULL);
 	ck_assert_int_eq(cb_change, MODEL_RELOAD);
 
-	listmodel_notify_change(&model, 0x1337, MODEL_ADD);
+	listmodel_notify_change(&model, MODEL_ADD, 0x1337, 0);
 	ck_assert_uint_eq(cb_count, 1);
-	ck_assert_uint_eq(cb_index, 0x1337);
+	ck_assert_uint_eq(cb_newindex, 0x1337);
 	ck_assert_ptr_eq(cb_data, &model);
 	ck_assert_int_eq(cb_change, MODEL_ADD);
 
-	listmodel_notify_change(&model, 0xdeadbeef, MODEL_REMOVE);
+	listmodel_notify_change(&model, MODEL_REMOVE, 0, 0xdeadbeef);
 	ck_assert_uint_eq(cb_count, 2);
-	ck_assert_uint_eq(cb_index, 0xdeadbeef);
+	ck_assert_uint_eq(cb_oldindex, 0xdeadbeef);
 	ck_assert_ptr_eq(cb_data, &model);
 	ck_assert_int_eq(cb_change, MODEL_REMOVE);
 }
@@ -62,9 +66,9 @@ START_TEST(test_two_callbacks)
 	assert_oom(listmodel_register_change_callback(&model, change_callback, &model) == true);
 	assert_oom(listmodel_register_change_callback(&model, change_callback, &cb_count) == true);
 
-	listmodel_notify_change(&model, 0x1337, MODEL_ADD);
+	listmodel_notify_change(&model, MODEL_ADD, 0x1337, 0);
 	ck_assert_uint_eq(cb_count, 2);
-	ck_assert_uint_eq(cb_index, 0x1337);
+	ck_assert_uint_eq(cb_newindex, 0x1337);
 	ck_assert_ptr_eq(cb_data, &cb_count);
 	ck_assert_int_eq(cb_change, MODEL_ADD);
 }
@@ -76,17 +80,16 @@ START_TEST(test_unregister_callback)
 
 	listmodel_unregister_change_callback(&model, change_callback, NULL);
 
-	listmodel_notify_change(&model, 0x1337, MODEL_ADD);
+	listmodel_notify_change(&model, MODEL_ADD, 0x1337, 0);
 	ck_assert_uint_eq(cb_count, 1);
-	ck_assert_uint_eq(cb_index, 0x1337);
+	ck_assert_uint_eq(cb_newindex, 0x1337);
 	ck_assert_ptr_eq(cb_data, &model);
 	ck_assert_int_eq(cb_change, MODEL_ADD);
 
 	listmodel_unregister_change_callback(&model, change_callback, &model);
 
-	listmodel_notify_change(&model, 0xdeadbeef, MODEL_REMOVE);
+	listmodel_notify_change(&model, MODEL_REMOVE, 0, 0xdeadbeef);
 	ck_assert_uint_eq(cb_count, 1);
-	ck_assert_uint_eq(cb_index, 0x1337);
 	ck_assert_ptr_eq(cb_data, &model);
 	ck_assert_int_eq(cb_change, MODEL_ADD);
 }

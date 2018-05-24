@@ -193,15 +193,17 @@ START_TEST(test_dirmodel_render_specialcases)
 }
 END_TEST
 
-static size_t cb_index;
+static size_t cb_newindex;
+static size_t cb_oldindex;
 static enum model_change cb_change;
 static unsigned int cb_count;
 
-static void change_callback(size_t index, enum model_change change, void *data)
+static void change_callback(enum model_change change, size_t newindex, size_t oldindex, void *data)
 {
 	(void)data;
 	cb_count++;
-	cb_index = index;
+	cb_newindex = newindex;
+	cb_oldindex = oldindex;
 	cb_change = change;
 }
 
@@ -236,7 +238,7 @@ START_TEST(test_dirmodel_addedfileevent)
 	assert_oom(dirmodel_notify_file_added_or_changed(&model, "2") != ENOMEM);
 
 	ck_assert_uint_eq(cb_count, 2);
-	ck_assert_uint_eq(cb_index, 2);
+	ck_assert_uint_eq(cb_newindex, 2);
 	ck_assert_uint_eq(cb_change, MODEL_ADD);
 }
 END_TEST
@@ -257,7 +259,7 @@ START_TEST(test_dirmodel_removedfileevent)
 	dirmodel_notify_file_deleted(&model, "3");
 
 	ck_assert_uint_eq(cb_count, 2);
-	ck_assert_uint_eq(cb_index, 3);
+	ck_assert_uint_eq(cb_oldindex, 3);
 	ck_assert_uint_eq(cb_change, MODEL_REMOVE);
 }
 END_TEST
@@ -279,7 +281,7 @@ START_TEST(test_dirmodel_changedfileevent)
 	assert_oom(dirmodel_notify_file_added_or_changed(&model, "1") != ENOMEM);
 
 	ck_assert_uint_eq(cb_count, 2);
-	ck_assert_uint_eq(cb_index, 1);
+	ck_assert_uint_eq(cb_newindex, 1);
 	ck_assert_uint_eq(cb_change, MODEL_CHANGE);
 }
 END_TEST
@@ -329,7 +331,7 @@ END_TEST
 START_TEST(test_dirmodel_markfiles_changeevent)
 {
 	cb_count = 0;
-	cb_index = 0;
+	cb_newindex = 0;
 	cb_change = MODEL_RELOAD;
 
 	assert_oom(dirmodel_change_directory(&model, path) == true);
@@ -338,7 +340,7 @@ START_TEST(test_dirmodel_markfiles_changeevent)
 	listmodel_setmark(&model.listmodel, 1, true);
 
 	ck_assert_uint_eq(cb_count, 1);
-	ck_assert_uint_eq(cb_index, 1);
+	ck_assert_uint_eq(cb_newindex, 1);
 	ck_assert_uint_eq(cb_change, MODEL_CHANGE);
 }
 END_TEST

@@ -151,7 +151,7 @@ static void dirmodel_setmark(struct listmodel *listmodel, size_t index, bool mar
 	struct list *list = model->list;
 	struct filedata *filedata = list_get_item(list, index);
 	filedata->is_marked = mark;
-	listmodel_notify_change(listmodel, index, MODEL_CHANGE);
+	listmodel_notify_change(listmodel, MODEL_CHANGE, index, index);
 }
 
 static bool dirmodel_ismarked(struct listmodel *listmodel, size_t index)
@@ -265,7 +265,7 @@ void dirmodel_regex_setmark(struct dirmodel *model, const char *regex, bool mark
 		struct filedata *filedata = list_get_item(list, i);
 		if(regexec(&cregex, filedata->filename, 0, NULL, 0) == 0) {
 			filedata->is_marked = mark;
-			listmodel_notify_change(&model->listmodel, i, MODEL_CHANGE);
+			listmodel_notify_change(&model->listmodel, MODEL_CHANGE, i, i);
 		}
 	}
 
@@ -297,7 +297,7 @@ void dirmodel_notify_file_deleted(struct dirmodel *model, const char *filename)
 		struct filedata *filedata = list_get_item(list, index);
 		filedata_delete(filedata);
 		list_remove(list, index);
-		listmodel_notify_change(&model->listmodel, index, MODEL_REMOVE);
+		listmodel_notify_change(&model->listmodel, MODEL_REMOVE, 0, index);
 	}
 }
 
@@ -319,13 +319,13 @@ int dirmodel_notify_file_added_or_changed(struct dirmodel *model, const char *fi
 		struct filedata *filedataold = list_get_item(list, index);
 		list_set_item(list, index, filedata);
 		filedata_delete(filedataold);
-		listmodel_notify_change(&model->listmodel, index, MODEL_CHANGE);
+		listmodel_notify_change(&model->listmodel, MODEL_CHANGE, index, index);
 	} else {
 		if(!list_insert(list, index, filedata)) {
 			filedata_delete(filedata);
 			return ENOMEM;
 		}
-		listmodel_notify_change(&model->listmodel, index, MODEL_ADD);
+		listmodel_notify_change(&model->listmodel, MODEL_ADD, index, 0);
 	}
 
 	return 0;
@@ -410,7 +410,7 @@ bool dirmodel_change_directory(struct dirmodel *model, const char *path)
 	internal_destroy(model);
 	if(!internal_init(model, path))
 		return false;
-	listmodel_notify_change(&model->listmodel, 0, MODEL_RELOAD);
+	listmodel_notify_change(&model->listmodel, MODEL_RELOAD, 0, 0);
 	return true;
 }
 

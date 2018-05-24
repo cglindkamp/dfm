@@ -142,26 +142,35 @@ void listview_resize(struct listview *view, unsigned int width, unsigned int hei
 	listview_setindex_internal(view, view->index, 0, false);
 }
 
-static void change_cb(size_t index, enum model_change change, void *data)
+static void change_cb(enum model_change change, size_t newindex, size_t oldindex, void *data)
 {
 	struct listview *view = data;
 	unsigned int rowcount = getmaxy(view->window);
 
 	switch(change) {
 	case MODEL_ADD:
-		if(index <= view->index)
+		if(newindex <= view->index)
 			listview_setindex_internal(view, view->index + 1, 1, true);
-		else if(index < view->first + rowcount)
+		else if(newindex < view->first + rowcount)
 			print_list(view);
 		break;
 	case MODEL_REMOVE:
-		if(index < view->index)
+		if(oldindex < view->index)
 			listview_setindex_internal(view, view->index - 1, -1, true);
-		else if(index < view->first + rowcount)
+		else if(oldindex < view->first + rowcount)
 			listview_setindex_internal(view, view->index, 0, true);
+		break;
 	case MODEL_CHANGE:
-		if(index >= view->first && index < view->first + rowcount)
-			print_list(view);
+		if(newindex == oldindex) {
+			if(newindex >= view->first && newindex < view->first + rowcount)
+				print_list(view);
+		} else if(oldindex == view->index) {
+			listview_setindex_internal(view, newindex, 0, false);
+		} else {
+			/* this will redraw the screen two times, if oldindex and newindex are visible at the moment */
+			change_cb(MODEL_ADD, newindex, oldindex, data);
+			change_cb(MODEL_REMOVE, newindex, oldindex, data);
+		}
 		break;
 	case MODEL_RELOAD:
 		view->first = 0;

@@ -72,7 +72,7 @@ void listmodel_unregister_change_callback(struct listmodel *model, model_change_
 	}
 }
 
-void listmodel_notify_change(struct listmodel *model, size_t index, enum model_change change)
+void listmodel_notify_change(struct listmodel *model, enum model_change change, size_t newindex, size_t oldindex)
 {
 	struct list *list = model->change_callbacks;
 	if(list == NULL)
@@ -83,7 +83,7 @@ void listmodel_notify_change(struct listmodel *model, size_t index, enum model_c
 
 	for(size_t i = 0; i < length; i++) {
 		cb = list_get_item(list, i);
-		cb->cb(index, change, cb->data);
+		cb->cb(change, newindex, oldindex, cb->data);
 	}
 }
 

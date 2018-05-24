@@ -49,13 +49,18 @@ static void testmodel_destroy(struct testmodel *model)
 static void testmodel_add(struct testmodel *model, size_t index)
 {
 	model->count++;
-	listmodel_notify_change(&model->listmodel, index, MODEL_ADD);
+	listmodel_notify_change(&model->listmodel, MODEL_ADD, index, 0);
 }
 
 static void testmodel_remove(struct testmodel *model, size_t index)
 {
 	model->count--;
-	listmodel_notify_change(&model->listmodel, index, MODEL_REMOVE);
+	listmodel_notify_change(&model->listmodel, MODEL_REMOVE, 0, index);
+}
+
+static void testmodel_change(struct testmodel *model, size_t newindex, size_t oldindex)
+{
+	listmodel_notify_change(&model->listmodel, MODEL_CHANGE, newindex, oldindex);
 }
 
 static bool create_view() {
@@ -568,6 +573,63 @@ START_TEST(test_listview_modelchange_removeafterindex_atendoflist)
 }
 END_TEST
 
+START_TEST(test_listview_modelchange_moveditem_itemselected)
+{
+	testmodel_init(&model, 100);
+	assert_oom(create_view() == true);
+
+	listview_setindex(&listview, 50);
+	ck_assert_uint_eq(listview_getindex(&listview), 50);
+	ck_assert_uint_eq(listview_getfirst(&listview), 26);
+
+	testmodel_change(&model, 30, 50);
+
+	ck_assert_uint_eq(listview_getindex(&listview), 30);
+	ck_assert_uint_eq(listview_getfirst(&listview), 26);
+
+	listview_destroy(&listview);
+	testmodel_destroy(&model);
+}
+END_TEST
+
+START_TEST(test_listview_modelchange_moveditem_itemnotselected_addedbefore)
+{
+	testmodel_init(&model, 100);
+	assert_oom(create_view() == true);
+
+	listview_setindex(&listview, 50);
+	ck_assert_uint_eq(listview_getindex(&listview), 50);
+	ck_assert_uint_eq(listview_getfirst(&listview), 26);
+
+	testmodel_change(&model, 40, 60);
+
+	ck_assert_uint_eq(listview_getindex(&listview), 51);
+	ck_assert_uint_eq(listview_getfirst(&listview), 27);
+
+	listview_destroy(&listview);
+	testmodel_destroy(&model);
+}
+END_TEST
+
+START_TEST(test_listview_modelchange_moveditem_itemnotselected_removedbefore)
+{
+	testmodel_init(&model, 100);
+	assert_oom(create_view() == true);
+
+	listview_setindex(&listview, 50);
+	ck_assert_uint_eq(listview_getindex(&listview), 50);
+	ck_assert_uint_eq(listview_getfirst(&listview), 26);
+
+	testmodel_change(&model, 60, 40);
+
+	ck_assert_uint_eq(listview_getindex(&listview), 49);
+	ck_assert_uint_eq(listview_getfirst(&listview), 25);
+
+	listview_destroy(&listview);
+	testmodel_destroy(&model);
+}
+END_TEST
+
 START_TEST(test_listview_modelchange_addbeforefirst_smallist)
 {
 	testmodel_init(&model, 10);
@@ -666,6 +728,9 @@ Suite *listview_suite(void)
 	tcase_add_test(tcase, test_listview_modelchange_addafterindex);
 	tcase_add_test(tcase, test_listview_modelchange_removeafterindex);
 	tcase_add_test(tcase, test_listview_modelchange_removeafterindex_atendoflist);
+	tcase_add_test(tcase, test_listview_modelchange_moveditem_itemselected);
+	tcase_add_test(tcase, test_listview_modelchange_moveditem_itemnotselected_addedbefore);
+	tcase_add_test(tcase, test_listview_modelchange_moveditem_itemnotselected_removedbefore);
 	suite_add_tcase(suite, tcase);
 
 	tcase = tcase_create("modelchange_smalllist");
