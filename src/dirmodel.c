@@ -22,6 +22,13 @@
 #define INFO_SIZE_OVERFLOW    L">9000"
 #define INFO_SIZE_DIR_LENGTH  5
 
+static int (*dirmodel_comparision_functions[])(const void *, const void *) = {
+	[DIRMODEL_FILENAME] = filedata_listcompare_directory_filename,
+	[DIRMODEL_FILENAME_DESCENDING] = filedata_listcompare_directory_filename_descending,
+	[DIRMODEL_SIZE] = filedata_listcompare_directory_size_filename,
+	[DIRMODEL_SIZE_DESCENDING] = filedata_listcompare_directory_size_filename_descending,
+};
+
 size_t dirmodel_count(struct listmodel *listmodel)
 {
 	struct dirmodel *model = container_of(listmodel, struct dirmodel, listmodel);
@@ -207,7 +214,7 @@ bool dirmodel_get_internal_index(struct dirmodel *model, const char *filename, s
 		return false;
 
 	struct filedata *internal_filedata = list_get_item(model->list, *internal_index);
-	if(!list_find_item_or_insertpoint(model->sortedlist, filedata_listcompare_directory_filename, internal_filedata, index))
+	if(!list_find_item_or_insertpoint(model->sortedlist, model->sort_compare, internal_filedata, index))
 		return false;
 	return true;
 }
@@ -288,6 +295,11 @@ bool dirmodel_setfilter(struct dirmodel *model, const char *regex)
 	return model->filter_active;
 }
 
+void dirmodel_set_sort_mode(struct dirmodel *model, enum dirmodel_sort_mode mode)
+{
+	model->sort_compare = dirmodel_comparision_functions[mode];
+}
+
 void dirmodel_notify_file_deleted(struct dirmodel *model, const char *filename)
 {
 	struct list *list = model->list;
@@ -308,8 +320,8 @@ static int dirmodel_update_file(struct dirmodel *model, struct filedata *newfile
 	struct filedata *oldfiledata = list_get_item(model->list, internal_index);
 	size_t newindex, oldindex;
 
-	list_find_item_or_insertpoint(model->sortedlist, filedata_listcompare_directory_filename, oldfiledata, &oldindex);
-	list_find_item_or_insertpoint(model->sortedlist, filedata_listcompare_directory_filename, newfiledata, &newindex);
+	list_find_item_or_insertpoint(model->sortedlist, model->sort_compare, oldfiledata, &oldindex);
+	list_find_item_or_insertpoint(model->sortedlist, model->sort_compare, newfiledata, &newindex);
 
 	if((newindex == oldindex) || (newindex == oldindex + 1)) {
 		list_set_item(model->sortedlist, oldindex, newfiledata);
@@ -341,7 +353,7 @@ static int dirmodel_add_file(struct dirmodel *model, struct filedata *filedata, 
 	}
 
 	size_t index;
-	list_find_item_or_insertpoint(model->sortedlist, filedata_listcompare_directory_filename, filedata, &index);
+	list_find_item_or_insertpoint(model->sortedlist, model->sort_compare, filedata, &index);
 
 	if(!list_insert(model->sortedlist, index, filedata)) {
 		filedata_delete(filedata);
@@ -430,7 +442,7 @@ static bool internal_init(struct dirmodel *model, const char *path)
 	model->sortedlist = sortedlist;
 
 	list_sort(list, filedata_listcompare_filename);
-	list_sort(sortedlist, filedata_listcompare_directory_filename);
+	list_sort(sortedlist, model->sort_compare);
 
 	return true;
 
@@ -478,6 +490,7 @@ void dirmodel_init(struct dirmodel *model)
 	model->listmodel.setmark = dirmodel_setmark;
 	model->listmodel.ismarked = dirmodel_ismarked;
 	model->filter_active = false;
+	model->sort_compare = filedata_listcompare_directory_filename;
 }
 
 void dirmodel_destroy(struct dirmodel *model)
