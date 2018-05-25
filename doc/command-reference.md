@@ -36,6 +36,7 @@ The table below shows all supported commands:
 | search\_next       | none                | -                   |
 | filter             | filename regex      | no                  |
 | map                | add key binding     | yes                 |
+| sort               | sort mode           | yes                 |
 
 Command description
 ===================
@@ -223,3 +224,18 @@ following key strings are currently supported:
 - f1 - f10
 
 See default rc file in examples/rc as an example.
+
+sort
+----
+**Purpose**: sets the sort mode
+**Parameter**: sort\_mode
+
+The sort command set the order, in which the files are displayed. The following
+modes are currently supported:
+
+- name+
+- name-
+- size+
+- size-
+
+A trailing '+' denotes an ascending order and a '-' a descending order.

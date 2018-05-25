@@ -446,6 +446,24 @@ static void command_filter(struct commandexecutor *commandexecutor, char *regex)
 	enter_directory(app, NULL);
 }
 
+static void command_sort(struct commandexecutor *commandexecutor, char *mode_string)
+{
+	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
+	enum dirmodel_sort_mode mode;
+	if(strcmp(mode_string, "name+") == 0)
+		mode = DIRMODEL_FILENAME;
+	else if(strcmp(mode_string, "name-") == 0)
+		mode = DIRMODEL_FILENAME_DESCENDING;
+	else if(strcmp(mode_string, "size+") == 0)
+		mode = DIRMODEL_SIZE;
+	else if(strcmp(mode_string, "size-") == 0)
+		mode = DIRMODEL_SIZE_DESCENDING;
+	else
+		return;
+	dirmodel_set_sort_mode(&app->model, mode);
+	enter_directory(app, NULL);
+}
+
 static void command_map(struct commandexecutor *commandexecutor, char *keymapstring)
 {
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
@@ -477,6 +495,7 @@ struct command_map application_command_map[] = {
 	{ "search_reverse", command_search_reverse, true },
 	{ "filter", command_filter, false },
 	{ "map", command_map, true },
+	{ "sort", command_sort, true },
 	{ NULL, NULL, false },
 };
 
