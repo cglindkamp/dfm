@@ -227,7 +227,7 @@ See default rc file in examples/rc as an example.
 
 sort
 ----
-**Purpose**: sets the sort mode
+**Purpose**: sets the sort mode  
 **Parameter**: sort\_mode
 
 The sort command set the order, in which the files are displayed. The following
