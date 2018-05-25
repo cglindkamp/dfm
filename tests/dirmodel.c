@@ -282,6 +282,32 @@ START_TEST(test_dirmodel_changedfileevent)
 
 	ck_assert_uint_eq(cb_count, 2);
 	ck_assert_uint_eq(cb_newindex, 1);
+	ck_assert_uint_eq(cb_oldindex, 1);
+	ck_assert_uint_eq(cb_change, MODEL_CHANGE);
+}
+END_TEST
+
+START_TEST(test_dirmodel_changedfileevent_newposition)
+{
+	cb_count = 0;
+	cb_change = MODEL_RELOAD;
+
+	create_file(dir_fd, "0", 0);
+	create_file(dir_fd, "1", 0);
+	create_file(dir_fd, "2", 0);
+	create_file(dir_fd, "3", 0);
+	create_file(dir_fd, "4", 0);
+	assert_oom(listmodel_register_change_callback(&model.listmodel, change_callback, NULL) == true);
+
+	assert_oom(dirmodel_change_directory(&model, path) == true);
+
+	unlinkat(dir_fd, "1", 0);
+	mkdirat(dir_fd, "1", 0x700);
+	assert_oom(dirmodel_notify_file_added_or_changed(&model, "1") != ENOMEM);
+
+	ck_assert_uint_eq(cb_count, 2);
+	ck_assert_uint_eq(cb_newindex, 0);
+	ck_assert_uint_eq(cb_oldindex, 1);
 	ck_assert_uint_eq(cb_change, MODEL_CHANGE);
 }
 END_TEST
@@ -532,6 +558,7 @@ Suite *dirmodel_suite(void)
 	tcase_add_test(tcase, test_dirmodel_addedfileevent);
 	tcase_add_test(tcase, test_dirmodel_removedfileevent);
 	tcase_add_test(tcase, test_dirmodel_changedfileevent);
+	tcase_add_test(tcase, test_dirmodel_changedfileevent_newposition);
 	tcase_add_test(tcase, test_dirmodel_addedfileremovedbeforeeventhandled);
 	suite_add_tcase(suite, tcase);
 

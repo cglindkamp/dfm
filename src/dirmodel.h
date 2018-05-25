@@ -10,6 +10,7 @@
 struct dirmodel {
 	struct listmodel listmodel;
 	struct list *list;
+	struct list *sortedlist;
 	DIR *dir;
 	regex_t filter;
 	bool filter_active;

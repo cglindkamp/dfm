@@ -110,7 +110,7 @@ static size_t render_filename(wchar_t *buffer, size_t len, size_t width, const c
 static size_t dirmodel_render(struct listmodel *listmodel, wchar_t *buffer, size_t len, size_t width, size_t index)
 {
 	struct dirmodel *model = container_of(listmodel, struct dirmodel, listmodel);;
-	struct list *list = model->list;
+	struct list *list = model->sortedlist;
 	struct filedata *filedata = list_get_item(list, index);
 	wchar_t info[INFO_SEPARATOR_LENGTH + INFO_LINK_LENGTH + INFO_SIZE_DIR_LENGTH + 1];
 	size_t info_size;
@@ -148,7 +148,7 @@ static size_t dirmodel_render(struct listmodel *listmodel, wchar_t *buffer, size
 static void dirmodel_setmark(struct listmodel *listmodel, size_t index, bool mark)
 {
 	struct dirmodel *model = container_of(listmodel, struct dirmodel, listmodel);;
-	struct list *list = model->list;
+	struct list *list = model->sortedlist;
 	struct filedata *filedata = list_get_item(list, index);
 	filedata->is_marked = mark;
 	listmodel_notify_change(listmodel, MODEL_CHANGE, index, index);
@@ -157,14 +157,14 @@ static void dirmodel_setmark(struct listmodel *listmodel, size_t index, bool mar
 static bool dirmodel_ismarked(struct listmodel *listmodel, size_t index)
 {
 	struct dirmodel *model = container_of(listmodel, struct dirmodel, listmodel);;
-	struct list *list = model->list;
+	struct list *list = model->sortedlist;
 	struct filedata *filedata = list_get_item(list, index);
 	return filedata->is_marked;
 }
 
 int dirmodel_getmarkedfilenames(struct dirmodel *model, const struct list **markedlist_out)
 {
-	struct list *list = model->list;
+	struct list *list = model->sortedlist;
 	struct list *markedlist = list_new(0);
 
 	if(markedlist == NULL)
@@ -197,29 +197,30 @@ int dirmodel_getmarkedfilenames(struct dirmodel *model, const struct list **mark
 	return 0;
 }
 
-bool dirmodel_get_index(struct dirmodel *model, const char *filename, size_t *index)
+bool dirmodel_get_internal_index(struct dirmodel *model, const char *filename, size_t *internal_index, size_t *index)
 {
-	struct list *list = model->list;
 	struct filedata filedata;
-	bool found;
 
 	filedata.filename = filename;
 
-	/* We cannot stat a potentially deleted or moved file, but the compare function
-	 * used by the search function uses S_IFDIR. So search two times, with and
-	 * without the flag set */
-	filedata.stat.st_mode = S_IFDIR;
-	found = list_find_item_or_insertpoint(list, filedata_listcompare_directory_filename, &filedata, index);
-	if(!found) {
-		filedata.stat.st_mode = 0;
-		found = list_find_item_or_insertpoint(list, filedata_listcompare_directory_filename, &filedata, index);
-	}
-	return found;
+	if(!list_find_item_or_insertpoint(model->list, filedata_listcompare_filename, &filedata, internal_index))
+		return false;
+
+	struct filedata *internal_filedata = list_get_item(model->list, *internal_index);
+	if(!list_find_item_or_insertpoint(model->sortedlist, filedata_listcompare_directory_filename, internal_filedata, index))
+		return false;
+	return true;
+}
+
+bool dirmodel_get_index(struct dirmodel *model, const char *filename, size_t *index)
+{
+	size_t internal_index;
+	return dirmodel_get_internal_index(model, filename, &internal_index, index);
 }
 
 size_t dirmodel_regex_getnext(struct dirmodel *model, const char *regex, size_t start_index, int direction)
 {
-	struct list *list = model->list;
+	struct list *list = model->sortedlist;
 	regex_t cregex;
 	size_t result = start_index;
 
@@ -252,7 +253,7 @@ size_t dirmodel_regex_getnext(struct dirmodel *model, const char *regex, size_t 
 
 void dirmodel_regex_setmark(struct dirmodel *model, const char *regex, bool mark)
 {
-	struct list *list = model->list;
+	struct list *list = model->sortedlist;
 	regex_t cregex;
 
 	int ret = regcomp(&cregex, regex, REG_EXTENDED | REG_ICASE | REG_NOSUB);
@@ -290,22 +291,71 @@ bool dirmodel_setfilter(struct dirmodel *model, const char *regex)
 void dirmodel_notify_file_deleted(struct dirmodel *model, const char *filename)
 {
 	struct list *list = model->list;
-	size_t index;
+	size_t index, internal_index;
 
-	bool found = dirmodel_get_index(model, filename, &index);
+	bool found = dirmodel_get_internal_index(model, filename, &internal_index, &index);
 	if(found) {
-		struct filedata *filedata = list_get_item(list, index);
+		struct filedata *filedata = list_get_item(list, internal_index);
 		filedata_delete(filedata);
-		list_remove(list, index);
+		list_remove(list, internal_index);
+		list_remove(model->sortedlist, index);
 		listmodel_notify_change(&model->listmodel, MODEL_REMOVE, 0, index);
 	}
 }
 
+static int dirmodel_update_file(struct dirmodel *model, struct filedata *newfiledata, size_t internal_index)
+{
+	struct filedata *oldfiledata = list_get_item(model->list, internal_index);
+	size_t newindex, oldindex;
+
+	list_find_item_or_insertpoint(model->sortedlist, filedata_listcompare_directory_filename, oldfiledata, &oldindex);
+	list_find_item_or_insertpoint(model->sortedlist, filedata_listcompare_directory_filename, newfiledata, &newindex);
+
+	if((newindex == oldindex) || (newindex == oldindex + 1)) {
+		list_set_item(model->sortedlist, oldindex, newfiledata);
+		listmodel_notify_change(&model->listmodel, MODEL_CHANGE, oldindex, oldindex);
+	} else {
+		if(oldindex < newindex)
+			newindex--;
+		list_remove(model->sortedlist, oldindex);
+		if(!list_insert(model->sortedlist, newindex, newfiledata)) {
+			/* list_insert can't actually fail here, because we
+			 * just removed an item, just in case this changes in
+			 * the future, abort to potentially catch it in unit
+			 * test runs */
+			abort();
+		}
+		listmodel_notify_change(&model->listmodel, MODEL_CHANGE, newindex, oldindex);
+	}
+	list_set_item(model->list, internal_index, newfiledata);
+	filedata_delete(oldfiledata);
+
+	return 0;
+}
+
+static int dirmodel_add_file(struct dirmodel *model, struct filedata *filedata, size_t internal_index)
+{
+	if(!list_insert(model->list, internal_index, filedata)) {
+		filedata_delete(filedata);
+		return ENOMEM;
+	}
+
+	size_t index;
+	list_find_item_or_insertpoint(model->sortedlist, filedata_listcompare_directory_filename, filedata, &index);
+
+	if(!list_insert(model->sortedlist, index, filedata)) {
+		filedata_delete(filedata);
+		list_remove(model->list, internal_index);
+		return ENOMEM;
+	}
+	listmodel_notify_change(&model->listmodel, MODEL_ADD, index, 0);
+	return 0;
+}
+
 int dirmodel_notify_file_added_or_changed(struct dirmodel *model, const char *filename)
 {
-	struct list *list = model->list;
 	struct filedata *filedata;
-	size_t index;
+	size_t internal_index;
 
 	if(model->filter_active && regexec(&model->filter, filename, 0, NULL, 0) != 0)
 		return 0;
@@ -314,33 +364,25 @@ int dirmodel_notify_file_added_or_changed(struct dirmodel *model, const char *fi
 	if(ret != 0)
 		return ret;
 
-	bool found = list_find_item_or_insertpoint(list, filedata_listcompare_directory_filename, filedata, &index);
-	if(found) {
-		struct filedata *filedataold = list_get_item(list, index);
-		list_set_item(list, index, filedata);
-		filedata_delete(filedataold);
-		listmodel_notify_change(&model->listmodel, MODEL_CHANGE, index, index);
-	} else {
-		if(!list_insert(list, index, filedata)) {
-			filedata_delete(filedata);
-			return ENOMEM;
-		}
-		listmodel_notify_change(&model->listmodel, MODEL_ADD, index, 0);
-	}
+	bool found = list_find_item_or_insertpoint(model->list, filedata_listcompare_filename, filedata, &internal_index);
+	if(found)
+		return dirmodel_update_file(model, filedata, internal_index);
+	else
+		return dirmodel_add_file(model, filedata, internal_index);
 
 	return 0;
 }
 
 const char *dirmodel_getfilename(struct dirmodel *model, size_t index)
 {
-	struct list *list = model->list;
+	struct list *list = model->sortedlist;
 	struct filedata *filedata = list_get_item(list, index);
 	return filedata->filename;
 }
 
 bool dirmodel_isdir(struct dirmodel *model, size_t index)
 {
-	struct list *list = model->list;
+	struct list *list = model->sortedlist;
 	struct filedata *filedata = list_get_item(list, index);
 	return S_ISDIR(filedata->stat.st_mode);
 }
@@ -358,6 +400,10 @@ static bool internal_init(struct dirmodel *model, const char *path)
 	if(list == NULL)
 		goto err_newlist;
 
+	struct list *sortedlist = list_new(0);
+	if(sortedlist == NULL)
+		goto err_newsortedlist;
+
 	struct dirent *entry = readdir(dir);
 
 	while(entry) {
@@ -372,6 +418,8 @@ static bool internal_init(struct dirmodel *model, const char *path)
 			if(ret != 0)
 				continue;
 
+			if(!list_append(sortedlist, filedata))
+				goto err_readdir;
 			if(!list_append(list, filedata))
 				goto err_readdir;
 		}
@@ -379,13 +427,17 @@ static bool internal_init(struct dirmodel *model, const char *path)
 	}
 	model->dir = dir;
 	model->list = list;
+	model->sortedlist = sortedlist;
 
-	list_sort(list, filedata_listcompare_directory_filename);
+	list_sort(list, filedata_listcompare_filename);
+	list_sort(sortedlist, filedata_listcompare_directory_filename);
 
 	return true;
 
 err_readdir:
 	filedata_delete(filedata);
+	list_delete(sortedlist, NULL);
+err_newsortedlist:
 	list_delete(list, (list_item_deallocator)filedata_delete);
 err_newlist:
 	closedir(dir);
@@ -402,6 +454,7 @@ static void internal_destroy(struct dirmodel *model)
 	closedir(model->dir);
 
 	list_delete(list, (list_item_deallocator)filedata_delete);
+	list_delete(model->sortedlist, NULL);
 	model->list = NULL;
 }
 
@@ -419,6 +472,7 @@ void dirmodel_init(struct dirmodel *model)
 	listmodel_init(&model->listmodel);
 
 	model->list = NULL;
+	model->sortedlist = NULL;
 	model->listmodel.count = dirmodel_count;
 	model->listmodel.render = dirmodel_render;
 	model->listmodel.setmark = dirmodel_setmark;
