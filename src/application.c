@@ -44,6 +44,7 @@ static void select_filename(struct application *app, const char *filename)
 	if(index == listmodel_count(&app->model.listmodel))
 		index--;
 	listview_setindex(&app->view, index);
+	listview_refresh(&app->view);
 }
 
 static void select_stored_position(struct application *app, const char *oldfilename)
@@ -99,6 +100,7 @@ static bool enter_directory(struct application *app, const char *oldpathname)
 
 	select_stored_position(app, oldpathname);
 	display_current_path(app);
+	listview_refresh(&app->view);
 
 	return true;
 }
@@ -110,6 +112,7 @@ static void unblock_signals(void)
 	sigemptyset(&sigset);
 	sigaddset(&sigset, SIGWINCH);
 	sigaddset(&sigset, SIGCHLD);
+	sigaddset(&sigset, SIGALRM);
 	sigprocmask(SIG_UNBLOCK, &sigset, NULL);
 }
 
@@ -196,6 +199,7 @@ static void command_navigate_up(struct commandexecutor *commandexecutor, char *u
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	(void)unused;
 	listview_up(&app->view);
+	listview_refresh(&app->view);
 }
 
 static void command_navigate_down(struct commandexecutor *commandexecutor, char *unused)
@@ -203,6 +207,7 @@ static void command_navigate_down(struct commandexecutor *commandexecutor, char 
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	(void)unused;
 	listview_down(&app->view);
+	listview_refresh(&app->view);
 }
 
 static void command_navigate_pageup(struct commandexecutor *commandexecutor, char *unused)
@@ -210,6 +215,7 @@ static void command_navigate_pageup(struct commandexecutor *commandexecutor, cha
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	(void)unused;
 	listview_pageup(&app->view);
+	listview_refresh(&app->view);
 }
 
 static void command_navigate_pagedown(struct commandexecutor *commandexecutor, char *unused)
@@ -217,6 +223,7 @@ static void command_navigate_pagedown(struct commandexecutor *commandexecutor, c
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	(void)unused;
 	listview_pagedown(&app->view);
+	listview_refresh(&app->view);
 }
 
 static void command_navigate_left(struct commandexecutor *commandexecutor, char *unused)
@@ -257,6 +264,7 @@ static void command_navigate_first(struct commandexecutor *commandexecutor, char
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	(void)unused;
 	listview_setindex(&app->view, 0);
+	listview_refresh(&app->view);
 }
 
 static void command_navigate_last(struct commandexecutor *commandexecutor, char *unused)
@@ -265,8 +273,10 @@ static void command_navigate_last(struct commandexecutor *commandexecutor, char 
 	(void)unused;
 	size_t count = listmodel_count(&app->model.listmodel);
 
-	if(count > 0)
+	if(count > 0) {
 		listview_setindex(&app->view, count - 1);
+		listview_refresh(&app->view);
+	}
 }
 
 static void command_change_directory(struct commandexecutor *commandexecutor, char *path)
@@ -288,6 +298,7 @@ static void command_togglemark(struct commandexecutor *commandexecutor, char *un
 	size_t index = listview_getindex(&app->view);
 	listmodel_setmark(&app->model.listmodel, index, !listmodel_ismarked(&app->model.listmodel, index));
 	listview_down(&app->view);
+	listview_refresh(&app->view);
 }
 
 static void command_invert_marks(struct commandexecutor *commandexecutor, char *unused)
@@ -300,18 +311,21 @@ static void command_invert_marks(struct commandexecutor *commandexecutor, char *
 		for(size_t i = 0; i < count; i++)
 			listmodel_setmark(&app->model.listmodel, i, !listmodel_ismarked(&app->model.listmodel, i));
 	}
+	listview_refresh(&app->view);
 }
 
 static void command_mark(struct commandexecutor *commandexecutor, char *regex)
 {
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	dirmodel_regex_setmark(&app->model, regex, true);
+	listview_refresh(&app->view);
 }
 
 static void command_unmark(struct commandexecutor *commandexecutor, char *regex)
 {
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	dirmodel_regex_setmark(&app->model, regex, false);
+	listview_refresh(&app->view);
 }
 
 static void command_yank(struct commandexecutor *commandexecutor, char *unused)
@@ -416,6 +430,7 @@ static void command_search_next(struct commandexecutor *commandexecutor, char *u
 	index = dirmodel_regex_getnext(&app->model, app->lastsearch_regex, index, app->lastsearch_direction);
 
 	listview_setindex(&app->view, index);
+	listview_refresh(&app->view);
 }
 
 static void search(struct application *app, const char *regex, int direction)
@@ -570,6 +585,7 @@ static void handle_signal(struct application *app)
 		mvwin(app->status, LINES - 1, 0);
 		wresize(app->status, 1, COLS);
 		listview_resize(&app->view, COLS, LINES - 1);
+		listview_refresh(&app->view);
 		commandline_resize(&app->commandline, 0, LINES - 1, COLS);
 		if(app->mode == MODE_NORMAL)
 			display_current_path(app);
@@ -580,6 +596,9 @@ static void handle_signal(struct application *app)
 		   info.ssi_code == CLD_DUMPED) {
 			processmanager_waitpid(&app->pm, info.ssi_pid, &status);
 		}
+	case SIGALRM:
+		app->timer_running = false;
+		listview_refresh(&app->view);
 		break;
 	}
 }
@@ -610,6 +629,15 @@ static void handle_inotify(struct application *app)
 	}
 	if(app->mode == MODE_COMMAND)
 		commandline_updatecursor(&app->commandline);
+
+	if(!app->timer_running) {
+		app->refresh_timer.it_value.tv_sec = 0;
+		app->refresh_timer.it_value.tv_usec = 50000;
+		app->refresh_timer.it_interval.tv_sec = 0;
+		app->refresh_timer.it_interval.tv_usec = 0;
+		setitimer(ITIMER_REAL, &app->refresh_timer, NULL);
+		app->timer_running = true;
+	}
 }
 
 void application_run(struct application *app)
@@ -643,6 +671,7 @@ static int create_signalfd()
 	sigemptyset(&sigset);
 	sigaddset(&sigset, SIGWINCH);
 	sigaddset(&sigset, SIGCHLD);
+	sigaddset(&sigset, SIGALRM);
 	sigprocmask(SIG_BLOCK, &sigset, NULL);
 
 	return signalfd(-1, &sigset, SFD_CLOEXEC);
@@ -709,6 +738,7 @@ bool application_init(struct application *app)
 
 	app->mode = MODE_NORMAL;
 	app->lastsearch_regex = NULL;
+	app->timer_running = false;
 	curs_set(0);
 
 	processmanager_init(&app->pm);

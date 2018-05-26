@@ -14,6 +14,7 @@
 
 #include <ncurses.h>
 #include <stdbool.h>
+#include <sys/time.h>
 
 struct list;
 
@@ -33,6 +34,8 @@ struct application {
 	struct keymap keymap;
 	struct commandexecutor commandexecutor;
 	struct processmanager pm;
+	struct itimerval refresh_timer;
+	bool timer_running;
 	int signal_fd;
 	int inotify_fd;
 	int inotify_watch;

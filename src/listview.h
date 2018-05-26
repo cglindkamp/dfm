@@ -3,14 +3,22 @@
 #define LISTVIEW_H
 
 #include <ncurses.h>
+#include <stdbool.h>
 
 struct listview {
 	WINDOW *window;
 	struct listmodel *model;
 	size_t first;
 	size_t index;
+	/*
+	 * this variable might never really be needed, if the code calling
+	 * listview_refresh also knows, when a refresh is needed, but we keep
+	 * it to mark all places in the code, after which a refresh is needed
+	 */
+	bool needs_refresh;
 };
 
+void listview_refresh(struct listview *view);
 void listview_up(struct listview *view);
 void listview_down(struct listview *view);
 void listview_pageup(struct listview *view);

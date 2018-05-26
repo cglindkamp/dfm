@@ -20,8 +20,11 @@ static int attrs_for_index(struct listmodel *model, size_t index, size_t selecte
 	return 0;
 }
 
-static void print_list(struct listview *view)
+void listview_refresh(struct listview *view)
 {
+	if(!view->needs_refresh)
+		return;
+
 	unsigned int height, width;
 	size_t i = 0;
 	height = getmaxy(view->window);
@@ -52,6 +55,7 @@ static void print_list(struct listview *view)
 		i++;
 	}
 	wrefresh(view->window);
+	view->needs_refresh = false;
 }
 
 static void listview_setindex_internal(struct listview *view, size_t index, int direction, bool keep_distance)
@@ -88,7 +92,7 @@ static void listview_setindex_internal(struct listview *view, size_t index, int 
 	else if(listcount - view->first <= rowcount)
 		view->first = listcount - rowcount;
 
-	print_list(view);
+	view->needs_refresh = true;
 }
 
 void listview_up(struct listview *view)
@@ -152,7 +156,7 @@ static void change_cb(enum model_change change, size_t newindex, size_t oldindex
 		if(newindex <= view->index)
 			listview_setindex_internal(view, view->index + 1, 1, true);
 		else if(newindex < view->first + rowcount)
-			print_list(view);
+			view->needs_refresh = true;
 		break;
 	case MODEL_REMOVE:
 		if(oldindex < view->index)
@@ -163,11 +167,10 @@ static void change_cb(enum model_change change, size_t newindex, size_t oldindex
 	case MODEL_CHANGE:
 		if(newindex == oldindex) {
 			if(newindex >= view->first && newindex < view->first + rowcount)
-				print_list(view);
+				view->needs_refresh = true;
 		} else if(oldindex == view->index) {
 			listview_setindex_internal(view, newindex, 0, false);
 		} else {
-			/* this will redraw the screen two times, if oldindex and newindex are visible at the moment */
 			change_cb(MODEL_ADD, newindex, oldindex, data);
 			change_cb(MODEL_REMOVE, newindex, oldindex, data);
 		}
@@ -175,7 +178,7 @@ static void change_cb(enum model_change change, size_t newindex, size_t oldindex
 	case MODEL_RELOAD:
 		view->first = 0;
 		view->index = 0;
-		print_list(view);
+		view->needs_refresh = true;
 	}
 }
 
@@ -188,6 +191,7 @@ bool listview_init(struct listview *view, struct listmodel *model, unsigned int 
 	view->index = 0;
 	view->first = 0;
 	view->model = model;
+	view->needs_refresh = true;
 
 	if(!listmodel_register_change_callback(view->model, change_cb, view)) {
 		delwin(view->window);
@@ -195,7 +199,7 @@ bool listview_init(struct listview *view, struct listmodel *model, unsigned int 
 		return false;
 	}
 
-	print_list(view);
+	listview_refresh(view);
 
 	return true;
 }
