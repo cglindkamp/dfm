@@ -13,6 +13,7 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/epoll.h>
 #include <sys/inotify.h>
 #include <sys/signalfd.h>
 #include <sys/stat.h>
@@ -643,25 +644,43 @@ static void handle_inotify(struct application *app)
 
 void application_run(struct application *app)
 {
-	struct pollfd pollfds[3] = {
-		{ .events = POLLIN, .fd = 0, },
-		{ .events = POLLIN, .fd = app->signal_fd, },
-		{ .events = POLLIN, .fd = app->inotify_fd, },
+	struct epoll_event pollfds[3] = {
+		{ .events = EPOLLIN, .data.fd = 0, },
+		{ .events = EPOLLIN, .data.fd = app->signal_fd, },
+		{ .events = EPOLLIN, .data.fd = app->inotify_fd, },
 	};
-	int nfds = app->inotify_fd == -1 ? 2 : 3;
+	struct epoll_event events[10];
+
+	int epollfd = epoll_create1(EPOLL_CLOEXEC);
+	if(epollfd < 0)
+		return;
+
+	if(epoll_ctl(epollfd, EPOLL_CTL_ADD, 0, &pollfds[0]) < 0)
+		goto out;
+	if(epoll_ctl(epollfd, EPOLL_CTL_ADD, app->signal_fd, &pollfds[1]) < 0)
+		goto out;
+	if(app->inotify_fd != -1) {
+		if(epoll_ctl(epollfd, EPOLL_CTL_ADD, app->inotify_fd, &pollfds[2]) < 0)
+			goto out;
+	}
 
 	app->running = true;
 	while(app->running) {
-		int ret = poll(pollfds, nfds, -1);
-		if(ret > 0) {
-			if(pollfds[0].revents & POLLIN)
+		int ret = epoll_wait(epollfd, events, sizeof(events)/sizeof(events[0]), -1);
+		if(ret < 0)
+			goto out;
+		for(int i = 0; i < ret; i++) {
+			if(events[i].data.fd == 0)
 				handle_stdin(app);
-			if(pollfds[1].revents & POLLIN)
+			if(events[i].data.fd == app->signal_fd)
 				handle_signal(app);
-			if(pollfds[2].revents & POLLIN)
+			if(events[i].data.fd == app->inotify_fd)
 				handle_inotify(app);
 		}
 	}
+out:
+	close(epollfd);
+	return;
 }
 
 
