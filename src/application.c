@@ -667,8 +667,12 @@ void application_run(struct application *app)
 	app->running = true;
 	while(app->running) {
 		int ret = epoll_wait(epollfd, events, sizeof(events)/sizeof(events[0]), -1);
-		if(ret < 0)
-			goto out;
+		if(ret < 0) {
+			if(errno == EINTR)
+				continue;
+			else
+				goto out;
+		}
 		for(int i = 0; i < ret; i++) {
 			if(events[i].data.fd == 0)
 				handle_stdin(app);
