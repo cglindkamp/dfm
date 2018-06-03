@@ -364,7 +364,7 @@ static int dirmodel_add_file(struct dirmodel *model, struct filedata *filedata, 
 	return 0;
 }
 
-int dirmodel_notify_file_added_or_changed(struct dirmodel *model, const char *filename)
+static int dirmodel_notify_file_added_or_changed_real(struct dirmodel *model, const char *filename)
 {
 	struct filedata *filedata;
 	size_t internal_index;
@@ -383,6 +383,39 @@ int dirmodel_notify_file_added_or_changed(struct dirmodel *model, const char *fi
 		return dirmodel_add_file(model, filedata, internal_index);
 
 	return 0;
+}
+
+static int listcompare_strcmp(const void *a, const void *b)
+{
+	char *string1 = *(char **)a;
+	char *string2 = *(char **)b;
+
+	return strcmp(string1, string2);
+}
+
+int dirmodel_notify_file_added_or_changed(struct dirmodel *model, const char *filename)
+{
+	size_t index;
+	bool found = list_find_item_or_insertpoint(model->addchange_queue, listcompare_strcmp, filename, &index);
+	if(!found)
+		return list_insert(model->addchange_queue, index, strdup(filename));
+	return 0;
+}
+
+int dirmodel_notify_flush(struct dirmodel *model)
+{
+	int ret;
+	size_t length = list_length(model->addchange_queue);
+	for(size_t i = 0; i < length; i++) {
+		ret = dirmodel_notify_file_added_or_changed_real(model, list_get_item(model->addchange_queue, i));
+		if(ret != 0)
+			break;
+	}
+	for(size_t i = length; i > 0; i--) {
+		free(list_get_item(model->addchange_queue, i - 1));
+		list_remove(model->addchange_queue, i - 1);
+	}
+	return ret;
 }
 
 const char *dirmodel_getfilename(struct dirmodel *model, size_t index)
@@ -407,6 +440,10 @@ static bool internal_init(struct dirmodel *model, const char *path)
 	dir = opendir(path);
 	if(dir == NULL)
 		goto err_opendir;
+
+	model->addchange_queue = list_new(0);
+	if(model->addchange_queue == NULL)
+		goto err_new_addchange_queue;
 
 	struct list *list = list_new(0);
 	if(list == NULL)
@@ -452,6 +489,8 @@ err_readdir:
 err_newsortedlist:
 	list_delete(list, (list_item_deallocator)filedata_delete);
 err_newlist:
+	list_delete(model->addchange_queue, NULL);
+err_new_addchange_queue:
 	closedir(dir);
 err_opendir:
 	return false;
@@ -467,6 +506,7 @@ static void internal_destroy(struct dirmodel *model)
 
 	list_delete(list, (list_item_deallocator)filedata_delete);
 	list_delete(model->sortedlist, NULL);
+	list_delete(model->addchange_queue, free);
 	model->list = NULL;
 }
 

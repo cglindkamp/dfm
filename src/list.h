@@ -17,6 +17,6 @@ void list_remove(struct list *list, size_t index);
 void *list_get_item(const struct list *list, size_t index);
 void list_set_item(struct list *list, size_t index, void *item);
 void list_sort(struct list *list, int (*compare)(const void *, const void *));
-bool list_find_item_or_insertpoint(const struct list *list, int (*compare)(const void *, const void *), void *item, size_t *index);
+bool list_find_item_or_insertpoint(const struct list *list, int (*compare)(const void *, const void *), const void *item, size_t *index);
 
 #endif

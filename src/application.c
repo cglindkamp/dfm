@@ -598,6 +598,7 @@ static void handle_signal(struct application *app)
 		}
 	case SIGALRM:
 		app->timer_running = false;
+		dirmodel_notify_flush(&app->model);
 		listview_refresh(&app->view);
 		break;
 	}

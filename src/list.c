@@ -115,7 +115,7 @@ void list_sort(struct list *list, int (*compare)(const void *, const void *))
 	qsort(list->items, list->length, sizeof(void *), compare);
 }
 
-bool list_find_item_or_insertpoint(const struct list *list, int (*compare)(const void *, const void *), void *item, size_t *index)
+bool list_find_item_or_insertpoint(const struct list *list, int (*compare)(const void *, const void *), const void *item, size_t *index)
 {
 	void *currentitem;
 	size_t min, middle, max;

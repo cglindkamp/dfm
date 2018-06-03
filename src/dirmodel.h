@@ -11,6 +11,7 @@ struct dirmodel {
 	struct listmodel listmodel;
 	struct list *list;
 	struct list *sortedlist;
+	struct list *addchange_queue;
 	DIR *dir;
 	regex_t filter;
 	bool filter_active;
@@ -29,6 +30,7 @@ const char *dirmodel_getfilename(struct dirmodel *model, size_t index);
 int dirmodel_getmarkedfilenames(struct dirmodel *model, const struct list **markedlist_out) __attribute__((warn_unused_result));
 void dirmodel_notify_file_deleted(struct dirmodel *model, const char *filename);
 int dirmodel_notify_file_added_or_changed(struct dirmodel *model, const char *filename);
+int dirmodel_notify_flush(struct dirmodel *model);
 bool dirmodel_isdir(struct dirmodel *model, size_t index);
 bool dirmodel_get_index(struct dirmodel *model, const char *filename, size_t *index);
 size_t dirmodel_regex_getnext(struct dirmodel *model, const char *regex, size_t start_index, int direction);

@@ -236,6 +236,7 @@ START_TEST(test_dirmodel_addedfileevent)
 	create_file(dir_fd, "2", 0);
 
 	assert_oom(dirmodel_notify_file_added_or_changed(&model, "2") != ENOMEM);
+	assert_oom(dirmodel_notify_flush(&model) != ENOMEM);
 
 	ck_assert_uint_eq(cb_count, 2);
 	ck_assert_uint_eq(cb_newindex, 2);
@@ -279,6 +280,7 @@ START_TEST(test_dirmodel_changedfileevent)
 	assert_oom(dirmodel_change_directory(&model, path) == true);
 
 	assert_oom(dirmodel_notify_file_added_or_changed(&model, "1") != ENOMEM);
+	assert_oom(dirmodel_notify_flush(&model) != ENOMEM);
 
 	ck_assert_uint_eq(cb_count, 2);
 	ck_assert_uint_eq(cb_newindex, 1);
@@ -304,6 +306,7 @@ START_TEST(test_dirmodel_changedfileevent_newposition)
 	unlinkat(dir_fd, "1", 0);
 	mkdirat(dir_fd, "1", 0x700);
 	assert_oom(dirmodel_notify_file_added_or_changed(&model, "1") != ENOMEM);
+	assert_oom(dirmodel_notify_flush(&model) != ENOMEM);
 
 	ck_assert_uint_eq(cb_count, 2);
 	ck_assert_uint_eq(cb_newindex, 0);
@@ -323,6 +326,7 @@ START_TEST(test_dirmodel_addedfileremovedbeforeeventhandled)
 
 	/* we simulate this situation by notifying dirmodel without creating the file */
 	assert_oom(dirmodel_notify_file_added_or_changed(&model, "foo") != ENOMEM);
+	assert_oom(dirmodel_notify_flush(&model) != ENOMEM);
 
 	ck_assert_uint_eq(cb_count, 1);
 	ck_assert_uint_eq(cb_change, MODEL_RELOAD);
@@ -531,6 +535,7 @@ START_TEST(test_dirmodel_setfilter_filteraddedfile)
 
 	create_file(dir_fd, ".hiddenfile", 0);
 	assert_oom(dirmodel_notify_file_added_or_changed(&model, ".hiddenfile") != ENOMEM);
+	assert_oom(dirmodel_notify_flush(&model) != ENOMEM);
 
 	ck_assert_uint_eq(listmodel_count(&model.listmodel), 5);
 }
