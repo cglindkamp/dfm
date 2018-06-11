@@ -63,10 +63,10 @@ static void select_stored_position(struct application *app, const char *oldfilen
 
 static void display_current_path(struct application *app)
 {
-	wmove(app->status, 0, 0);
-	wclear(app->status);
-	wprintw(app->status, "%s", path_tocstr(&app->cwd));
-	wrefresh(app->status);
+	wmove(app->pathbar, 0, 0);
+	werase(app->pathbar);
+	wprintw(app->pathbar, "%s", path_tocstr(&app->cwd));
+	wrefresh(app->pathbar);
 }
 
 static bool enter_directory(struct application *app, const char *oldpathname)
@@ -546,7 +546,8 @@ static void handle_stdin(struct application *app)
 		if(ret != KEY_CODE_YES && key == L'\n') {
 			app->mode = MODE_NORMAL;
 			curs_set(0);
-			display_current_path(app);
+			werase(app->status);
+			wrefresh(app->status);
 
 			const wchar_t *wcommand = commandline_getcommand(&app->commandline);
 			char command[wcstombs(NULL, wcommand, 0) + 1];
@@ -559,7 +560,8 @@ static void handle_stdin(struct application *app)
 			if(ret == ERR) {
 				app->mode = MODE_NORMAL;
 				curs_set(0);
-				display_current_path(app);
+				werase(app->status);
+				wrefresh(app->status);
 				return;
 			}
 			if(ret != KEY_CODE_YES && key == L'\n')
@@ -585,7 +587,8 @@ static void handle_signal(struct application *app)
 		doupdate();
 		mvwin(app->status, LINES - 1, 0);
 		wresize(app->status, 1, COLS);
-		listview_resize(&app->view, COLS, LINES - 1);
+		wresize(app->pathbar, 1, COLS);
+		listview_resize(&app->view, COLS, LINES - 2);
 		listview_refresh(&app->view);
 		commandline_resize(&app->commandline, 0, LINES - 1, COLS);
 		if(app->mode == MODE_NORMAL)
@@ -785,6 +788,10 @@ bool application_init(struct application *app)
 	if(app->stored_positions == NULL)
 		ret = false;
 
+	app->pathbar = newwin(1, COLS, 0, 0);
+	if(app->pathbar == NULL)
+		ret = false;
+
 	app->status = newwin(1, COLS, LINES - 1, 0);
 	if(app->status != NULL) {
 		keypad(app->status, TRUE);
@@ -798,7 +805,7 @@ bool application_init(struct application *app)
 	if(!path_init(&app->cwd, PATH_MAX))
 		ret = false;
 
-	if(!listview_init(&app->view, &app->model.listmodel, 0, 0, COLS, LINES - 1))
+	if(!listview_init(&app->view, &app->model.listmodel, 0, 1, COLS, LINES - 2))
 		ret = false;
 
 	if(ret == false)
@@ -828,6 +835,8 @@ void application_destroy(struct application *app)
 	commandline_destroy(&app->commandline);
 	if(app->status)
 		delwin(app->status);
+	if(app->pathbar)
+		delwin(app->pathbar);
 	dict_delete(app->stored_positions, true);
 	dirmodel_destroy(&app->model);
 	keymap_destroy(&app->keymap);

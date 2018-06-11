@@ -27,6 +27,7 @@ struct application {
 	struct listview view;
 	struct dirmodel model;
 	struct list *stored_positions;
+	WINDOW *pathbar;
 	WINDOW *status;
 	struct commandline commandline;
 	struct path cwd;
