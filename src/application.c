@@ -80,6 +80,7 @@ static bool enter_directory(struct application *app, const char *oldpathname)
 
 			app->inotify_watch = inotify_add_watch(app->inotify_fd, cwd,
 				IN_CREATE |
+				IN_ATTRIB |
 				IN_DELETE |
 				IN_MOVED_FROM |
 				IN_MOVED_TO |
@@ -474,6 +475,10 @@ static void command_sort(struct commandexecutor *commandexecutor, char *mode_str
 		mode = DIRMODEL_SIZE;
 	else if(strcmp(mode_string, "size-") == 0)
 		mode = DIRMODEL_SIZE_DESCENDING;
+	else if(strcmp(mode_string, "mtime+") == 0)
+		mode = DIRMODEL_MTIME;
+	else if(strcmp(mode_string, "mtime-") == 0)
+		mode = DIRMODEL_MTIME_DESCENDING;
 	else
 		return;
 	dirmodel_set_sort_mode(&app->model, mode);
@@ -628,7 +633,7 @@ static void handle_inotify(struct application *app)
 
 		if(event->mask & (IN_DELETE | IN_MOVED_FROM)) {
 			dirmodel_notify_file_deleted(&app->model, event->name);
-		} else if(event->mask & (IN_CREATE | IN_MOVED_TO | IN_MODIFY)) {
+		} else if(event->mask & (IN_CREATE | IN_MOVED_TO | IN_MODIFY | IN_ATTRIB)) {
 			(void)dirmodel_notify_file_added_or_changed(&app->model, event->name);
 		}
 	}

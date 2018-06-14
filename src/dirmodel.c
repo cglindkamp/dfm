@@ -27,6 +27,8 @@ static int (*dirmodel_comparision_functions[])(const void *, const void *) = {
 	[DIRMODEL_FILENAME_DESCENDING] = filedata_listcompare_directory_filename_descending,
 	[DIRMODEL_SIZE] = filedata_listcompare_directory_size_filename,
 	[DIRMODEL_SIZE_DESCENDING] = filedata_listcompare_directory_size_filename_descending,
+	[DIRMODEL_MTIME] = filedata_listcompare_directory_mtime_filename,
+	[DIRMODEL_MTIME_DESCENDING] = filedata_listcompare_directory_mtime_filename_descending,
 };
 
 size_t dirmodel_count(struct listmodel *listmodel)

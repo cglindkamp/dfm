@@ -24,6 +24,8 @@ enum dirmodel_sort_mode {
 	DIRMODEL_FILENAME_DESCENDING,
 	DIRMODEL_SIZE,
 	DIRMODEL_SIZE_DESCENDING,
+	DIRMODEL_MTIME,
+	DIRMODEL_MTIME_DESCENDING,
 };
 
 const char *dirmodel_getfilename(struct dirmodel *model, size_t index);

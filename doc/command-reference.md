@@ -237,5 +237,7 @@ modes are currently supported:
 - name-
 - size+
 - size-
+- mtime+
+- mtime-
 
 A trailing '+' denotes an ascending order and a '-' a descending order.
