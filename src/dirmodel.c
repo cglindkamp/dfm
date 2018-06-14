@@ -411,18 +411,18 @@ int dirmodel_notify_file_added_or_changed(struct dirmodel *model, const char *fi
 
 int dirmodel_notify_flush(struct dirmodel *model)
 {
-	int ret;
+	int ret = 0;
 	size_t length = list_length(model->addchange_queue);
 	for(size_t i = 0; i < length; i++) {
 		ret = dirmodel_notify_file_added_or_changed_real(model, list_get_item(model->addchange_queue, i));
-		if(ret != 0)
+		if(ret == ENOMEM)
 			break;
 	}
 	for(size_t i = length; i > 0; i--) {
 		free(list_get_item(model->addchange_queue, i - 1));
 		list_remove(model->addchange_queue, i - 1);
 	}
-	return ret;
+	return ret == ENOMEM ? ENOMEM : 0;
 }
 
 const char *dirmodel_getfilename(struct dirmodel *model, size_t index)
