@@ -397,8 +397,15 @@ int dirmodel_notify_file_added_or_changed(struct dirmodel *model, const char *fi
 {
 	size_t index;
 	bool found = list_find_item_or_insertpoint(model->addchange_queue, listcompare_strcmp, filename, &index);
-	if(!found)
-		return list_insert(model->addchange_queue, index, strdup(filename));
+	if(!found) {
+		char *filename_copy = strdup(filename);
+		if(filename_copy == NULL)
+			return ENOMEM;
+		if(!list_insert(model->addchange_queue, index, filename_copy)) {
+			free(filename_copy);
+			return ENOMEM;
+		}
+	}
 	return 0;
 }
 
