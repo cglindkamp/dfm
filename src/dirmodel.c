@@ -322,6 +322,8 @@ static int dirmodel_update_file(struct dirmodel *model, struct filedata *newfile
 	struct filedata *oldfiledata = list_get_item(model->list, internal_index);
 	size_t newindex, oldindex;
 
+	newfiledata->is_marked = oldfiledata->is_marked;
+
 	list_find_item_or_insertpoint(model->sortedlist, model->sort_compare, oldfiledata, &oldindex);
 	list_find_item_or_insertpoint(model->sortedlist, model->sort_compare, newfiledata, &newindex);
 
