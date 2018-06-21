@@ -3,6 +3,7 @@
 
 #include <locale.h>
 #include <ncurses.h>
+#include <time.h>
 
 void _nc_freeall();
 
@@ -24,6 +25,7 @@ int main(void)
 	int ret = 0;
 
 	setlocale(LC_ALL, "");
+	tzset();
 	init_ncurses();
 
 	if(application_init(&app)) {

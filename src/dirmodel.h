@@ -7,6 +7,8 @@
 #include <dirent.h>
 #include <regex.h>
 
+struct filedata;
+
 struct dirmodel {
 	struct listmodel listmodel;
 	struct list *list;
@@ -29,6 +31,7 @@ enum dirmodel_sort_mode {
 };
 
 const char *dirmodel_getfilename(struct dirmodel *model, size_t index);
+const struct filedata *dirmodel_getfiledata(struct dirmodel *model, size_t index);
 int dirmodel_getmarkedfilenames(struct dirmodel *model, const struct list **markedlist_out) __attribute__((warn_unused_result));
 void dirmodel_notify_file_deleted(struct dirmodel *model, const char *filename);
 int dirmodel_notify_file_added_or_changed(struct dirmodel *model, const char *filename);

@@ -436,6 +436,11 @@ const char *dirmodel_getfilename(struct dirmodel *model, size_t index)
 	return filedata->filename;
 }
 
+const struct filedata *dirmodel_getfiledata(struct dirmodel *model, size_t index)
+{
+	return list_get_item(model->sortedlist, index);
+}
+
 bool dirmodel_isdir(struct dirmodel *model, size_t index)
 {
 	struct list *list = model->sortedlist;

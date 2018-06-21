@@ -3,6 +3,7 @@
 
 #include "commandexecutor.h"
 #include "dict.h"
+#include "filedata.h"
 #include "list.h"
 #include "util.h"
 
@@ -18,6 +19,7 @@
 #include <sys/signalfd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 #include <wchar.h>
 
@@ -69,6 +71,68 @@ static void display_current_path(struct application *app)
 	wrefresh(app->pathbar);
 }
 
+static char filetype_character(const struct stat *statbuf)
+{
+	switch(statbuf->st_mode & S_IFMT) {
+	case S_IFBLK:
+		return 'b';
+	case S_IFCHR:
+		return 'b';
+	case S_IFDIR:
+		return 'd';
+	case S_IFIFO:
+		return 'p';
+	case S_IFLNK:
+		return 'l';
+	case S_IFSOCK:
+		return 's';
+	case S_IFREG:
+	default:
+		return '-';
+	}
+}
+
+static void permission_characters(char *buffer, char mode)
+{
+	if(mode & 4)
+		buffer[0] = 'r';
+	else
+		buffer[0] = '-';
+	if(mode & 2)
+		buffer[1] = 'w';
+	else
+		buffer[1] = '-';
+	if(mode & 1)
+		buffer[2] = 'x';
+	else
+		buffer[2] = '-';
+}
+
+static void refresh_statusbar(struct application *app)
+{
+	werase(app->status);
+	if(listmodel_count(&app->model.listmodel) > 0) {
+		const struct filedata *filedata = dirmodel_getfiledata(&app->model, listview_getindex(&app->view));
+		char buffer[sizeof("drwxrwxrwx 1970-01-01 00:00:00")];
+
+		memset(buffer, 0, sizeof(buffer));
+
+		buffer[0] = filetype_character(&filedata->stat);
+		permission_characters(buffer + 1, (filedata->stat.st_mode >> 6) & 7);
+		permission_characters(buffer + 4, (filedata->stat.st_mode >> 3) & 7);
+		permission_characters(buffer + 7,  filedata->stat.st_mode       & 7);
+		buffer[10] = ' ';
+
+		struct tm modification_time;
+		localtime_r(&filedata->stat.st_mtime, &modification_time);
+
+		strftime(buffer + 11, sizeof(buffer) - 11, "%F %T", &modification_time);
+
+		wprintw(app->status, "%s", buffer);
+	}
+	wrefresh(app->status);
+}
+
 static bool enter_directory(struct application *app, const char *oldpathname)
 {
 	while(1) {
@@ -102,6 +166,7 @@ static bool enter_directory(struct application *app, const char *oldpathname)
 
 	select_stored_position(app, oldpathname);
 	display_current_path(app);
+	refresh_statusbar(app);
 	listview_refresh(&app->view);
 
 	return true;
@@ -202,6 +267,7 @@ static void command_navigate_up(struct commandexecutor *commandexecutor, char *u
 	(void)unused;
 	listview_up(&app->view);
 	listview_refresh(&app->view);
+	refresh_statusbar(app);
 }
 
 static void command_navigate_down(struct commandexecutor *commandexecutor, char *unused)
@@ -210,6 +276,7 @@ static void command_navigate_down(struct commandexecutor *commandexecutor, char 
 	(void)unused;
 	listview_down(&app->view);
 	listview_refresh(&app->view);
+	refresh_statusbar(app);
 }
 
 static void command_navigate_pageup(struct commandexecutor *commandexecutor, char *unused)
@@ -218,6 +285,7 @@ static void command_navigate_pageup(struct commandexecutor *commandexecutor, cha
 	(void)unused;
 	listview_pageup(&app->view);
 	listview_refresh(&app->view);
+	refresh_statusbar(app);
 }
 
 static void command_navigate_pagedown(struct commandexecutor *commandexecutor, char *unused)
@@ -226,6 +294,7 @@ static void command_navigate_pagedown(struct commandexecutor *commandexecutor, c
 	(void)unused;
 	listview_pagedown(&app->view);
 	listview_refresh(&app->view);
+	refresh_statusbar(app);
 }
 
 static void command_navigate_left(struct commandexecutor *commandexecutor, char *unused)
@@ -267,6 +336,7 @@ static void command_navigate_first(struct commandexecutor *commandexecutor, char
 	(void)unused;
 	listview_setindex(&app->view, 0);
 	listview_refresh(&app->view);
+	refresh_statusbar(app);
 }
 
 static void command_navigate_last(struct commandexecutor *commandexecutor, char *unused)
@@ -278,6 +348,7 @@ static void command_navigate_last(struct commandexecutor *commandexecutor, char 
 	if(count > 0) {
 		listview_setindex(&app->view, count - 1);
 		listview_refresh(&app->view);
+		refresh_statusbar(app);
 	}
 }
 
@@ -417,6 +488,7 @@ static void command_rename(struct commandexecutor *commandexecutor, char *newfil
 	if(rename(filename, newfilename) == 0) {
 		dirmodel_notify_file_added_or_changed(&app->model, newfilename);
 		select_filename(app, newfilename);
+		refresh_statusbar(app);
 	}
 }
 
@@ -433,6 +505,7 @@ static void command_search_next(struct commandexecutor *commandexecutor, char *u
 
 	listview_setindex(&app->view, index);
 	listview_refresh(&app->view);
+	refresh_statusbar(app);
 }
 
 static void search(struct application *app, const char *regex, int direction)
@@ -551,8 +624,7 @@ static void handle_stdin(struct application *app)
 		if(ret != KEY_CODE_YES && key == L'\n') {
 			app->mode = MODE_NORMAL;
 			curs_set(0);
-			werase(app->status);
-			wrefresh(app->status);
+			refresh_statusbar(app);
 
 			const wchar_t *wcommand = commandline_getcommand(&app->commandline);
 			char command[wcstombs(NULL, wcommand, 0) + 1];
@@ -596,8 +668,9 @@ static void handle_signal(struct application *app)
 		listview_resize(&app->view, COLS, LINES - 2);
 		listview_refresh(&app->view);
 		commandline_resize(&app->commandline, 0, LINES - 1, COLS);
+		display_current_path(app);
 		if(app->mode == MODE_NORMAL)
-			display_current_path(app);
+			refresh_statusbar(app);
 		break;
 	case SIGCHLD:
 		if(info.ssi_code == CLD_EXITED ||
@@ -610,6 +683,10 @@ static void handle_signal(struct application *app)
 		app->timer_running = false;
 		dirmodel_notify_flush(&app->model);
 		listview_refresh(&app->view);
+		if(app->mode == MODE_NORMAL)
+			refresh_statusbar(app);
+		else
+			commandline_updatecursor(&app->commandline);
 		break;
 	}
 }
