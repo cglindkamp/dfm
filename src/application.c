@@ -605,6 +605,7 @@ static void handle_signal(struct application *app)
 		   info.ssi_code == CLD_DUMPED) {
 			processmanager_waitpid(&app->pm, info.ssi_pid, &status);
 		}
+		break;
 	case SIGALRM:
 		app->timer_running = false;
 		dirmodel_notify_flush(&app->model);
