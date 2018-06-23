@@ -3,6 +3,9 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <pwd.h>
+#include <grp.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
@@ -159,8 +162,19 @@ void filedata_format_output(const struct filedata *filedata, char *buffer)
 
 	size_t length = 11;
 
+	struct passwd *passwd = getpwuid(filedata->stat.st_uid);
+	struct group *group = getgrgid(filedata->stat.st_gid);
 	struct tm modification_time;
 	localtime_r(&filedata->stat.st_mtime, &modification_time);
+
+	if(passwd)
+		length += sprintf(buffer + length, "%.32s ", passwd->pw_name);
+	else
+		length += sprintf(buffer + length, "%.32d ", filedata->stat.st_uid);
+	if(group)
+		length += sprintf(buffer + length, "%.32s ", group->gr_name);
+	else
+		length += sprintf(buffer + length, "%.32d ", filedata->stat.st_gid);
 
 	length += strftime(buffer + length, sizeof("1970-01-01 00:00:00"), "%F %T", &modification_time);
 
