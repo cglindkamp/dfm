@@ -19,7 +19,6 @@
 #include <sys/signalfd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <time.h>
 #include <unistd.h>
 #include <wchar.h>
 
@@ -71,62 +70,14 @@ static void display_current_path(struct application *app)
 	wrefresh(app->pathbar);
 }
 
-static char filetype_character(const struct stat *statbuf)
-{
-	switch(statbuf->st_mode & S_IFMT) {
-	case S_IFBLK:
-		return 'b';
-	case S_IFCHR:
-		return 'b';
-	case S_IFDIR:
-		return 'd';
-	case S_IFIFO:
-		return 'p';
-	case S_IFLNK:
-		return 'l';
-	case S_IFSOCK:
-		return 's';
-	case S_IFREG:
-	default:
-		return '-';
-	}
-}
-
-static void permission_characters(char *buffer, char mode)
-{
-	if(mode & 4)
-		buffer[0] = 'r';
-	else
-		buffer[0] = '-';
-	if(mode & 2)
-		buffer[1] = 'w';
-	else
-		buffer[1] = '-';
-	if(mode & 1)
-		buffer[2] = 'x';
-	else
-		buffer[2] = '-';
-}
-
 static void refresh_statusbar(struct application *app)
 {
 	werase(app->status);
 	if(listmodel_count(&app->model.listmodel) > 0) {
 		const struct filedata *filedata = dirmodel_getfiledata(&app->model, listview_getindex(&app->view));
-		char buffer[sizeof("drwxrwxrwx 1970-01-01 00:00:00")];
+		char buffer[FILEDATA_FORMAT_OUTPUT_BUFFER_SIZE];
 
-		memset(buffer, 0, sizeof(buffer));
-
-		buffer[0] = filetype_character(&filedata->stat);
-		permission_characters(buffer + 1, (filedata->stat.st_mode >> 6) & 7);
-		permission_characters(buffer + 4, (filedata->stat.st_mode >> 3) & 7);
-		permission_characters(buffer + 7,  filedata->stat.st_mode       & 7);
-		buffer[10] = ' ';
-
-		struct tm modification_time;
-		localtime_r(&filedata->stat.st_mtime, &modification_time);
-
-		strftime(buffer + 11, sizeof(buffer) - 11, "%F %T", &modification_time);
+		filedata_format_output(filedata, buffer);
 
 		wprintw(app->status, "%s", buffer);
 	}

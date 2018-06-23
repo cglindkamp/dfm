@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <time.h>
 
 int filedata_listcompare_filename(const void *a, const void *b)
 {
@@ -109,6 +110,61 @@ int filedata_listcompare_directory_mtime_filename_descending(const void *a, cons
 	if(S_ISDIR(filedata1->stat.st_mode))
 		return -1;
 	return 1;
+}
+
+static char filetype_character(const struct stat *statbuf)
+{
+	switch(statbuf->st_mode & S_IFMT) {
+	case S_IFBLK:
+		return 'b';
+	case S_IFCHR:
+		return 'b';
+	case S_IFDIR:
+		return 'd';
+	case S_IFIFO:
+		return 'p';
+	case S_IFLNK:
+		return 'l';
+	case S_IFSOCK:
+		return 's';
+	case S_IFREG:
+	default:
+		return '-';
+	}
+}
+
+static void permission_characters(char *buffer, char mode)
+{
+	if(mode & 4)
+		buffer[0] = 'r';
+	else
+		buffer[0] = '-';
+	if(mode & 2)
+		buffer[1] = 'w';
+	else
+		buffer[1] = '-';
+	if(mode & 1)
+		buffer[2] = 'x';
+	else
+		buffer[2] = '-';
+}
+
+void filedata_format_output(const struct filedata *filedata, char *buffer)
+{
+	buffer[0] = filetype_character(&filedata->stat);
+	permission_characters(buffer + 1, (filedata->stat.st_mode >> 6) & 7);
+	permission_characters(buffer + 4, (filedata->stat.st_mode >> 3) & 7);
+	permission_characters(buffer + 7,  filedata->stat.st_mode       & 7);
+	buffer[10] = ' ';
+
+	size_t length = 11;
+
+	struct tm modification_time;
+	localtime_r(&filedata->stat.st_mtime, &modification_time);
+
+	length += strftime(buffer + length, sizeof("1970-01-01 00:00:00"), "%F %T", &modification_time);
+
+	buffer[length] = 0;
 }
 
 int filedata_new_from_file(struct filedata **filedata, int dirfd, const char *filename)
