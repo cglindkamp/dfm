@@ -74,12 +74,25 @@ static void refresh_statusbar(struct application *app)
 {
 	werase(app->status);
 	if(listmodel_count(&app->model.listmodel) > 0) {
-		const struct filedata *filedata = dirmodel_getfiledata(&app->model, listview_getindex(&app->view));
-		char buffer[FILEDATA_FORMAT_OUTPUT_BUFFER_SIZE];
+		size_t count = listmodel_count(&app->model.listmodel);
+		size_t pos = listview_getindex(&app->view) + 1;
+		size_t rightwidth = snprintf(NULL, 0, " %zu/%zu", pos, count);
+		char right[rightwidth + 1];
 
-		filedata_format_output(filedata, buffer);
+		sprintf(right, " %zu/%zu", pos, count);
 
-		wprintw(app->status, "%s", buffer);
+		size_t width = getmaxx(app->status);
+		if(rightwidth >= width) {
+			mvwprintw(app->status, 0, 0, "%s", right + rightwidth - width);
+		} else {
+			const struct filedata *filedata = dirmodel_getfiledata(&app->model, listview_getindex(&app->view));
+			char left [FILEDATA_FORMAT_OUTPUT_BUFFER_SIZE];
+
+			filedata_format_output(filedata, left);
+			wprintw(app->status, "%s", left);
+
+			mvwprintw(app->status, 0, width - rightwidth, "%s", right);
+		}
 	}
 	wrefresh(app->status);
 }
