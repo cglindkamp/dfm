@@ -26,6 +26,7 @@ struct dirmodel {
 	int (*sort_compare)(const void *, const void *);
 	bool sort_ascending;
 	struct marked_stats marked_stats;
+	off_t dirsize;
 };
 
 enum dirmodel_sort_mode {
@@ -39,6 +40,7 @@ enum dirmodel_sort_mode {
 
 const char *dirmodel_getfilename(struct dirmodel *model, size_t index);
 const struct filedata *dirmodel_getfiledata(struct dirmodel *model, size_t index);
+off_t dirmodel_getdirsize(struct dirmodel *model);
 int dirmodel_getmarkedfilenames(struct dirmodel *model, const struct list **markedlist_out) __attribute__((warn_unused_result));
 struct marked_stats dirmodel_getmarkedstats(struct dirmodel *model);
 void dirmodel_notify_file_deleted(struct dirmodel *model, const char *filename);

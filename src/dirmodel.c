@@ -222,6 +222,7 @@ void dirmodel_notify_file_deleted(struct dirmodel *model, const char *filename)
 			model->marked_stats.count--;
 			model->marked_stats.size -= filedata->stat.st_size;
 		}
+		model->dirsize -= filedata->stat.st_size;
 		filedata_delete(filedata);
 		list_remove(list, internal_index);
 		list_remove(model->sortedlist, index);
@@ -239,6 +240,8 @@ static int dirmodel_update_file(struct dirmodel *model, struct filedata *newfile
 		model->marked_stats.size -= oldfiledata->stat.st_size;
 		model->marked_stats.size += newfiledata->stat.st_size;
 	}
+	model->dirsize -= oldfiledata->stat.st_size;
+	model->dirsize += newfiledata->stat.st_size;
 
 	list_find_item_or_insertpoint(model->sortedlist, model->sort_compare, oldfiledata, &oldindex);
 	list_find_item_or_insertpoint(model->sortedlist, model->sort_compare, newfiledata, &newindex);
@@ -280,6 +283,7 @@ static int dirmodel_add_file(struct dirmodel *model, struct filedata *filedata, 
 		list_remove(model->list, internal_index);
 		return ENOMEM;
 	}
+	model->dirsize += filedata->stat.st_size;
 	listmodel_notify_change(&model->listmodel, MODEL_ADD, index, 0);
 	return 0;
 }
@@ -357,6 +361,11 @@ const struct filedata *dirmodel_getfiledata(struct dirmodel *model, size_t index
 	return list_get_item(model->sortedlist, index);
 }
 
+off_t dirmodel_getdirsize(struct dirmodel *model)
+{
+	return model->dirsize;
+}
+
 bool dirmodel_isdir(struct dirmodel *model, size_t index)
 {
 	struct list *list = model->sortedlist;
@@ -387,6 +396,7 @@ static bool internal_init(struct dirmodel *model, const char *path)
 
 	struct dirent *entry = readdir(dir);
 
+	model->dirsize = 0;
 	while(entry) {
 		if(strcmp(entry->d_name, ".") != 0 &&
 		   strcmp(entry->d_name, "..") != 0 &&
@@ -403,6 +413,7 @@ static bool internal_init(struct dirmodel *model, const char *path)
 				goto err_readdir;
 			if(!list_append(list, filedata))
 				goto err_readdir;
+			model->dirsize += filedata->stat.st_size;
 		}
 		entry = readdir(dir);
 	}
