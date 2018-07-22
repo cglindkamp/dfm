@@ -19,7 +19,6 @@
 #define INFO_LINK_LENGTH      3
 #define INFO_DIR              L"<DIR>"
 #define INFO_SIZE_OVERFLOW    L">9000"
-#define INFO_SIZE_DIR_LENGTH  5
 
 int filedata_listcompare_filename(const void *a, const void *b)
 {
@@ -191,7 +190,7 @@ void filedata_format_output(const struct filedata *filedata, char *buffer)
 	buffer[length] = 0;
 }
 
-static void filesize_to_string(wchar_t *buf, off_t filesize)
+void filesize_to_string(wchar_t *buf, off_t filesize)
 {
 	char suffix[] = {' ', 'K', 'M', 'G', 'T', 'P', 'E'};
 	size_t cs = 0;

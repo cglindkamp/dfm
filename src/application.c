@@ -76,10 +76,25 @@ static void refresh_statusbar(struct application *app)
 	if(listmodel_count(&app->model.listmodel) > 0) {
 		size_t count = listmodel_count(&app->model.listmodel);
 		size_t pos = listview_getindex(&app->view) + 1;
-		size_t rightwidth = snprintf(NULL, 0, " %zu/%zu", pos, count);
+		struct marked_stats mstats = dirmodel_getmarkedstats(&app->model);
+		wchar_t markedsize[INFO_SIZE_DIR_LENGTH + 1];
+
+		filesize_to_string(markedsize, mstats.size);
+
+		size_t markedstatswidth = snprintf(NULL, 0, " %zu %ls", mstats.count, markedsize);
+		char markedstats[markedstatswidth + 1];
+
+		if(mstats.count > 0)
+			sprintf(markedstats, " %zu %ls", mstats.count, markedsize);
+		else {
+			markedstats[0] = '\0';
+			markedstatswidth = 0;
+		}
+
+		size_t rightwidth = snprintf(NULL, 0, " %zu/%zu%s", pos, count, markedstats);
 		char right[rightwidth + 1];
 
-		sprintf(right, " %zu/%zu", pos, count);
+		sprintf(right, " %zu/%zu%s", pos, count, markedstats);
 
 		size_t width = getmaxx(app->status);
 		if(rightwidth >= width) {
@@ -92,6 +107,16 @@ static void refresh_statusbar(struct application *app)
 			wprintw(app->status, "%s", left);
 
 			mvwprintw(app->status, 0, width - rightwidth, "%s", right);
+		}
+
+		if(markedstatswidth > 0) {
+			int colorstart = width - markedstatswidth + 1;
+			int colorwidth = markedstatswidth - 1;
+			if(colorstart < 0) {
+				colorwidth += colorstart;
+				colorstart = 0;
+			}
+			mvwchgat(app->status, 0, colorstart, colorwidth, 0, 2, NULL);
 		}
 	}
 	wrefresh(app->status);
@@ -336,6 +361,7 @@ static void command_togglemark(struct commandexecutor *commandexecutor, char *un
 	listmodel_setmark(&app->model.listmodel, index, !listmodel_ismarked(&app->model.listmodel, index));
 	listview_down(&app->view);
 	listview_refresh(&app->view);
+	refresh_statusbar(app);
 }
 
 static void command_invert_marks(struct commandexecutor *commandexecutor, char *unused)
@@ -349,6 +375,7 @@ static void command_invert_marks(struct commandexecutor *commandexecutor, char *
 			listmodel_setmark(&app->model.listmodel, i, !listmodel_ismarked(&app->model.listmodel, i));
 	}
 	listview_refresh(&app->view);
+	refresh_statusbar(app);
 }
 
 static void command_mark(struct commandexecutor *commandexecutor, char *regex)
@@ -356,6 +383,7 @@ static void command_mark(struct commandexecutor *commandexecutor, char *regex)
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	dirmodel_regex_setmark(&app->model, regex, true);
 	listview_refresh(&app->view);
+	refresh_statusbar(app);
 }
 
 static void command_unmark(struct commandexecutor *commandexecutor, char *regex)
@@ -363,6 +391,7 @@ static void command_unmark(struct commandexecutor *commandexecutor, char *regex)
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
 	dirmodel_regex_setmark(&app->model, regex, false);
 	listview_refresh(&app->view);
+	refresh_statusbar(app);
 }
 
 static void command_yank(struct commandexecutor *commandexecutor, char *unused)
