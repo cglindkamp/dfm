@@ -76,6 +76,11 @@ static void refresh_statusbar(struct application *app)
 	if(listmodel_count(&app->model.listmodel) > 0) {
 		size_t count = listmodel_count(&app->model.listmodel);
 		size_t pos = listview_getindex(&app->view) + 1;
+
+		size_t dsize = dirmodel_getdirsize(&app->model);
+		wchar_t dirsize[INFO_SIZE_DIR_LENGTH + 1];
+		filesize_to_string(dirsize, dsize);
+
 		struct marked_stats mstats = dirmodel_getmarkedstats(&app->model);
 		wchar_t markedsize[INFO_SIZE_DIR_LENGTH + 1];
 
@@ -91,10 +96,10 @@ static void refresh_statusbar(struct application *app)
 			markedstatswidth = 0;
 		}
 
-		size_t rightwidth = snprintf(NULL, 0, " %zu/%zu%s", pos, count, markedstats);
+		size_t rightwidth = snprintf(NULL, 0, " %zu/%zu %ls%s", pos, count, dirsize, markedstats);
 		char right[rightwidth + 1];
 
-		sprintf(right, " %zu/%zu%s", pos, count, markedstats);
+		sprintf(right, " %zu/%zu %ls%s", pos, count, dirsize, markedstats);
 
 		size_t width = getmaxx(app->status);
 		if(rightwidth >= width) {
