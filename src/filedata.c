@@ -336,6 +336,10 @@ int filedata_new_from_file(struct filedata **filedata, int dirfd, const char *fi
 		memcpy(&(*filedata)->stat, &stat, sizeof(stat));
 	}
 
+	/* st_size field is not used for directories, so zero it out to get
+	 * better file size count statistics in dirmodel */
+	if(S_ISDIR((*filedata)->stat.st_mode))
+		(*filedata)->stat.st_size = 0;
 	return 0;
 }
 
