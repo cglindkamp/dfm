@@ -206,9 +206,9 @@ static void filesize_to_string(wchar_t *buf, off_t filesize)
 	if(cv >= 10000)
 		wcscpy(buf, INFO_SIZE_OVERFLOW);
 	else if(cv < 100 && cs > 0)
-		swprintf(buf, 6, L"%2lu.%1lu%c", cv, (filesize - cv * 1024) * 10 / 1024, suffix[cs]);
+		swprintf(buf, 6, L"%lu.%1lu%c", cv, (filesize - cv * 1024) * 10 / 1024, suffix[cs]);
 	else
-		swprintf(buf, 6, L"%4lu%c", cv, suffix[cs]);
+		swprintf(buf, 6, L"%lu%c", cv, suffix[cs]);
 }
 
 static size_t render_info(wchar_t *buffer, struct filedata *filedata)
@@ -227,8 +227,11 @@ static size_t render_info(wchar_t *buffer, struct filedata *filedata)
 
 	if(S_ISDIR(filedata->stat.st_mode))
 		wcscat(buffer, INFO_DIR);
-	else
-		filesize_to_string(buffer + wcslen(buffer), filedata->stat.st_size);
+	else {
+		wchar_t size[INFO_SIZE_DIR_LENGTH + 1];
+		filesize_to_string(size, filedata->stat.st_size);
+		swprintf(buffer + wcslen(buffer), sizeof(size)/sizeof(size[0]), L"%5ls", size);
+	}
 
 	return info_size;
 }
