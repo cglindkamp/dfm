@@ -10,7 +10,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
 
 static int (*dirmodel_comparision_functions[])(const void *, const void *) = {
 	[DIRMODEL_FILENAME] = filedata_listcompare_directory_filename,
@@ -44,6 +43,17 @@ static void dirmodel_setmark(struct listmodel *listmodel, size_t index, bool mar
 	struct dirmodel *model = container_of(listmodel, struct dirmodel, listmodel);;
 	struct list *list = model->sortedlist;
 	struct filedata *filedata = list_get_item(list, index);
+
+	if(filedata->is_marked == mark)
+		return;
+
+	if(mark) {
+		model->marked_stats.count++;
+		model->marked_stats.size += filedata->stat.st_size;
+	} else {
+		model->marked_stats.count--;
+		model->marked_stats.size -= filedata->stat.st_size;
+	}
 	filedata->is_marked = mark;
 	listmodel_notify_change(listmodel, MODEL_CHANGE, index, index);
 }
@@ -89,6 +99,11 @@ int dirmodel_getmarkedfilenames(struct dirmodel *model, const struct list **mark
 
 	*markedlist_out = markedlist;
 	return 0;
+}
+
+struct marked_stats dirmodel_getmarkedstats(struct dirmodel *model)
+{
+	return model->marked_stats;
 }
 
 bool dirmodel_get_internal_index(struct dirmodel *model, const char *filename, size_t *internal_index, size_t *index)
@@ -158,7 +173,15 @@ void dirmodel_regex_setmark(struct dirmodel *model, const char *regex, bool mark
 
 	for(size_t i = 0; i < length; i++) {
 		struct filedata *filedata = list_get_item(list, i);
-		if(regexec(&cregex, filedata->filename, 0, NULL, 0) == 0) {
+		if(regexec(&cregex, filedata->filename, 0, NULL, 0) == 0 &&
+		   filedata->is_marked != mark) {
+			if(mark) {
+				model->marked_stats.count++;
+				model->marked_stats.size += filedata->stat.st_size;
+			} else {
+				model->marked_stats.count--;
+				model->marked_stats.size -= filedata->stat.st_size;
+			}
 			filedata->is_marked = mark;
 			listmodel_notify_change(&model->listmodel, MODEL_CHANGE, i, i);
 		}
@@ -195,6 +218,10 @@ void dirmodel_notify_file_deleted(struct dirmodel *model, const char *filename)
 	bool found = dirmodel_get_internal_index(model, filename, &internal_index, &index);
 	if(found) {
 		struct filedata *filedata = list_get_item(list, internal_index);
+		if(filedata->is_marked) {
+			model->marked_stats.count--;
+			model->marked_stats.size -= filedata->stat.st_size;
+		}
 		filedata_delete(filedata);
 		list_remove(list, internal_index);
 		list_remove(model->sortedlist, index);
@@ -208,6 +235,10 @@ static int dirmodel_update_file(struct dirmodel *model, struct filedata *newfile
 	size_t newindex, oldindex;
 
 	newfiledata->is_marked = oldfiledata->is_marked;
+	if(newfiledata->is_marked) {
+		model->marked_stats.size -= oldfiledata->stat.st_size;
+		model->marked_stats.size += newfiledata->stat.st_size;
+	}
 
 	list_find_item_or_insertpoint(model->sortedlist, model->sort_compare, oldfiledata, &oldindex);
 	list_find_item_or_insertpoint(model->sortedlist, model->sort_compare, newfiledata, &newindex);
@@ -381,6 +412,9 @@ static bool internal_init(struct dirmodel *model, const char *path)
 
 	list_sort(list, filedata_listcompare_filename);
 	list_sort(sortedlist, model->sort_compare);
+
+	model->marked_stats.count = 0;
+	model->marked_stats.size = 0;
 
 	return true;
 
