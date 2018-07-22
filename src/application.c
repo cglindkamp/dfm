@@ -86,11 +86,11 @@ static void refresh_statusbar(struct application *app)
 
 		filesize_to_string(markedsize, mstats.size);
 
-		size_t markedstatswidth = snprintf(NULL, 0, " %zu %ls", mstats.count, markedsize);
+		size_t markedstatswidth = snprintf(NULL, 0, " (%zu %ls)", mstats.count, markedsize);
 		char markedstats[markedstatswidth + 1];
 
 		if(mstats.count > 0)
-			sprintf(markedstats, " %zu %ls", mstats.count, markedsize);
+			sprintf(markedstats, " (%zu %ls)", mstats.count, markedsize);
 		else {
 			markedstats[0] = '\0';
 			markedstatswidth = 0;
