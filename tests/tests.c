@@ -1,6 +1,7 @@
 /* See LICENSE file for copyright and license details. */
 #include <check.h>
 #include <fcntl.h>
+#include <langinfo.h>
 #include <locale.h>
 #include <stdlib.h>
 #include <ncurses.h>
@@ -57,7 +58,15 @@ int main(int argc, char *argv[])
 
 	FILE *dummyterm;
 
-	setlocale(LC_ALL, "en_US.UTF-8");
+	setlocale(LC_ALL, "");
+	if(strcmp(nl_langinfo(CODESET), "UTF-8") != 0 &&
+	   setlocale(LC_ALL, "en_US.UTF-8") == NULL) {
+		puts(
+			"Current locale does not use UTF-8 encoding and en_US.UTF-8 as fallback was\n"
+			"also not available. UTF-8 tests would fail.\n"
+			"Please set locale to an available one with UTF-8 encoding and rerun tests.");
+		return EXIT_FAILURE;
+	}
 
 	atexit(reset_malloc);
 
