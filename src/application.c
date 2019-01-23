@@ -166,6 +166,12 @@ static bool enter_directory(struct application *app, const char *oldpathname)
 	return true;
 }
 
+static bool reload_directory(struct application *app)
+{
+	save_current_position(app);
+	return enter_directory(app, NULL);
+}
+
 static void unblock_signals(void)
 {
 	sigset_t sigset;
@@ -562,6 +568,13 @@ static void command_map(struct commandexecutor *commandexecutor, char *keymapstr
 	keymap_addmapping(&app->keymap, keymapstring);
 }
 
+static void command_reload(struct commandexecutor *commandexecutor, char *unused)
+{
+	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
+	(void)unused;
+	reload_directory(app);
+}
+
 struct command_map application_command_map[] = {
 	{ "navigate_up", command_navigate_up, false },
 	{ "navigate_down", command_navigate_down, false },
@@ -588,6 +601,7 @@ struct command_map application_command_map[] = {
 	{ "filter", command_filter, false },
 	{ "map", command_map, true },
 	{ "sort", command_sort, true },
+	{ "reload", command_reload, false },
 	{ NULL, NULL, false },
 };
 

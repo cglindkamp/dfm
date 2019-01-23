@@ -37,6 +37,7 @@ The table below shows all supported commands:
 | filter             | filename regex      | no                  |
 | map                | add key binding     | yes                 |
 | sort               | sort mode           | yes                 |
+| reload             | none                | -                   |
 
 Command description
 ===================
@@ -241,3 +242,12 @@ modes are currently supported:
 - mtime-
 
 A trailing '+' denotes an ascending order and a '-' a descending order.
+
+reload
+------
+**Purpose**: reload the directory contents  
+**Parameter**: none
+
+This is mainly needed for network filesystems, where inotify cannot detect
+changes on the server or when inotify was not, for whatever reason, compiled
+into the kernel.
