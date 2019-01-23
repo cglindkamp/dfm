@@ -718,6 +718,10 @@ static void handle_inotify(struct application *app)
 	for(ptr = buf; ptr < buf + len; ptr += sizeof(struct inotify_event) + event->len) {
 		event = (const struct inotify_event *)ptr;
 
+		if(event->wd == -1 && event->mask & IN_Q_OVERFLOW) {
+			reload_directory(app);
+			return;
+		}
 		if(event->wd != app->inotify_watch)
 			continue;
 
