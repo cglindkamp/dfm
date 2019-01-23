@@ -827,8 +827,10 @@ static char *application_load_rcfile(const char *filename)
 	ret = read(fd, contents, size);
 	close(fd);
 
-	if(ret < 0)
+	if(ret < 0) {
+		free(contents);
 		return NULL;
+	}
 
 	contents[ret] = '\0';
 	return contents;
