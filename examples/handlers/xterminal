@@ -5,3 +5,5 @@ if [ ! "x$DFM_FOREGROUND" = "xyes" ] && [ ! "x$DISPLAY" = "x" ] && [ "$RUNNING_I
 	#RUNNING_IN_XTERM=t exec urxvt -e "$0" "$*" < /dev/null > /dev/null 2> /dev/null
 	exit 0
 fi
+
+unset RUNNING_IN_XTERM
