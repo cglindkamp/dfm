@@ -1,0 +1,10 @@
+#!/bin/sh
+
+#OPEN=xdg-open
+OPEN=edit
+
+if grep -q -x -z "`cat \"$1\"/selected`" "$1"/marked 2> /dev/null; then
+	exec xargs -0 -n 1 -a "$1"/marked $OPEN
+else
+	exec $OPEN "`cat \"$1\"/selected`"
+fi

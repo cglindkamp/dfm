@@ -64,6 +64,7 @@ them to your liking.
 | 1        | Go to home (~) directory                                                             |
 | 2        | Go to root (/) directory                                                             |
 | r        | Reload directory contents, mainly useful on network filesystems                      |
+| e        | Open selected or marked files for editing                                            |
 | D        | Delete currently marked files, or when no file is marked the currently selected file |
 | p        | Copy files in clipboard to the current directory                                     |
 | P        | Move files in clipboard to the current directory                                     |
