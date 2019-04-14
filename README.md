@@ -8,7 +8,8 @@ Features
 --------
 * Uses inotify to always show an accurate view of the current directory
 * Delegates file actions (open, copy, move, delete) to external scripts. The
-  default scripts use xdg-open, cp, mv and rm to perform the requested actions.
+  default scripts use see (run-mailcap), cp, mv and rm to perform the requested
+  actions.
 * Remembers the last selected file in every directory to quickly navigate to
   previously visited paths
 * Filtered view: Show only files/directories matching a regular expression,
