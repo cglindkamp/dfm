@@ -490,9 +490,12 @@ static void command_rename(struct commandexecutor *commandexecutor, char *newfil
 	const char *filename = dirmodel_getfilename(&app->model, index);
 
 	if(rename(filename, newfilename) == 0) {
+		dirmodel_notify_file_deleted(&app->model, filename);
 		dirmodel_notify_file_added_or_changed(&app->model, newfilename);
+		dirmodel_notify_flush(&app->model);
 		select_filename(app, newfilename);
-		refresh_statusbar(app);
+		if(app->mode == MODE_NORMAL)
+			refresh_statusbar(app);
 	}
 }
 
