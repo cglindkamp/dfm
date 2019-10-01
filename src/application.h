@@ -40,6 +40,7 @@ struct application {
 	int signal_fd;
 	int inotify_fd;
 	int inotify_watch;
+	uint32_t inotify_cookie;
 	enum mode mode;
 	bool running;
 	const char *lastsearch_regex;

@@ -163,6 +163,8 @@ static bool enter_directory(struct application *app, const char *oldpathname)
 	refresh_statusbar(app);
 	listview_refresh(&app->view);
 
+	app->inotify_cookie = 0;
+
 	return true;
 }
 
@@ -728,10 +730,25 @@ static void handle_inotify(struct application *app)
 		if(event->wd != app->inotify_watch)
 			continue;
 
+		if(event->mask & IN_MOVED_FROM && listmodel_count(&app->model.listmodel) != 0) {
+			size_t index = listview_getindex(&app->view);
+			const char *filename = dirmodel_getfilename(&app->model, index);
+			if(strcmp(event->name, filename) == 0)
+				app->inotify_cookie = event->cookie;
+		}
+
 		if(event->mask & (IN_DELETE | IN_MOVED_FROM)) {
 			dirmodel_notify_file_deleted(&app->model, event->name);
 		} else if(event->mask & (IN_CREATE | IN_MOVED_TO | IN_MODIFY | IN_ATTRIB)) {
 			(void)dirmodel_notify_file_added_or_changed(&app->model, event->name);
+		}
+
+		if(event->mask & IN_MOVED_TO && event->cookie == app->inotify_cookie) {
+			dirmodel_notify_flush(&app->model);
+			select_filename(app, event->name);
+			app->inotify_cookie = 0;
+			if(app->mode == MODE_NORMAL)
+				refresh_statusbar(app);
 		}
 	}
 	if(app->mode == MODE_COMMAND)
