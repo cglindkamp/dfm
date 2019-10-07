@@ -14,6 +14,7 @@ map -         cmdline unmark
 map 1         cd                ~
 map 2         cd                /
 map r         reload
+map e         invoke_handler    edit
 map D         invoke_handler    delete
 map l         invoke_handler    symlink
 map p         invoke_handler    copy
