@@ -14,6 +14,7 @@
 
 #include <ncurses.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <sys/time.h>
 
 struct list;
