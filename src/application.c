@@ -42,7 +42,8 @@ static void select_filename(struct application *app, const char *filename)
 {
 	size_t index;
 
-	dirmodel_get_index(&app->model, filename, &index);
+	if(!dirmodel_get_index(&app->model, filename, &index))
+		return;
 	if(index == listmodel_count(&app->model.listmodel))
 		index--;
 	listview_setindex(&app->view, index);
