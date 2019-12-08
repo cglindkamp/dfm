@@ -1,4 +1,4 @@
-Dynamic File Manager [![Build Status](https://travis-ci.org/cglindkamp/dfm.svg?branch=master)](https://travis-ci.org/cglindkamp/dfm)
+Dynamic File Manager [![Build Status](https://api.travis-ci.com/cglindkamp/dfm.svg?branch=master)](https://travis-ci.com/cglindkamp/dfm)
 ====================
 Dynamic File Manager (dfm) is a simple ncurses based file manager. It is
 inspired by ranger but tries to keep the user interface much simpler and memory
