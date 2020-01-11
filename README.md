@@ -4,6 +4,8 @@ Dynamic File Manager (dfm) is a simple ncurses based file manager. It is
 inspired by ranger but tries to keep the user interface much simpler and memory
 footprint as well a CPU usage low.
 
+![Screenshot](/doc/screenshot.png)
+
 Features
 --------
 * Uses inotify to always show an accurate view of the current directory
