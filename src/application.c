@@ -460,8 +460,11 @@ static void command_quit(struct commandexecutor *commandexecutor, char *unused)
 static void command_mkdir(struct commandexecutor *commandexecutor, char *dirname)
 {
 	struct application *app = container_of(commandexecutor, struct application, commandexecutor);
-	(void)app;
-	mkdir(dirname, 0777);
+	if(mkdir(dirname, 0777) == 0) {
+		dirmodel_notify_file_added_or_changed(&app->model, dirname);
+		dirmodel_notify_flush(&app->model);
+		select_filename(app, dirname);
+	}
 }
 
 static void command_cmdline(struct commandexecutor *commandexecutor, char *command)
