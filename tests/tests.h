@@ -23,9 +23,4 @@ extern int oom_pipe[2];
 
 #define assert_oom(condition) assert_oom_cleanup(condition,)
 
-#undef END_TEST
-#define END_TEST \
-		alloc_set_allocations_until_fail(-1); \
-	} \
-
 #endif
