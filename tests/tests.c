@@ -1,9 +1,11 @@
 /* See LICENSE file for copyright and license details. */
+#define _GNU_SOURCE
 #include <check.h>
 #include <fcntl.h>
 #include <langinfo.h>
 #include <locale.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <ncurses.h>
 
 #include "tests.h"
