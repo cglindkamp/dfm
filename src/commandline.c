@@ -114,6 +114,25 @@ static int commandline_copy_history_buffer(struct commandline *commandline)
 	return 0;
 }
 
+static void commandline_delete_character_before_cursor(struct commandline *commandline)
+{
+	size_t oldcursorpos = commandline->cursor_pos;
+	size_t length = wcslen(commandline->buffer);
+
+	if(commandline->cursor_pos > 0) {
+		size_t distance = 0;
+		int width;
+		do {
+			width = wcwidth(commandline->buffer[commandline->cursor_pos - 1]);
+			distance++;
+			commandline->cursor_pos--;
+		} while(commandline->cursor_pos > 0 && width < 1);
+
+		wmemmove(commandline->buffer + commandline->cursor_pos, commandline->buffer + oldcursorpos, length - commandline->cursor_pos);
+		commandline->buffer[length - distance] = L'\0';
+	}
+}
+
 int commandline_handlekey(struct commandline *commandline, wint_t key, bool iskeycode)
 {
 	size_t length = wcslen(commandline->buffer);
@@ -124,18 +143,7 @@ int commandline_handlekey(struct commandline *commandline, wint_t key, bool iske
 		case KEY_BACKSPACE:
 			if(commandline_copy_history_buffer(commandline) != 0)
 				return ENOMEM;
-			if(commandline->cursor_pos > 0) {
-				size_t distance = 0;
-				int width;
-				do {
-					width = wcwidth(commandline->buffer[commandline->cursor_pos - 1]);
-					distance++;
-					commandline->cursor_pos--;
-				} while(commandline->cursor_pos > 0 && width < 1);
-
-				wmemmove(commandline->buffer + commandline->cursor_pos, commandline->buffer + cursorpos, length - commandline->cursor_pos);
-				commandline->buffer[length - distance] = L'\0';
-			}
+			commandline_delete_character_before_cursor(commandline);
 			break;
 		case KEY_DC:
 			if(commandline_copy_history_buffer(commandline) != 0)
@@ -192,6 +200,21 @@ int commandline_handlekey(struct commandline *commandline, wint_t key, bool iske
 			break;
 		}
 	} else {
+		if(key == 23) { /* Ctrl-W */
+			if(commandline_copy_history_buffer(commandline) != 0)
+				return ENOMEM;
+
+			while(commandline->cursor_pos > 0 && commandline->buffer[commandline->cursor_pos - 1] == L' ') {
+				commandline_delete_character_before_cursor(commandline);
+			}
+			while(commandline->cursor_pos > 0 && commandline->buffer[commandline->cursor_pos - 1] != L' ') {
+				commandline_delete_character_before_cursor(commandline);
+			}
+
+			commandline_updateview(commandline);
+			return 0;
+		}
+
 		if(key == 0 || wcwidth(key) < 0)
 			return EINVAL;
 

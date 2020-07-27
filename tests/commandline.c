@@ -92,6 +92,20 @@ static struct {
 		.cursorpos = 1,
 	},
 	{
+		.keypresses = (struct keyspec[]) { { 0, L'h' }, { 0, L'e'}, { 0, L'l'}, { 0, L'l'}, { 0, L'o'}, { 0, L' ' }, { 0, L'w'}, { 0, L'o'}, { 0, L'r'}, { 0, L'l'}, { 0, L'd'}, { 0, 23 /* Ctrl-W */ } },
+		.keypresscount = 12,
+		.result = L"hello ",
+		.output = L":hello    ",
+		.cursorpos = 7,
+	},
+	{
+		.keypresses = (struct keyspec[]) { { 0, L'h' }, { 0, L'e'}, { 0, L'l'}, { 0, L'l'}, { 0, L'o'}, { 0, L' ' }, { 0, L'w'}, { 0, L'o'}, { 0, L'r'}, { 0, L'l'}, { 0, L'd'}, { 0, L' ' }, { 0, 23 /* Ctrl-W */ } },
+		.keypresscount = 13,
+		.result = L"hello ",
+		.output = L":hello    ",
+		.cursorpos = 7,
+	},
+	{
 		.keypresses = (struct keyspec[]) { { 0, L'a' }, { 0, 0x300 }, { 0, 0x301 } },
 		.keypresscount = 3,
 		.result = L"à́",
@@ -217,7 +231,7 @@ START_TEST(test_commandline_input)
 }
 END_TEST
 
-static wchar_t invaliddata[] = { 0, 1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 127 };
+static wchar_t invaliddata[] = { 0, 1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 24, 25, 26, 27, 28, 29, 30, 31, 127 };
 
 START_TEST(test_commandline_invalidinput)
 {
