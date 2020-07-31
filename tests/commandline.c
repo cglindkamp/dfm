@@ -317,6 +317,33 @@ START_TEST(test_commandline_history_edit)
 }
 END_TEST
 
+/* Verify correct initialization of internal member buffer after
+ * commandline_start, when history function was used without editing the old
+ * history entry.
+ * This test crashes with double free, when not fixed. During runtime, this
+ * could also result in a buffer overflow. This was detected with GCC Address
+ * Sanitizer. */
+START_TEST(test_commandline_history_without_edit_bug)
+{
+	struct commandline cmdline;
+
+	assert_oom(commandline_init(&cmdline, 0, 0, 10) == true);;
+
+	assert_oom_cleanup(commandline_start(&cmdline, L':') != ENOMEM, commandline_destroy(&cmdline));
+	assert_oom_cleanup(commandline_history_add(&cmdline, wcsdup(L"foo")) != ENOMEM, commandline_destroy(&cmdline));
+
+	assert_oom_cleanup(commandline_start(&cmdline, L':') != ENOMEM, commandline_destroy(&cmdline));
+	ck_assert_int_eq(commandline_handlekey(&cmdline, KEY_UP, true), 0);
+	assert_oom_cleanup(commandline_history_add(&cmdline, wcsdup(L"foo")) != ENOMEM, commandline_destroy(&cmdline));
+
+	assert_oom_cleanup(commandline_start(&cmdline, L':') != ENOMEM, commandline_destroy(&cmdline));
+	ck_assert_int_eq(commandline_handlekey(&cmdline, KEY_UP, true), 0);
+	assert_oom_cleanup(commandline_handlekey(&cmdline, L'o', false) != ENOMEM, commandline_destroy(&cmdline));
+
+	commandline_destroy(&cmdline);
+}
+END_TEST
+
 Suite *commandline_suite(void)
 {
 	Suite *suite;
@@ -330,6 +357,7 @@ Suite *commandline_suite(void)
 	tcase_add_test(tcase, test_commandline_history_nullpointer);
 	tcase_add_test(tcase, test_commandline_history_noedit);
 	tcase_add_test(tcase, test_commandline_history_edit);
+	tcase_add_test(tcase, test_commandline_history_without_edit_bug);
 	suite_add_tcase(suite, tcase);
 
 	return suite;

@@ -83,6 +83,10 @@ int commandline_start(struct commandline *commandline, wchar_t prompt)
 	commandline->first = 0;
 	commandline->history_position = 0;
 
+	if(commandline->backup_buffer) {
+		commandline->buffer = commandline->backup_buffer;
+		commandline->backup_buffer = NULL;
+	}
 	if(commandline->buffer == NULL)
 		commandline->buffer = malloc(commandline->allocated_size * sizeof(wchar_t));
 	if(commandline->buffer == NULL)
