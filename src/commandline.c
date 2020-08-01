@@ -260,6 +260,14 @@ int commandline_history_add(struct commandline *commandline, const wchar_t *comm
 	if(command == NULL)
 		return EINVAL;
 
+	/* filter out commands only consisting of whitespace */
+	for(size_t i = 0; ; i++) {
+		if(i == wcslen(command))
+			return EINVAL;
+		if(!iswspace(command[i]))
+			break;
+	}
+
 	/* remove old entry with same content */
 	for(size_t i = 0; i < list_length(commandline->history); i++) {
 		if(wcscmp(command, list_get_item(commandline->history, i)) == 0) {

@@ -367,6 +367,27 @@ START_TEST(test_commandline_history_double_entry)
 }
 END_TEST
 
+START_TEST(test_commandline_history_white_space)
+{
+	struct commandline cmdline;
+
+	assert_oom(commandline_init(&cmdline, 0, 0, 10) == true);;
+
+	assert_oom_cleanup(commandline_start(&cmdline, L':') != ENOMEM, commandline_destroy(&cmdline));
+	ck_assert_int_eq(commandline_history_add(&cmdline, L""), EINVAL);
+	ck_assert_int_eq(commandline_history_add(&cmdline, L"	 "), EINVAL);
+	assert_oom_cleanup(commandline_history_add(&cmdline, L"foo") != ENOMEM, commandline_destroy(&cmdline));
+
+	assert_oom_cleanup(commandline_start(&cmdline, L':') != ENOMEM, commandline_destroy(&cmdline));
+	ck_assert_int_eq(commandline_handlekey(&cmdline, KEY_UP, true), 0);
+	ck_assert(wcscmp(commandline_getcommand(&cmdline), L"foo") == 0);
+	ck_assert_int_eq(commandline_handlekey(&cmdline, KEY_UP, true), 0);
+	ck_assert(wcscmp(commandline_getcommand(&cmdline), L"foo") == 0);
+
+	commandline_destroy(&cmdline);
+}
+END_TEST
+
 Suite *commandline_suite(void)
 {
 	Suite *suite;
@@ -382,6 +403,7 @@ Suite *commandline_suite(void)
 	tcase_add_test(tcase, test_commandline_history_edit);
 	tcase_add_test(tcase, test_commandline_history_without_edit_bug);
 	tcase_add_test(tcase, test_commandline_history_double_entry);
+	tcase_add_test(tcase, test_commandline_history_white_space);
 	suite_add_tcase(suite, tcase);
 
 	return suite;
