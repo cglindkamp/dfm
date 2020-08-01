@@ -25,7 +25,7 @@ void commandline_updatecursor(struct commandline *commandline);
 int commandline_handlekey(struct commandline *commandline, wint_t key, bool iskeycode);
 const wchar_t *commandline_getcommand(struct commandline *commandline);
 void commandline_resize(struct commandline *commandline, unsigned int x, unsigned int y, unsigned int width);
-int commandline_history_add(struct commandline *commandline, wchar_t *command);
+int commandline_history_add(struct commandline *commandline, const wchar_t *command);
 
 bool commandline_init(struct commandline *commandline, unsigned int x, unsigned int y, unsigned int width);
 void commandline_destroy(struct commandline *commandline);

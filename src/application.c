@@ -651,7 +651,7 @@ static void handle_stdin(struct application *app)
 			char command[wcstombs(NULL, wcommand, 0) + 1];
 			wcstombs(command, wcommand, sizeof(command));
 			commandexecutor_execute(&app->commandexecutor, command);
-			commandline_history_add(&app->commandline, wcsdup(wcommand));
+			commandline_history_add(&app->commandline, wcommand);
 		} else if(ret != KEY_CODE_YES && key == L'\t') {
 		} else if(ret != KEY_CODE_YES && key == 27) {
 			ret = wget_wch(app->status, &key);

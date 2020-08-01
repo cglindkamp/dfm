@@ -255,7 +255,7 @@ void commandline_resize(struct commandline *commandline, unsigned int x, unsigne
 		commandline_updateview(commandline);
 }
 
-int commandline_history_add(struct commandline *commandline, wchar_t *command)
+int commandline_history_add(struct commandline *commandline, const wchar_t *command)
 {
 	if(command == NULL)
 		return EINVAL;
@@ -269,10 +269,15 @@ int commandline_history_add(struct commandline *commandline, wchar_t *command)
 		}
 	}
 
-	if(list_append(commandline->history, command))
+	wchar_t *commanddup = wcsdup(command);
+	if(commanddup == NULL) {
+		return ENOMEM;
+	}
+
+	if(list_append(commandline->history, commanddup))
 		return 0;
 	else {
-		free(command);
+		free(commanddup);
 		return ENOMEM;
 	}
 }

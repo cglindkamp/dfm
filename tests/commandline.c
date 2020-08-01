@@ -264,8 +264,8 @@ START_TEST(test_commandline_history_noedit)
 
 	assert_oom(commandline_init(&cmdline, 0, 0, 10) == true);;
 
-	assert_oom_cleanup(commandline_history_add(&cmdline, wcsdup(L"foo")) != ENOMEM, commandline_destroy(&cmdline));
-	assert_oom_cleanup(commandline_history_add(&cmdline, wcsdup(L"bar")) != ENOMEM, commandline_destroy(&cmdline));
+	assert_oom_cleanup(commandline_history_add(&cmdline, L"foo") != ENOMEM, commandline_destroy(&cmdline));
+	assert_oom_cleanup(commandline_history_add(&cmdline, L"bar") != ENOMEM, commandline_destroy(&cmdline));
 	assert_oom_cleanup(commandline_start(&cmdline, L':') != ENOMEM, commandline_destroy(&cmdline));
 
 	int x, y;
@@ -294,8 +294,8 @@ START_TEST(test_commandline_history_edit)
 
 	assert_oom(commandline_init(&cmdline, 0, 0, 10) == true);;
 
-	assert_oom_cleanup(commandline_history_add(&cmdline, wcsdup(L"foo")) != ENOMEM, commandline_destroy(&cmdline));
-	assert_oom_cleanup(commandline_history_add(&cmdline, wcsdup(L"bar")) != ENOMEM, commandline_destroy(&cmdline));
+	assert_oom_cleanup(commandline_history_add(&cmdline, L"foo") != ENOMEM, commandline_destroy(&cmdline));
+	assert_oom_cleanup(commandline_history_add(&cmdline, L"bar") != ENOMEM, commandline_destroy(&cmdline));
 	assert_oom_cleanup(commandline_start(&cmdline, L':') != ENOMEM, commandline_destroy(&cmdline));
 
 	ck_assert_int_eq(commandline_handlekey(&cmdline, KEY_UP, true), 0);
@@ -330,11 +330,11 @@ START_TEST(test_commandline_history_without_edit_bug)
 	assert_oom(commandline_init(&cmdline, 0, 0, 10) == true);;
 
 	assert_oom_cleanup(commandline_start(&cmdline, L':') != ENOMEM, commandline_destroy(&cmdline));
-	assert_oom_cleanup(commandline_history_add(&cmdline, wcsdup(L"foo")) != ENOMEM, commandline_destroy(&cmdline));
+	assert_oom_cleanup(commandline_history_add(&cmdline, L"foo") != ENOMEM, commandline_destroy(&cmdline));
 
 	assert_oom_cleanup(commandline_start(&cmdline, L':') != ENOMEM, commandline_destroy(&cmdline));
 	ck_assert_int_eq(commandline_handlekey(&cmdline, KEY_UP, true), 0);
-	assert_oom_cleanup(commandline_history_add(&cmdline, wcsdup(L"foo")) != ENOMEM, commandline_destroy(&cmdline));
+	assert_oom_cleanup(commandline_history_add(&cmdline, L"foo") != ENOMEM, commandline_destroy(&cmdline));
 
 	assert_oom_cleanup(commandline_start(&cmdline, L':') != ENOMEM, commandline_destroy(&cmdline));
 	ck_assert_int_eq(commandline_handlekey(&cmdline, KEY_UP, true), 0);
@@ -351,9 +351,9 @@ START_TEST(test_commandline_history_double_entry)
 	assert_oom(commandline_init(&cmdline, 0, 0, 10) == true);;
 
 	assert_oom_cleanup(commandline_start(&cmdline, L':') != ENOMEM, commandline_destroy(&cmdline));
-	assert_oom_cleanup(commandline_history_add(&cmdline, wcsdup(L"foo")) != ENOMEM, commandline_destroy(&cmdline));
-	assert_oom_cleanup(commandline_history_add(&cmdline, wcsdup(L"bar")) != ENOMEM, commandline_destroy(&cmdline));
-	assert_oom_cleanup(commandline_history_add(&cmdline, wcsdup(L"foo")) != ENOMEM, commandline_destroy(&cmdline));
+	assert_oom_cleanup(commandline_history_add(&cmdline, L"foo") != ENOMEM, commandline_destroy(&cmdline));
+	assert_oom_cleanup(commandline_history_add(&cmdline, L"bar") != ENOMEM, commandline_destroy(&cmdline));
+	assert_oom_cleanup(commandline_history_add(&cmdline, L"foo") != ENOMEM, commandline_destroy(&cmdline));
 
 	assert_oom_cleanup(commandline_start(&cmdline, L':') != ENOMEM, commandline_destroy(&cmdline));
 	ck_assert_int_eq(commandline_handlekey(&cmdline, KEY_UP, true), 0);
