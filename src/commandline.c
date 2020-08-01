@@ -259,6 +259,16 @@ int commandline_history_add(struct commandline *commandline, wchar_t *command)
 {
 	if(command == NULL)
 		return EINVAL;
+
+	/* remove old entry with same content */
+	for(size_t i = 0; i < list_length(commandline->history); i++) {
+		if(wcscmp(command, list_get_item(commandline->history, i)) == 0) {
+			free(list_get_item(commandline->history, i));
+			list_remove(commandline->history, i);
+			break;
+		}
+	}
+
 	if(list_append(commandline->history, command))
 		return 0;
 	else {
