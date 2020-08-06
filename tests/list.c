@@ -139,6 +139,50 @@ START_TEST(test_list_insert_sort)
 }
 END_TEST
 
+START_TEST(test_list_move_item)
+{
+	assert_oom(list != NULL);
+
+	for(size_t i = 0; i < 10; i++)
+		assert_oom(list_append(list, (void*)i) == true);
+
+	list_move_item(list, 4, 8);
+
+	ck_assert_uint_eq((size_t)list_get_item(list, 0), 0);
+	ck_assert_uint_eq((size_t)list_get_item(list, 1), 1);
+	ck_assert_uint_eq((size_t)list_get_item(list, 2), 2);
+	ck_assert_uint_eq((size_t)list_get_item(list, 3), 3);
+	ck_assert_uint_eq((size_t)list_get_item(list, 4), 5);
+	ck_assert_uint_eq((size_t)list_get_item(list, 5), 6);
+	ck_assert_uint_eq((size_t)list_get_item(list, 6), 7);
+	ck_assert_uint_eq((size_t)list_get_item(list, 7), 8);
+	ck_assert_uint_eq((size_t)list_get_item(list, 8), 4);
+	ck_assert_uint_eq((size_t)list_get_item(list, 9), 9);
+}
+END_TEST
+
+START_TEST(test_list_move_item_backwards)
+{
+	assert_oom(list != NULL);
+
+	for(size_t i = 0; i < 10; i++)
+		assert_oom(list_append(list, (void*)i) == true);
+
+	list_move_item(list, 7, 5);
+
+	ck_assert_uint_eq((size_t)list_get_item(list, 0), 0);
+	ck_assert_uint_eq((size_t)list_get_item(list, 1), 1);
+	ck_assert_uint_eq((size_t)list_get_item(list, 2), 2);
+	ck_assert_uint_eq((size_t)list_get_item(list, 3), 3);
+	ck_assert_uint_eq((size_t)list_get_item(list, 4), 4);
+	ck_assert_uint_eq((size_t)list_get_item(list, 5), 7);
+	ck_assert_uint_eq((size_t)list_get_item(list, 6), 5);
+	ck_assert_uint_eq((size_t)list_get_item(list, 7), 6);
+	ck_assert_uint_eq((size_t)list_get_item(list, 8), 8);
+	ck_assert_uint_eq((size_t)list_get_item(list, 9), 9);
+}
+END_TEST
+
 Suite *list_suite(void)
 {
 	Suite *suite;
@@ -155,6 +199,8 @@ Suite *list_suite(void)
 	tcase_add_test(tcase, test_list_remove_items);
 	tcase_add_test(tcase, test_list_sort);
 	tcase_add_test(tcase, test_list_insert_sort);
+	tcase_add_test(tcase, test_list_move_item);
+	tcase_add_test(tcase, test_list_move_item_backwards);
 	suite_add_tcase(suite, tcase);
 
 	return suite;

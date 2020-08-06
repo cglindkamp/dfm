@@ -88,6 +88,21 @@ bool list_insert(struct list *list, size_t index, void *item)
 	return true;
 }
 
+void list_move_item(struct list *list, size_t oldindex, size_t newindex)
+{
+	assert(oldindex < list->length);
+	assert(newindex < list->length);
+
+	void *item = list->items[oldindex];
+
+	if(oldindex < newindex)
+		memmove(&list->items[oldindex], &list->items[oldindex + 1], (newindex - oldindex) * sizeof(list->items[0]));
+	else
+		memmove(&list->items[newindex + 1], &list->items[newindex], (oldindex - newindex) * sizeof(list->items[0]));
+
+	list->items[newindex] = item;
+}
+
 void list_remove(struct list *list, size_t index)
 {
 	assert(index < list->length);
