@@ -268,12 +268,11 @@ int commandline_history_add(struct commandline *commandline, const wchar_t *comm
 			break;
 	}
 
-	/* remove old entry with same content */
+	/* make old entry with same content the newest entry and ignore the new addition */
 	for(size_t i = 0; i < list_length(commandline->history); i++) {
 		if(wcscmp(command, list_get_item(commandline->history, i)) == 0) {
-			free(list_get_item(commandline->history, i));
-			list_remove(commandline->history, i);
-			break;
+			list_move_item(commandline->history, i, list_length(commandline->history) - 1);
+			return 0;
 		}
 	}
 
