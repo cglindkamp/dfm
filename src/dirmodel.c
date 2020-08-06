@@ -252,14 +252,7 @@ static int dirmodel_update_file(struct dirmodel *model, struct filedata *newfile
 	} else {
 		if(oldindex < newindex)
 			newindex--;
-		list_remove(model->sortedlist, oldindex);
-		if(!list_insert(model->sortedlist, newindex, newfiledata)) {
-			/* list_insert can't actually fail here, because we
-			 * just removed an item, just in case this changes in
-			 * the future, abort to potentially catch it in unit
-			 * test runs */
-			abort();
-		}
+		list_move_item(model->sortedlist, oldindex, newindex);
 		listmodel_notify_change(&model->listmodel, MODEL_CHANGE, newindex, oldindex);
 	}
 	list_set_item(model->list, internal_index, newfiledata);
