@@ -1,11 +1,17 @@
 language: c
 
-dist: trusty
-sudo: false
+dist: xenial
 
 compiler:
   - gcc
   - clang
+
+jobs:
+  include:
+  - dist: focal
+    compiler: gcc
+  - dist: focal
+    compiler: clang
 
 addons:
   apt:
