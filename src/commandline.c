@@ -5,6 +5,7 @@
 
 #include <errno.h>
 #include <stdlib.h>
+#include <wctype.h>
 
 static int commandline_makeroom(struct commandline *commandline)
 {
