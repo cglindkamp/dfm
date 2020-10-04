@@ -20,6 +20,9 @@ Features
   environment variable DFM\_CLIPBOARD\_DIR is set to a writable directory. This
   way you can emulate tabs with screen mutliplexers or mutliple xterns running
   several dfm instances
+* Browse archives with the help of FUSE. Archives are temporarily mounted, then
+  a new instance of dfm launches in the mount point, and after this new
+  instance is exited, the archive is unmounted
 
 Installation
 ------------
@@ -34,6 +37,35 @@ To install dfm, just enter
 	sudo make install
 
 You might want to edit the Makefile to adjust the installation paths.
+
+### Archive support
+
+To support browsing of archives, *archivemount*
+(https://github.com/cybernoid/archivemount) and *rar2fs*
+(https://github.com/hasse69/rar2fs) have to be installed:
+
+And for the distinction of .rar files from other archives, the *file*
+utility (https://www.darwinsys.com/file/) is needed.
+
+If you want to browse archives with the normal open action instead of pressing
+"a", you have to configure your file launcher to use the dfm-archive-helper.
+For run-mailcap, add something like that in the ~/.mailcap:
+```
+application/zip; dfm-archive-helper '%s'; needsterminal
+application/x-tar; dfm-archive-helper '%s'; needsterminal
+application/gzip; dfm-archive-helper '%s'; needsterminal
+application/x-bzip2; dfm-archive-helper '%s'; needsterminal
+application/x-xz; dfm-archive-helper '%s'; needsterminal
+application/x-rar; dfm-archive-helper '%s'; needsterminal
+application/x-iso9660-image; dfm-archive-helper '%s'; needsterminal
+```
+Feel free to add further types. You may also need to adjust the mime types
+according to distribution. Check what "file --mime-type" returns for you, if it
+does not work.
+
+One advantage of using the explicit "open-archive" handler is, that you can
+also open archives, which aren't configured, or which are archives under the
+hood of another file format, e.g. Java JAR or OpenDocument files.
 
 Usage
 -----
@@ -71,6 +103,7 @@ them to your liking.
 | p        | Copy files in clipboard to the current directory                                     |
 | P        | Move files in clipboard to the current directory                                     |
 | s        | Open a shell in the current direcotory                                               |
+| a        | Browse contents of the selected archive                                              |
 | y        | Copy currently marked files or the currently selected file to clipboard              |
 | q        | Quit dfm                                                                             |
 | :        | Open the command line                                                                |

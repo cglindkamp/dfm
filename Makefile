@@ -29,6 +29,7 @@ endif
 
 HANDLERS = \
 	open \
+	open-archive \
 	delete \
 	copy \
 	move \
@@ -105,6 +106,7 @@ tests/tests: $(TESTEDOBJECTS) $(TESTOBJECTS)
 
 install:
 	install -m 755 -D $(PROJECT) $(BINDIR)/$(PROJECT)
+	install -m 755 examples/dfm-archive-helper $(BINDIR)/dfm-archive-helper
 	install -m 644 examples/rc $(SYSCONFDIR)/xdg/$(PROJECT)/rc
 	for FILE in $(HANDLERS); do \
 		install -m 755 -D examples/handlers/$$FILE $(SYSCONFDIR)/xdg/$(PROJECT)/handlers/$$FILE; \

@@ -1,0 +1,17 @@
+#!/bin/sh
+archivename=`basename "$1"`
+mountdir=`mktemp -d -p "" "$archivename.XXXXXX"`
+
+echo Opening "$1"
+if file -b --mime-type "$1"|grep 'application/.*rar'; then
+	rar2fs "$1" "$mountdir"
+else
+	archivemount -o readonly "$1" "$mountdir"
+fi
+
+pushd "$mountdir"
+dfm
+popd
+
+fusermount -u "$mountdir"
+rmdir "$mountdir"

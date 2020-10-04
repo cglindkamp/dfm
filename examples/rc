@@ -20,6 +20,7 @@ map l         invoke_handler    symlink
 map p         invoke_handler    copy
 map P         invoke_handler    move
 map s         invoke_handler    shell
+map a         invoke_handler    open-archive
 map y         yank
 map q         quit
 
