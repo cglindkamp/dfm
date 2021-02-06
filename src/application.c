@@ -128,6 +128,18 @@ static void refresh_statusbar(struct application *app)
 	wrefresh(app->status);
 }
 
+static void update_terminal_title(struct application *app)
+{
+	if(!tigetflag("hs"))
+		return;
+
+	putp(tigetstr("tsl"));
+	putp("dfm [");
+	putp(path_tocstr(&app->cwd));
+	putp("]");
+	putp(tigetstr("fsl"));
+}
+
 static bool enter_directory(struct application *app, const char *oldpathname)
 {
 	while(1) {
@@ -159,6 +171,7 @@ static bool enter_directory(struct application *app, const char *oldpathname)
 		path_remove_component(&app->cwd, &oldpathname);
 	}
 
+	update_terminal_title(app);
 	select_stored_position(app, oldpathname);
 	display_current_path(app);
 	refresh_statusbar(app);
