@@ -138,6 +138,7 @@ static void update_terminal_title(struct application *app)
 	putp(path_tocstr(&app->cwd));
 	putp("]");
 	putp(tigetstr("fsl"));
+	fflush(stdout);
 }
 
 static bool enter_directory(struct application *app, const char *oldpathname)
