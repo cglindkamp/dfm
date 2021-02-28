@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "wrapper/fstatat.h"
 #include "../src/dirmodel.h"
 #include "../src/list.h"
 #include "../src/util.h"
@@ -45,6 +46,7 @@ static void setup(void)
 
 static void teardown(void)
 {
+	fstatat_seterrno(0);
 	dirmodel_destroy(&model);
 	remove_directory_recursively(path);
 }
@@ -333,6 +335,15 @@ START_TEST(test_dirmodel_addedfileremovedbeforeeventhandled)
 }
 END_TEST
 
+/* regression test for endless loop in internal_init */
+START_TEST(test_dirmodel_statfail)
+{
+	create_file(dir_fd, "foo", 0);
+	fstatat_seterrno(ENOENT);
+	assert_oom(dirmodel_change_directory(&model, path) == true);
+}
+END_TEST
+
 static void setup_markfiles(void)
 {
 	setup();
@@ -565,6 +576,7 @@ Suite *dirmodel_suite(void)
 	tcase_add_test(tcase, test_dirmodel_changedfileevent);
 	tcase_add_test(tcase, test_dirmodel_changedfileevent_newposition);
 	tcase_add_test(tcase, test_dirmodel_addedfileremovedbeforeeventhandled);
+	tcase_add_test(tcase, test_dirmodel_statfail);
 	suite_add_tcase(suite, tcase);
 
 	tcase = tcase_create("Mark Files");

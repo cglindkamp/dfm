@@ -387,10 +387,9 @@ static bool internal_init(struct dirmodel *model, const char *path)
 	if(sortedlist == NULL)
 		goto err_newsortedlist;
 
-	struct dirent *entry = readdir(dir);
 
 	model->dirsize = 0;
-	while(entry) {
+	for(struct dirent *entry = readdir(dir); entry; entry = readdir(dir)) {
 		if(strcmp(entry->d_name, ".") != 0 &&
 		   strcmp(entry->d_name, "..") != 0 &&
 		   (model->filter_active ? regexec(&model->filter, entry->d_name, 0, NULL, 0) == 0 : true)) {
@@ -408,7 +407,6 @@ static bool internal_init(struct dirmodel *model, const char *path)
 				goto err_readdir;
 			model->dirsize += filedata->stat.st_size;
 		}
-		entry = readdir(dir);
 	}
 	model->dir = dir;
 	model->list = list;

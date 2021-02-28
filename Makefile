@@ -69,8 +69,9 @@ TESTOBJECTS = \
 	tests/processmanager.o \
 	tests/xdg.o \
 	tests/tests.o \
-	tests/wrapper/getcwd.o \
 	tests/wrapper/alloc.o \
+	tests/wrapper/getcwd.o \
+	tests/wrapper/fstatat.o \
 
 DEPS = $(patsubst %.o,%.d,$(OBJECTS) $(TESTOBJECTS) $(TESTEDOBJECTS))
 GCDAS = $(patsubst %.o,%.gcda,$(OBJECTS) $(TESTOBJECTS) $(TESTEDOBJECTS))
@@ -106,7 +107,12 @@ $(TESTOBJECTS): %.o: %.c
 $(TESTEDOBJECTS): tests/tested_%.o: src/%.c
 	$(COMPILE.c) $(CHECK_CFLAGs) $(CFLAGS_TEST) -c -o $@ $<
 tests/tests: $(TESTEDOBJECTS) $(TESTOBJECTS)
-	$(LINK.c) -o $@ $^ $(CHECK_LIBS) $(NCURSES_LIBS) -Wl,--wrap=getcwd -Wl,--wrap=malloc -Wl,--wrap=realloc -Wl,--wrap=strdup
+	$(LINK.c) -o $@ $^ $(CHECK_LIBS) $(NCURSES_LIBS) \
+		-Wl,--wrap=getcwd \
+		-Wl,--wrap=fstatat \
+		-Wl,--wrap=malloc \
+		-Wl,--wrap=realloc \
+		-Wl,--wrap=strdup \
 
 install:
 	install -m 755 -D $(PROJECT) $(BINDIR)/$(PROJECT)
