@@ -54,7 +54,7 @@ OBJECTS = \
 	src/util.o \
 	src/main.o \
 
-TESTEDOBJECTS = $(subst src/main.o,,$(OBJECTS))
+TESTEDOBJECTS = $(patsubst  src/%.o, tests/tested_%.o, $(subst src/main.o,,$(OBJECTS)))
 TESTOBJECTS = \
 	tests/clipboard.o \
 	tests/commandline.o \
@@ -72,9 +72,9 @@ TESTOBJECTS = \
 	tests/wrapper/getcwd.o \
 	tests/wrapper/alloc.o \
 
-DEPS = $(patsubst %.o,%.d,$(OBJECTS) $(TESTOBJECTS))
-GCDAS = $(patsubst %.o,%.gcda,$(OBJECTS) $(TESTOBJECTS))
-GCNOS = $(patsubst %.o,%.gcno,$(OBJECTS) $(TESTOBJECTS))
+DEPS = $(patsubst %.o,%.d,$(OBJECTS) $(TESTOBJECTS) $(TESTEDOBJECTS))
+GCDAS = $(patsubst %.o,%.gcda,$(OBJECTS) $(TESTOBJECTS) $(TESTEDOBJECTS))
+GCNOS = $(patsubst %.o,%.gcno,$(OBJECTS) $(TESTOBJECTS) $(TESTEDOBJECTS))
 
 $(PROJECT): $(OBJECTS)
 	$(LINK.c) -o $(PROJECT) $^ $(LIBS)
@@ -99,8 +99,12 @@ endif
 vtestoom: tests/tests
 	valgrind --leak-check=full tests/tests oom 2> valgrind-oom.log
 
+CFLAGS_TEST=-Os
+
 $(TESTOBJECTS): %.o: %.c
-	$(COMPILE.c) $(CHECK_CFLAGS) -c -o $@ $<
+	$(COMPILE.c) $(CHECK_CFLAGS) $(CFLAGS_TEST) -c -o $@ $<
+$(TESTEDOBJECTS): tests/tested_%.o: src/%.c
+	$(COMPILE.c) $(CHECK_CFLAGs) $(CFLAGS_TEST) -c -o $@ $<
 tests/tests: $(TESTEDOBJECTS) $(TESTOBJECTS)
 	$(LINK.c) -o $@ $^ $(CHECK_LIBS) $(NCURSES_LIBS) -Wl,--wrap=getcwd -Wl,--wrap=malloc -Wl,--wrap=realloc -Wl,--wrap=strdup
 
@@ -121,7 +125,7 @@ uninstall:
 	rmdir $(SYSCONFDIR)/xdg/$(PROJECT);
 
 clean:
-	rm -f $(PROJECT) $(OBJECTS) $(TESTOBJECTS) $(DEPS) $(GCNOS) $(GCDAS) *.gcov
+	rm -f $(PROJECT) $(OBJECTS) $(TESTOBJECTS) $(TESTEDOBJECTS) $(DEPS) $(GCNOS) $(GCDAS) *.gcov
 
 $(OBJECTS) $(TESTOBJECTS): Makefile coverage.mk
 -include $(DEPS)
