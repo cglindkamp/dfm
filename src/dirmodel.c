@@ -20,6 +20,44 @@ static int (*dirmodel_comparision_functions[])(const void *, const void *) = {
 	[DIRMODEL_MTIME_DESCENDING] = filedata_listcompare_directory_mtime_filename_descending,
 };
 
+static void dirmodel_update_marked_stats(struct dirmodel *model, struct filedata *oldfiledata, struct filedata *newfiledata)
+{
+	if(oldfiledata) {
+		if(oldfiledata->is_link) {
+			model->marked_stats.size -= oldfiledata->link_size;
+		} else {
+			model->marked_stats.size -= oldfiledata->stat.st_size;
+		}
+		model->marked_stats.count--;
+	}
+	if(newfiledata) {
+		if(newfiledata->is_link) {
+			model->marked_stats.size += newfiledata->link_size;
+		} else {
+			model->marked_stats.size += newfiledata->stat.st_size;
+		}
+		model->marked_stats.count++;
+	}
+}
+
+static void dirmodel_update_dirsize(struct dirmodel *model, struct filedata *oldfiledata, struct filedata *newfiledata)
+{
+	if(oldfiledata) {
+		if(oldfiledata->is_link) {
+			model->dirsize -= oldfiledata->link_size;
+		} else {
+			model->dirsize -= oldfiledata->stat.st_size;
+		}
+	}
+	if(newfiledata) {
+		if(newfiledata->is_link) {
+			model->dirsize += newfiledata->link_size;
+		} else {
+			model->dirsize += newfiledata->stat.st_size;
+		}
+	}
+}
+
 size_t dirmodel_count(struct listmodel *listmodel)
 {
 	struct dirmodel *model = container_of(listmodel, struct dirmodel, listmodel);
@@ -48,11 +86,9 @@ static void dirmodel_setmark(struct listmodel *listmodel, size_t index, bool mar
 		return;
 
 	if(mark) {
-		model->marked_stats.count++;
-		model->marked_stats.size += filedata->stat.st_size;
+		dirmodel_update_marked_stats(model, NULL, filedata);
 	} else {
-		model->marked_stats.count--;
-		model->marked_stats.size -= filedata->stat.st_size;
+		dirmodel_update_marked_stats(model, filedata, NULL);
 	}
 	filedata->is_marked = mark;
 	listmodel_notify_change(listmodel, MODEL_CHANGE, index, index);
@@ -176,11 +212,9 @@ void dirmodel_regex_setmark(struct dirmodel *model, const char *regex, bool mark
 		if(regexec(&cregex, filedata->filename, 0, NULL, 0) == 0 &&
 		   filedata->is_marked != mark) {
 			if(mark) {
-				model->marked_stats.count++;
-				model->marked_stats.size += filedata->stat.st_size;
+				dirmodel_update_marked_stats(model, NULL, filedata);
 			} else {
-				model->marked_stats.count--;
-				model->marked_stats.size -= filedata->stat.st_size;
+				dirmodel_update_marked_stats(model, filedata, NULL);
 			}
 			filedata->is_marked = mark;
 			listmodel_notify_change(&model->listmodel, MODEL_CHANGE, i, i);
@@ -219,10 +253,9 @@ void dirmodel_notify_file_deleted(struct dirmodel *model, const char *filename)
 	if(found) {
 		struct filedata *filedata = list_get_item(list, internal_index);
 		if(filedata->is_marked) {
-			model->marked_stats.count--;
-			model->marked_stats.size -= filedata->stat.st_size;
+			dirmodel_update_marked_stats(model, filedata, NULL);
 		}
-		model->dirsize -= filedata->stat.st_size;
+		dirmodel_update_dirsize(model, filedata, NULL);
 		filedata_delete(filedata);
 		list_remove(list, internal_index);
 		list_remove(model->sortedlist, index);
@@ -237,11 +270,9 @@ static int dirmodel_update_file(struct dirmodel *model, struct filedata *newfile
 
 	newfiledata->is_marked = oldfiledata->is_marked;
 	if(newfiledata->is_marked) {
-		model->marked_stats.size -= oldfiledata->stat.st_size;
-		model->marked_stats.size += newfiledata->stat.st_size;
+		dirmodel_update_marked_stats(model, oldfiledata, newfiledata);
 	}
-	model->dirsize -= oldfiledata->stat.st_size;
-	model->dirsize += newfiledata->stat.st_size;
+	dirmodel_update_dirsize(model, oldfiledata, newfiledata);
 
 	list_find_item_or_insertpoint(model->sortedlist, model->sort_compare, oldfiledata, &oldindex);
 	list_find_item_or_insertpoint(model->sortedlist, model->sort_compare, newfiledata, &newindex);
@@ -276,7 +307,7 @@ static int dirmodel_add_file(struct dirmodel *model, struct filedata *filedata, 
 		list_remove(model->list, internal_index);
 		return ENOMEM;
 	}
-	model->dirsize += filedata->stat.st_size;
+	dirmodel_update_dirsize(model, NULL, filedata);
 	listmodel_notify_change(&model->listmodel, MODEL_ADD, index, 0);
 	return 0;
 }
@@ -405,7 +436,7 @@ static bool internal_init(struct dirmodel *model, const char *path)
 				goto err_readdir;
 			if(!list_append(list, filedata))
 				goto err_readdir;
-			model->dirsize += filedata->stat.st_size;
+			dirmodel_update_dirsize(model, NULL, filedata);
 		}
 	}
 	model->dir = dir;

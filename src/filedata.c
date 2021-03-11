@@ -326,6 +326,7 @@ int filedata_new_from_file(struct filedata **filedata, int dirfd, const char *fi
 
 	if(S_ISLNK(stat.st_mode)) {
 		(*filedata)->is_link = true;
+		(*filedata)->link_size = stat.st_size;
 		if(fstatat(dirfd, (*filedata)->filename, &(*filedata)->stat, 0) != 0) {
 			(*filedata)->is_link_broken = true;
 			memcpy(&(*filedata)->stat, &stat, sizeof(stat));

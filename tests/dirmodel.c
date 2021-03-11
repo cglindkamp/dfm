@@ -344,6 +344,108 @@ START_TEST(test_dirmodel_statfail)
 }
 END_TEST
 
+START_TEST(test_dirmodel_dirsize_files)
+{
+	create_file(dir_fd, "foo", 10);
+	create_file(dir_fd, "bar", 25);
+	assert_oom(dirmodel_change_directory(&model, path) == true);
+
+	ck_assert_uint_eq(dirmodel_getdirsize(&model), 35);
+}
+END_TEST
+
+START_TEST(test_dirmodel_dirsize_file_and_symlink)
+{
+	const off_t filesize = 10;
+
+	create_file(dir_fd, "foo", filesize);
+	ck_assert_int_eq(symlinkat("foo", dir_fd, "bar"), 0);
+	assert_oom(dirmodel_change_directory(&model, path) == true);
+
+	ck_assert_uint_eq(dirmodel_getdirsize(&model), filesize + strlen("bar"));
+
+	dirmodel_regex_setmark(&model, "bar", 1);
+	struct marked_stats stats = dirmodel_getmarkedstats(&model);
+	ck_assert_uint_eq(stats.count, 1);
+	ck_assert_uint_eq(stats.size, strlen("bar"));
+
+	dirmodel_regex_setmark(&model, "bar", 0);
+	stats = dirmodel_getmarkedstats(&model);
+	ck_assert_uint_eq(stats.count, 0);
+	ck_assert_uint_eq(stats.size, 0);
+
+	listmodel_setmark(&(model.listmodel), 0, 1);
+	stats = dirmodel_getmarkedstats(&model);
+	ck_assert_uint_eq(stats.count, 1);
+	ck_assert_uint_eq(stats.size, strlen("bar"));
+
+	listmodel_setmark(&model.listmodel, 0, 0);
+	stats = dirmodel_getmarkedstats(&model);
+	ck_assert_uint_eq(stats.count, 0);
+	ck_assert_uint_eq(stats.size, 0);
+}
+END_TEST
+
+START_TEST(test_dirmodel_dirsize_file_and_symlink_added)
+{
+	const off_t filesize = 10;
+
+	create_file(dir_fd, "foo", filesize);
+	assert_oom(dirmodel_change_directory(&model, path) == true);
+	ck_assert_uint_eq(dirmodel_getdirsize(&model), filesize);
+
+	ck_assert_int_eq(symlinkat("foo", dir_fd, "bar"), 0);
+	assert_oom(dirmodel_notify_file_added_or_changed(&model, "bar") != ENOMEM);
+	assert_oom(dirmodel_notify_flush(&model) != ENOMEM);
+
+	ck_assert_uint_eq(dirmodel_getdirsize(&model), filesize + strlen("bar"));
+}
+END_TEST
+
+START_TEST(test_dirmodel_dirsize_file_and_symlink_removed)
+{
+	const off_t filesize = 10;
+
+	create_file(dir_fd, "foo", filesize);
+	ck_assert_int_eq(symlinkat("foo", dir_fd, "bar"), 0);
+	assert_oom(dirmodel_change_directory(&model, path) == true);
+
+	dirmodel_regex_setmark(&model, "bar", 1);
+
+	dirmodel_notify_file_deleted(&model, "bar");
+	assert_oom(dirmodel_notify_flush(&model) != ENOMEM);
+
+	ck_assert_uint_eq(dirmodel_getdirsize(&model), filesize);
+
+	struct marked_stats stats = dirmodel_getmarkedstats(&model);
+	ck_assert_uint_eq(stats.count, 0);
+	ck_assert_uint_eq(stats.size, 0);
+}
+END_TEST
+
+START_TEST(test_dirmodel_dirsize_file_and_symlink_changed)
+{
+	const off_t filesize = 10;
+
+	create_file(dir_fd, "foo", filesize);
+	ck_assert_int_eq(symlinkat("foo", dir_fd, "bar"), 0);
+	assert_oom(dirmodel_change_directory(&model, path) == true);
+
+	dirmodel_regex_setmark(&model, "bar", 1);
+
+	create_file(dir_fd, "foo", filesize * 2);
+	assert_oom(dirmodel_notify_file_added_or_changed(&model, "foo") != ENOMEM);
+	assert_oom(dirmodel_notify_file_added_or_changed(&model, "bar") != ENOMEM);
+	assert_oom(dirmodel_notify_flush(&model) != ENOMEM);
+
+	ck_assert_uint_eq(dirmodel_getdirsize(&model), filesize * 2 + strlen("bar"));
+
+	struct marked_stats stats = dirmodel_getmarkedstats(&model);
+	ck_assert_uint_eq(stats.count, 1);
+	ck_assert_uint_eq(stats.size, strlen("bar"));
+}
+END_TEST
+
 static void setup_markfiles(void)
 {
 	setup();
@@ -577,6 +679,11 @@ Suite *dirmodel_suite(void)
 	tcase_add_test(tcase, test_dirmodel_changedfileevent_newposition);
 	tcase_add_test(tcase, test_dirmodel_addedfileremovedbeforeeventhandled);
 	tcase_add_test(tcase, test_dirmodel_statfail);
+	tcase_add_test(tcase, test_dirmodel_dirsize_files);
+	tcase_add_test(tcase, test_dirmodel_dirsize_file_and_symlink);
+	tcase_add_test(tcase, test_dirmodel_dirsize_file_and_symlink_added);
+	tcase_add_test(tcase, test_dirmodel_dirsize_file_and_symlink_removed);
+	tcase_add_test(tcase, test_dirmodel_dirsize_file_and_symlink_changed);
 	suite_add_tcase(suite, tcase);
 
 	tcase = tcase_create("Mark Files");

@@ -11,6 +11,7 @@ struct filedata {
 	bool is_link;
 	bool is_link_broken;
 	struct stat stat;
+	off_t link_size;
 	bool is_marked;
 };
 
