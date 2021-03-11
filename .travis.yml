@@ -6,13 +6,6 @@ compiler:
   - gcc
   - clang
 
-jobs:
-  include:
-  - dist: focal
-    compiler: gcc
-  - dist: focal
-    compiler: clang
-
 addons:
   apt:
     packages:
