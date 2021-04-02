@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "wrapper/fstatat.h"
 #include "../src/filedata.h"
 #include "../src/util.h"
 #include "tests.h"
@@ -105,6 +106,22 @@ START_TEST(test_filedata_linkbroken)
 }
 END_TEST
 
+START_TEST(test_filedata_statfail)
+{
+	struct filedata *filedata;
+	char buffer[FILEDATA_FORMAT_OUTPUT_BUFFER_SIZE];
+
+	create_file(dir_fd, "foo", 1024);
+	fstatat_seterrno(ENOTCONN);
+
+	assert_oom(filedata_new_from_file(&filedata, dir_fd, "foo") == 0);
+	filedata_format_output(filedata, buffer);
+	ck_assert_str_eq(buffer, "?????????? ? ? ????""-??""-?? ??:??:??");
+
+	filedata_delete(filedata);
+}
+END_TEST
+
 Suite *filedata_suite(void)
 {
 	Suite *suite;
@@ -118,6 +135,7 @@ Suite *filedata_suite(void)
 	tcase_add_test(tcase, test_filedata_regularfile);
 	tcase_add_test(tcase, test_filedata_link);
 	tcase_add_test(tcase, test_filedata_linkbroken);
+	tcase_add_test(tcase, test_filedata_statfail);
 	suite_add_tcase(suite, tcase);
 
 	return suite;

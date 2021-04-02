@@ -163,6 +163,12 @@ static void permission_characters(char *buffer, char mode)
 
 void filedata_format_output(const struct filedata *filedata, char *buffer)
 {
+	if(!filedata->is_stat_valid) {
+		strcpy(buffer, "?????????? ? ? ????""-??""-?? ??:??:??");
+		return;
+	}
+
+
 	buffer[0] = filetype_character(&filedata->stat);
 	permission_characters(buffer + 1, (filedata->stat.st_mode >> 6) & 7);
 	permission_characters(buffer + 4, (filedata->stat.st_mode >> 3) & 7);
@@ -227,8 +233,9 @@ static size_t render_info(wchar_t *buffer, struct filedata *filedata)
 	if(S_ISDIR(filedata->stat.st_mode))
 		wcscat(buffer, INFO_DIR);
 	else {
-		wchar_t size[INFO_SIZE_DIR_LENGTH + 1];
-		filesize_to_string(size, filedata->stat.st_size);
+		wchar_t size[INFO_SIZE_DIR_LENGTH + 1] = L"? ";
+		if(filedata->is_stat_valid)
+			filesize_to_string(size, filedata->stat.st_size);
 		swprintf(buffer + wcslen(buffer), sizeof(size)/sizeof(size[0]), L"%5ls", size);
 	}
 
@@ -307,9 +314,14 @@ size_t filedata_format_list_line(struct filedata *filedata, wchar_t *buffer, siz
 int filedata_new_from_file(struct filedata **filedata, int dirfd, const char *filename)
 {
 	struct stat stat;
+	bool valid = true;
 
-	if(fstatat(dirfd, filename, &stat, AT_SYMLINK_NOFOLLOW) != 0)
-		return ENOENT;
+	if(fstatat(dirfd, filename, &stat, AT_SYMLINK_NOFOLLOW) != 0) {
+		if(errno == ENOENT)
+			return ENOENT;
+		valid = false;
+		memset(&stat, 0, sizeof(stat));
+	}
 
 	*filedata = malloc(sizeof(**filedata));
 	if(*filedata == NULL)
@@ -323,6 +335,7 @@ int filedata_new_from_file(struct filedata **filedata, int dirfd, const char *fi
 	}
 
 	(*filedata)->is_marked = false;
+	(*filedata)->is_stat_valid = valid;
 
 	if(S_ISLNK(stat.st_mode)) {
 		(*filedata)->is_link = true;

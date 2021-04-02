@@ -13,6 +13,7 @@ struct filedata {
 	struct stat stat;
 	off_t link_size;
 	bool is_marked;
+	bool is_stat_valid;
 };
 
 int filedata_listcompare_filename(const void *a, const void *b);
