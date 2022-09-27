@@ -9,9 +9,9 @@ else
 	archivemount -o readonly "$1" "$mountdir"
 fi
 
-pushd "$mountdir"
+cd "$mountdir"
 dfm
-popd
+cd /
 
 fusermount -u "$mountdir"
 rmdir "$mountdir"
