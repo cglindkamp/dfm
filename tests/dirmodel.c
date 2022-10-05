@@ -178,8 +178,9 @@ static struct {
 	{ u8"fo\u0308o\u0308bar", L"fo\u0308o\u0308bar         <DIR>", 22, 20, 22 },
 	{ u8"fo\u0308o\u0308bar", NULL, 8, 8, 9 },
 	{ u8"fo\u0308o\u0308bar", L"fo\u0308 <DIR>", 9, 8, 9 },
-	{ "\xff", L"???  <DIR>", 10, 10, 10 },
-	{ "\xff", L"?? <DIR>", 8, 8, 8 },
+	{ "\xff", L"\uFFFD    <DIR>", 10, 10, 10 },
+	{ "f\xffo", L"f\uFFFDo  <DIR>", 10, 10, 10 },
+	{ "\xff\xff\xff", L"\uFFFD\uFFFD <DIR>", 8, 8, 8 },
 };
 
 START_TEST(test_dirmodel_render_specialcases)

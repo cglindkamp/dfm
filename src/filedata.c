@@ -244,34 +244,34 @@ static size_t render_info(wchar_t *buffer, struct filedata *filedata)
 
 static size_t render_filename(wchar_t *buffer, size_t len, size_t width, const char *filename)
 {
-	size_t wc_count = mbstowcs(NULL, filename, 0);
-
-	if(wc_count == (size_t)-1) {
-		buffer[0] = L'\0';
-		if(len > 3)
-			len = 3;
-		wcsncat(buffer, L"???", len);
-		return wcslen(buffer);
-	}
-
-	wchar_t name[wc_count + 1];
-
-	mbstowcs(name, filename, wc_count);
-
 	size_t char_count = 0, display_count = 0;
+	size_t flen = strlen(filename);
 
-	for(size_t i = 0; i < wc_count; i++) {
-		int w = wcwidth(name[i]);
+	while(flen > 0) {
+		wchar_t c;
+
+		int consumed = mbtowc(&c, filename, flen);
+		if(consumed < 0) {
+			c = L'\uFFFD';
+			consumed = 1;
+		}
+
+		flen -= consumed;
+		filename += consumed;
+
+		int w = wcwidth(c);
 		if(w == -1)
 			continue;
 		if(w + display_count > width)
 			break;
-		if(char_count < len)
-			buffer[char_count] = name[i];
-		display_count += w;
+
+		if(char_count < len) {
+			*buffer++ = c;
+			display_count += w;
+		}
 		char_count++;
 	}
-	buffer[char_count] = L'\0';
+	*buffer = L'\0';
 
 	return char_count;
 }
